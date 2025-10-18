@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You! - Arun Karyana Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Replicating the Tailwind config from the main page for consistency
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Original Color Palette
+                        primary: '#9C6F44', // Warm Brown
+                        secondary: '#E8C07D', // Light Gold
+                        accent: '#B88B4A', // Deeper Gold/Brown
+                        dark: '#2D2D2D', // Dark Grey
+                        light: '#F8F5F0' // Off-White
+                    },
+                    fontFamily: {
+                        // Keeping the updated typography
+                        heading: ['"Playfair Display"', 'serif'],
+                        body: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F8F5F0; /* Ensure the light background color */
+            color: #2D2D2D; /* Using original dark color */
+            /* Products section background - Distinct pattern and subtle texture */
+             background-image:
+                 linear-gradient(45deg, rgba(156, 111, 68, 0.05) 25%, transparent 25%, transparent 75%, rgba(156, 111, 68, 0.05) 75%, rgba(156, 111, 68, 0.05)),
+                 linear-gradient(-45deg, rgba(156, 111, 68, 0.05) 25%, transparent 25%, transparent 75%, rgba(156, 111, 68, 0.05) 75%, rgba(156, 111, 68, 0.05));
+             background-size: 30px 30px, 30px 30px; /* Size of the pattern tiles */
+             background-position: 0 0, 15px 15px; /* Offset one pattern to create the grid */
+        }
+         .logo-container {
+             position: relative;
+             display: inline-block;
+         }
+         /* Decorative rings around the logo */
+         .logo-container::after {
+             content: '';
+             position: absolute;
+             top: -5px;
+             left: -5px;
+             right: -5px;
+             bottom: -5px;
+             border: 2px solid #E8C07D; /* Using original secondary color */
+             border-radius: 50%;
+             z-index: -1;
+             opacity: 0.7;
+         }
+         .logo-container::before {
+             content: '';
+             position: absolute;
+             top: -10px;
+             left: -10px;
+             right: -10px;
+             bottom: -10px;
+             border: 1px dashed #9C6F44; /* Using original primary color */
+             border-radius: 50%;
+             z-index: -2;
+             opacity: 0.4;
+         }
+         /* Added basic responsive styling adjustments */
+         @media (max-width: 640px) {
+             .container {
+                 padding-left: 1rem;
+                 padding-right: 1rem;
+             }
+             .max-w-md {
+                 max-width: 100%; /* Full width on small screens */
+             }
+             .text-3xl {
+                 font-size: 2rem; /* Adjust heading size */
+             }
+             .text-gray-700 {
+                 font-size: 1rem; /* Adjust body text size */
+             }
+             .px-6 {
+                 padding-left: 1.5rem;
+                 padding-right: 1.5rem;
+             }
+             .py-2 {
+                 padding-top: 0.5rem;
+                 padding-bottom: 0.5rem;
+             }
+         }
+    </style>
+</head>
+<body>
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                 <a href="/" class="flex items-center mb-4 md:mb-0 text-dark hover:text-dark transition cursor-pointer">
+                    <div class="logo-container mr-3">
+                        <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                             alt="Arun Karyana Store Logo"
+                             onerror="this.onerror=null; this.src='https://placehold.co/60x60/F8F5F0/9C6F44?text=AK';"
+                             class="rounded-full w-14 h-14 object-cover border-2 border-primary">
+                    </div>
+                    <div>
+                        <h1 class="font-heading text-2xl font-bold">Arun Karyana Store</h1>
+                        <p class="text-xs text-gray-600">Your trusted neighborhood store</p>
+                    </div>
+                </a>
+
+                 <div class="flex-grow"></div> <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="cart-btn" class="text-dark hover:text-accent transition">
+                            <i class="fas fa-shopping-cart text-xl"></i>
+                            <span id="cart-count" class="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                    </div>
+                    <a href="login.html" id="auth-link" class="bg-primary text-white px-4 py-1.5 rounded-md text-sm hover:bg-opacity-90 transition font-medium">Login</a>
+                </div>
+            </div>
+             <nav class="mt-3">
+                <ul class="flex space-x-6 overflow-x-auto pb-2 scrollbar-hide">
+                    <li><a href="/" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Home</a></li>
+                    <li><a href="/#products" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Products</a></li>
+                    <li><a href="/#offers" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Offers</a></li>
+                    <li><a href="/#about" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">About Us</a></li>
+                    <li><a href="/#contact" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Contact</a></li>
+                    <li><a href="order-history.html" id="order-history-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">Order History</a></li>
+                    <li><a href="profile.html" id="profile-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">My Profile</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-12 text-center">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md mx-auto">
+            <div id="dynamic-content">
+                 <div class="flex justify-center mb-6">
+                      <div class="logo-container">
+                          <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                              alt="Arun Karyana Store Logo"
+                              onerror="this.onerror=null; this.src='https://placehold.co/80x80/F8F5F0/9C6F44?text=AK';"
+                              class="rounded-full w-20 h-20 object-cover border-2 border-primary shadow-lg">
+                     </div>
+                 </div>
+
+                 <div class="bg-green-100 rounded-full p-4 inline-block mb-6" id="success-icon">
+                     <i class="fas fa-check-circle text-green-500 text-5xl"></i>
+                 </div>
+                  <div class="bg-red-100 rounded-full p-4 inline-block mb-6 hidden" id="error-icon">
+                      <i class="fas fa-times-circle text-red-500 text-5xl"></i>
+                 </div>
+
+
+                 <h1 class="font-heading text-3xl font-bold mb-4 text-dark" id="thank-you-heading">Thank You For Your Order!</h1>
+
+                 <div id="order-details-container" class="hidden text-left text-gray-700 space-y-4 mb-6">
+                     <div>
+                         <p class="font-semibold">Order ID:</p>
+                         <p id="display-order-id" class="ml-4 text-gray-800"></p>
+                     </div>
+                      <div>
+                         <p class="font-semibold">Order Date:</p>
+                         <p id="display-order-date" class="ml-4 text-gray-800"></p>
+                     </div>
+                     <div>
+                         <p class="font-semibold">Items:</p>
+                         <ul id="display-order-items" class="ml-4 space-y-2 text-gray-800">
+                             </ul>
+                     </div>
+                     <div class="text-right font-bold text-xl border-t border-gray-200 pt-4">
+                         Total: <span id="display-order-total"></span>
+                     </div>
+                     </div>
+
+                 <p id="loading-message" class="text-center text-gray-500">Loading order details...</p>
+                 <p id="error-message" class="text-center text-red-500 hidden">Could not load order details. Please check your order history.</p>
+                 <p id="no-order-message" class="text-center text-gray-500 hidden">No recent order found.</p>
+            </div>
+
+
+            <a href="/" class="bg-primary text-white px-6 py-2.5 rounded-md font-medium hover:bg-opacity-90 transition shadow-md inline-block mt-6">
+                Continue Shopping
+            </a>
+        </div>
+    </div>
+
+    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="cart-heading">
+        <div class="absolute right-0 top-0 h-full w-full max-w-sm sm:max-w-md md:max-w-lg bg-white shadow-lg overflow-y-auto">
+            <div class="p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="cart-heading" class="font-heading text-2xl font-bold">Your Cart</h2>
+                    <button id="close-cart" aria-label="Close Cart" class="text-gray-500 hover:text-primary">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="cart-items" class="flex-grow space-y-4 mb-6 min-h-[100px] overflow-y-auto">
+                    <p id="empty-cart-message" class="text-center text-gray-500 py-8">Your cart is empty</p>
+                </div>
+
+                 <div id="customer-info-fields" class="space-y-4 mb-6 hidden">
+                     <h3 class="font-semibold text-lg">Your Details</h3>
+                     <div>
+                        <label for="customer_name" class="block text-gray-700 mb-1 text-sm">Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="customer_name" name="customer_name" form="new_order_form" required placeholder="Enter your full name" autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="customer_phone" class="block text-gray-700 mb-1 text-sm">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="customer_phone" name="customer_phone" form="new_order_form" required placeholder="Enter your phone number" autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                     <div>
+                        <label for="customer_address" class="block text-gray-700 mb-1 text-sm">Delivery Address <span class="text-red-500">*</span></label>
+                        <textarea id="customer_address" name="customer_address" form="new_order_form" required placeholder="Enter your delivery address" rows="3" autocomplete="street-address" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm"></textarea>
+                    </div>
+                </div>
+
+
+                <div class="border-t border-gray-200 pt-4 mt-auto">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-medium">Subtotal:</span>
+                        <span id="cart-subtotal" class="font-medium">₹0</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Delivery Charges:</span>
+                        <span id="delivery-charges">₹40</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold mb-4">
+                        <span>Total:</span>
+                        <span id="cart-total">₹40</span>
+                    </div>
+                     <button id="checkout-btn" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed hidden" disabled>Proceed to Checkout</button>
+                     <a href="/" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition text-center inline-block hidden">Proceed to Checkout (on Home Page)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                         <div class="logo-container mr-4">
+                             <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                                 alt="Arun Karyana Store Logo"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/48x48/2D2D2D/9C6F44?text=AK';"
+                                 class="rounded-full w-12 h-12 object-cover border-2 border-primary">
+                        </div>
+                        <h3 class="font-heading text-xl font-semibold">Arun Karyana Store</h3>
+                    </div>
+                    <p class="text-gray-300 mb-4">Your trusted neighborhood store for all household needs since 1977.</p>
+                    <div class="flex space-x-4">
+                         <a href="#" aria-label="Facebook" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="WhatsApp" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-secondary transition">Home</a></li>
+                         <li><a href="/#products" class="text-gray-300 hover:text-secondary transition">Products</a></li>
+                        <li><a href="/#offers" class="text-gray-300 hover:text-secondary transition">Offers</a></li>
+                        <li><a href="/#about" class="text-gray-300 hover:text-secondary transition">About Us</a></li>
+                        <li><a href="/#contact" class="text-gray-300 hover:text-secondary transition">Contact</a></li>
+                         <li><a href="order-history.html" id="order-history-footer-link" class="text-gray-300 hover:text-secondary transition hidden">Order History</a></li>
+                        <li><a href="profile.html" id="profile-footer-link" class="text-gray-300 hover:text-secondary transition hidden">My Profile</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Customer Service</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">FAQs</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Shipping Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Return Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Terms & Conditions</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Newsletter</h3>
+                    <p class="text-gray-300 mb-4">Subscribe to get updates on new products and special offers.</p>
+                     <form class="flex">
+                        <input type="email" placeholder="Your Email" aria-label="Newsletter Email" class="px-4 py-2 rounded-l focus:outline-none text-dark w-full">
+                        <button type="submit" aria-label="Subscribe to Newsletter" class="bg-primary px-4 py-2 rounded-r hover:bg-opacity-90 transition"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                    <div class="mt-4">
+                        <h4 class="font-medium mb-2">Download Our App</h4>
+                        <div class="flex space-x-2">
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-google-play mr-1"></i> Play Store
+                            </a>
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-apple mr-1"></i> App Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2025 Arun Karyana Store. All rights reserved.</p>
+                <p class="mt-2 text-sm">Designed with <i class="fas fa-heart text-red-500"></i> for the Barara community</p>
+            </div>
+        </div>
+    </footer>
+
+
+    <script>
+        // Your Replit backend URL (replace with your actual URL)
+        const backendBaseUrl = 'https://18226f98-78e8-4b6f-acb0-539aa6643784-00-dn7iak79e1lu.pike.replit.dev'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+
+        // DOM Elements
+        const loadingMessage = document.getElementById('loading-message');
+        const errorMessage = document.getElementById('error-message');
+        const noOrderMessage = document.getElementById('no-order-message');
+        const orderDetailsContainer = document.getElementById('order-details-container');
+        const displayOrderId = document.getElementById('display-order-id');
+        const displayOrderDate = document.getElementById('display-order-date');
+        const displayOrderItems = document.getElementById('display-order-items');
+        const displayOrderTotal = document.getElementById('display-order-total');
+        const thankYouHeading = document.getElementById('thank-you-heading');
+        const successIcon = document.getElementById('success-icon');
+        const errorIcon = document.getElementById('error-icon');
+        // const displayDeliveryAddress = document.getElementById('display-delivery-address'); // Uncomment if using address display
+
+        // Cart DOM Elements (Needed for updateAuthLink and potential future cart display)
+        const cartBtn = document.getElementById('cart-btn');
+        const cartCountEl = document.getElementById('cart-count');
+        const authLink = document.getElementById('auth-link');
+        const orderHistoryNavLink = document.getElementById('order-history-nav-link');
+        const orderHistoryFooterLink = document.getElementById('order-history-footer-link');
+        const profileNavLink = document.getElementById('profile-nav-link');
+        const profileFooterLink = document.getElementById('profile-footer-link');
+
+        // Get the logged-in user ID from local storage (Needed for updateAuthLink)
+        let loggedInUserId = localStorage.getItem('loggedInUserId');
+
+
+        // Function to show a specific message and hide others
+        function showStatus(statusElement) {
+             loadingMessage.classList.add('hidden');
+             errorMessage.classList.add('hidden');
+             noOrderMessage.classList.add('hidden');
+             orderDetailsContainer.classList.add('hidden');
+             successIcon.classList.add('hidden');
+             errorIcon.classList.add('hidden');
+
+             statusElement.classList.remove('hidden');
+             // Decide which icon to show based on the status being shown
+             if (statusElement === loadingMessage) {
+                // No icon needed, or add a spinner if you have one
+             } else if (statusElement === errorMessage) {
+                 errorIcon.classList.remove('hidden');
+                 thankYouHeading.textContent = "Order Details Error"; // Update heading
+             } else if (statusElement === noOrderMessage) {
+                 // Could show a generic icon or none
+                 thankYouHeading.textContent = "No Order Found"; // Update heading
+             } else if (statusElement === orderDetailsContainer) {
+                 successIcon.classList.remove('hidden'); // Show success icon when details are displayed
+                 thankYouHeading.textContent = "Thank You For Your Order!"; // Reset heading
+             }
+        }
+
+
+        // Fetch order details
+        async function fetchOrderDetails(orderId) {
+            console.log("Attempting to fetch order details for ID:", orderId); // Add this log
+            showStatus(loadingMessage); // Show loading message
+
+            const backendUrl = `${backendBaseUrl}/order/${orderId}`; // Assuming this endpoint exists
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log("Fetch response received:", response); // Add this log
+                const result = await response.json();
+                console.log("Fetch response JSON:", result); // Add this log
+
+
+                if (response.ok && result.success && result.order) {
+                    const order = result.order;
+                    console.log("Order details fetched successfully:", order); // Add this log
+                    displayOrderDetails(order); // Display the fetched order details
+                    // showStatus(orderDetailsContainer) is called by displayOrderDetails
+                } else {
+                    console.error("Failed to fetch order details:", result.message || response.statusText);
+                    showStatus(errorMessage); // Show error message
+                }
+
+            } catch (error) {
+                console.error("Error fetching order details:", error);
+                showStatus(errorMessage); // Show error message
+            }
+        }
+
+        // Display order details
+        function displayOrderDetails(order) {
+            console.log("Displaying order details:", order); // Add this log
+            // Hide messages
+            loadingMessage.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            noOrderMessage.classList.add('hidden');
+
+
+            // Populate elements with order data
+            displayOrderId.textContent = order._id; // Assuming _id is the order ID
+             const orderDate = new Date(order.order_date).toLocaleString('en-IN', {
+                 year: 'numeric',
+                 month: 'long',
+                 day: 'numeric',
+                 hour: '2-digit',
+                 minute: '2-digit',
+                 hour12: true // Use 12-hour format with AM/PM
+             });
+            displayOrderDate.textContent = orderDate;
+
+
+            // Clear previous items and add new ones
+            displayOrderItems.innerHTML = '';
+            order.items.forEach(item => {
+                const listItem = document.createElement('li');
+                 listItem.className = 'flex justify-between items-center border-b border-gray-100 py-1';
+                listItem.innerHTML = `
+                     <span>${item.name} x ${item.quantity}</span>
+                     <span class="font-medium">₹${(item.price * item.quantity).toFixed(2)}</span>
+                `;
+                displayOrderItems.appendChild(listItem);
+            });
+
+             // Remove bottom border from last item
+             if (displayOrderItems.lastElementChild) {
+                 displayOrderItems.lastElementChild.classList.remove('border-b');
+             }
+
+
+            displayOrderTotal.textContent = `₹${order.total_amount.toFixed(2)}`;
+
+            // Optional: Display delivery address
+            // if (order.customer_info && order.customer_info.address && displayDeliveryAddress) {
+            //      displayDeliveryAddress.textContent = order.customer_info.address;
+            // }
+
+
+            // Show the order details container
+            showStatus(orderDetailsContainer); // Use showStatus to handle visibility and icons
+        }
+
+
+        // --- Authentication Link Display (Copied from index.html) ---
+        function updateAuthLink() {
+            if (loggedInUserId) {
+                authLink.textContent = 'Logout';
+                authLink.href = '#';
+                // No login/logout event listeners needed on this page
+                // authLink.removeEventListener('click', handleLoginLinkClick);
+                // authLink.addEventListener('click', handleLogoutLinkClick);
+
+                if (orderHistoryNavLink) orderHistoryNavLink.classList.remove('hidden');
+                if (orderHistoryFooterLink) orderHistoryFooterLink.classList.remove('hidden');
+                if (profileNavLink) profileNavLink.classList.remove('hidden');
+                if (profileFooterLink) profileFooterLink.classList.remove('hidden');
+
+            } else {
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html';
+                // No login/logout event listeners needed on this page
+                // authLink.removeEventListener('click', handleLogoutLinkClick);
+                // authLink.addEventListener('click', handleLoginLinkClick);
+
+                 if (orderHistoryNavLink) orderHistoryNavLink.classList.add('hidden');
+                 if (orderHistoryFooterLink) orderHistoryFooterLink.classList.add('hidden');
+                 if (profileNavLink) profileNavLink.classList.add('hidden');
+                 if (profileFooterLink) profileFooterLink.classList.add('hidden');
+            }
+        }
+
+        // Note: handleLogoutLinkClick and handleLoginLinkClick are not needed on this page
+
+
+        // --- Cart Functionality (Simplified for Thank You page) ---
+        // Only need to load the cart count, no modal interaction or saving needed
+        let cart = []; // Initialize empty cart array
+
+        // Function to load cart from backend (Simplified)
+        async function loadCartFromBackend() {
+            if (!loggedInUserId) {
+                console.log("No user logged in, cannot load cart count from backend.");
+                loadCartFromLocalStorage(); // Load count from local storage if available
+                return;
+            }
+            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    console.log("Cart loaded from backend successfully for count display:", result.cart);
+                    cart = result.cart; // Update the cart array (needed for count calculation)
+                    updateCartCountDisplay(); // Update only the count
+                } else {
+                    console.warn("Failed to load cart from backend for count display:", result.message || response.statusText);
+                    console.log("Falling back to local storage cart for count display.");
+                    loadCartFromLocalStorage();
+                    updateCartCountDisplay();
+                }
+            } catch (error) {
+                console.error("Error loading cart from backend for count display:", error);
+                console.log("Falling back to local storage cart for count display due to fetch error.");
+                loadCartFromLocalStorage();
+                updateCartCountDisplay();
+            }
+        }
+
+         // Function to load cart from local storage (Simplified)
+         function loadCartFromLocalStorage() {
+             const savedCart = localStorage.getItem('arunKaryanaCart');
+             if (savedCart) {
+                 cart = JSON.parse(savedCart);
+                 console.log("Cart loaded from local storage for count display.");
+             } else {
+                  cart = [];
+                  console.log("No cart found in local storage. Initializing empty cart for count display.");
+             }
+         }
+
+        // Function to update *only* the cart count display
+        function updateCartCountDisplay() {
+             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+             cartCountEl.textContent = totalItems;
+             console.log("Cart count updated to:", totalItems);
+        }
+
+        // No need for saveCartToBackend or saveCartToLocalStorage on this page
+
+        // Cart Modal Toggle Listeners (Still needed to allow opening the modal, even if empty)
+        const cartModal = document.getElementById('cart-modal'); // Ensure this is defined
+        const closeCartBtn = document.getElementById('close-cart'); // Ensure this is defined
+        const cartItemsContainer = document.getElementById('cart-items'); // Ensure this is defined
+        const emptyCartMessage = document.getElementById('empty-cart-message'); // Ensure this is defined
+        const cartSubtotalEl = document.getElementById('cart-subtotal'); // Ensure this is defined
+        const deliveryChargesEl = document.getElementById('delivery-charges'); // Ensure this is defined
+        const cartTotalEl = document.getElementById('cart-total'); // Ensure this is defined
+
+
+        cartBtn.addEventListener('click', () => {
+            // When cart button is clicked, update the modal content based on the current 'cart' array
+            updateCartModalContent(); // New function to populate modal
+            cartModal.classList.remove('hidden');
+        });
+
+        closeCartBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
+        // Close cart if clicking the background overlay
+        cartModal.addEventListener('click', (e) => {
+            if (e.target === cartModal) {
+                cartModal.classList.add('hidden');
+            }
+        });
+
+         // New function to populate the cart modal content
+         function updateCartModalContent() {
+             cartItemsContainer.innerHTML = ''; // Clear current cart items
+
+             if (cart.length === 0) {
+                 emptyCartMessage.style.display = 'block';
+             } else {
+                 emptyCartMessage.style.display = 'none';
+
+                 cart.forEach(item => {
+                     const cartItemHTML = `
+                     <div class="cart-item flex items-center justify-between p-3 border-b border-gray-200">
+                         <div class="flex items-center overflow-hidden mr-2">
+                             <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded mr-3 flex-shrink-0" onerror="${item.onerror}">
+                             <div class="overflow-hidden">
+                                 <p class="font-medium truncate" title="${item.name}">${item.name}</p>
+                                 <p class="text-sm text-gray-600">₹${item.price} x ${item.quantity}</p>
+                             </div>
+                         </div>
+                         <div class="flex items-center space-x-2 flex-shrink-0 text-gray-500">
+                             <span>Qty: ${item.quantity}</span>
+                         </div>
+                     </div>
+                     `;
+                     cartItemsContainer.insertAdjacentHTML('beforeend', cartItemHTML);
+                 });
+                 // No need to attach action listeners here as actions are disabled
+             }
+
+             // Update cart summary in the modal
+             const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+             cartSubtotalEl.textContent = `₹${subtotal.toFixed(2)}`;
+
+             const deliveryThreshold = 500; // Define threshold again if not globally accessible
+             const deliveryFee = 40; // Define fee again if not globally accessible
+             const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+             deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
+
+             const total = subtotal + currentDeliveryFee;
+             cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+         }
+
+
+        // Initial logic on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Thank-you.html DOMContentLoaded"); // Add this log
+            updateAuthLink(); // Update auth links
+
+            // Load cart count for display in the header icon
+            if (loggedInUserId) {
+                 loadCartFromBackend(); // Load from backend if logged in
+             } else {
+                 loadCartFromLocalStorage(); // Load from local storage if not logged in
+             }
+            // updateCartCountDisplay() is called by the load functions
+
+            const lastOrderId = sessionStorage.getItem('lastOrderId'); // Retrieve the stored ID
+            console.log("Retrieved lastOrderId from sessionStorage:", lastOrderId); // Add this log
+
+            if (lastOrderId && lastOrderId !== 'null') { // Check if it's not null or undefined
+                console.log("Found a valid last order ID in sessionStorage:", lastOrderId);
+                sessionStorage.removeItem('lastOrderId'); // Remove the ID after retrieving it
+                console.log("Removed lastOrderId from sessionStorage."); // Add this log
+
+                fetchOrderDetails(lastOrderId); // Fetch and display details for this order
+            } else {
+                console.log("No valid last order ID found in sessionStorage. Displaying no order message.");
+                showStatus(noOrderMessage); // Show message that no order was found
+                 thankYouHeading.textContent = "No Recent Order Found"; // Update heading
+                 successIcon.classList.add('hidden'); // Hide success icon
+            }
+        });
+
+    </script>
+</body>
+</html>

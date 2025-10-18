@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Arun Karyana Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Replicating the Tailwind config from the main page for consistency
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Original Color Palette
+                        primary: '#9C6F44', // Warm Brown
+                        secondary: '#E8C07D', // Light Gold
+                        accent: '#B88B4A', // Deeper Gold/Brown
+                        dark: '#2D2D2D', // Dark Grey
+                        light: '#F8F5F0' // Off-White
+                    },
+                    fontFamily: {
+                        // Keeping the updated typography
+                        heading: ['"Playfair Display"', 'serif'],
+                        body: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F8F5F0; /* Using original light color */
+            color: #2D2D2D; /* Using original dark color */
+        }
+         .logo-container {
+             position: relative;
+             display: inline-block;
+         }
+         /* Decorative rings around the logo */
+         .logo-container::after {
+             content: '';
+             position: absolute;
+             top: -5px;
+             left: -5px;
+             right: -5px;
+             bottom: -5px;
+             border: 2px solid #E8C07D; /* Using original secondary color */
+             border-radius: 50%;
+             z-index: -1;
+             opacity: 0.7;
+         }
+         .logo-container::before {
+             content: '';
+             position: absolute;
+             top: -10px;
+             left: -10px;
+             right: -10px;
+             bottom: -10px;
+             border: 1px dashed #9C6F44; /* Using original primary color */
+             border-radius: 50%;
+             z-index: -2;
+             opacity: 0.4;
+         }
+        /* Underline effect on navigation links */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #9C6F44; /* Using original primary color */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+         /* Fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+         .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+         /* Specific style for cart items on hover */
+        .cart-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Added basic responsive styling adjustments */
+        @media (max-width: 640px) {
+             .cart-modal .max-w-sm {
+                max-width: 100%; /* Full width for cart modal on very small screens */
+            }
+             .cart-modal .right-0 {
+                right: 0;
+                left: 0;
+            }
+             .cart-modal .p-6 {
+                 padding: 1rem; /* Reduce padding */
+             }
+             .cart-item {
+                 flex-direction: column; /* Stack cart item content */
+                 align-items: flex-start;
+             }
+             .cart-item .overflow-hidden {
+                 margin-bottom: 0.5rem;
+             }
+             .cart-item .flex-shrink-0 {
+                 width: 100%; /* Full width for quantity controls */
+                 justify-content: space-between; /* Distribute quantity controls */
+             }
+             .cart-item .ml-2 {
+                 margin-left: 0; /* Remove left margin on remove button */
+             }
+             .footer .grid-cols-1 {
+                 grid-template-columns: 1fr; /* Stack footer columns */
+             }
+             .footer > div {
+                 margin-bottom: 1.5rem; /* Add space between stacked footer sections */
+             }
+             .footer > div:last-child {
+                 margin-bottom: 0;
+             }
+        }
+         @media (min-width: 641px) and (max-width: 768px) {
+             .cart-modal .max-w-sm {
+                max-width: 80%; /* Adjust cart modal width on small tablets */
+             }
+         }
+          @media (min-width: 769px) and (max-width: 1024px) {
+             .cart-modal .max-w-sm {
+                max-width: 60%; /* Adjust cart modal width on larger tablets */
+             }
+         }
+          /* General adjustments for inputs and buttons in modals */
+        #cart-modal input, #cart-modal textarea {
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 1rem; /* py-2 px-4 */
+        }
+         #cart-modal button {
+            font-size: 1rem; /* text-base */
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+         }
+
+        /* Profile Card Styling */
+        .profile-card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #E8C07D; /* Using secondary color for accent */
+        }
+
+         .profile-details p {
+            font-size: 1rem;
+            color: #4a4a4a; /* gray-700 */
+            margin-bottom: 12px;
+        }
+
+        .profile-details .font-medium {
+            font-weight: 500;
+            color: #2D2D2D; /* dark color */
+        }
+
+        .profile-form .form-group {
+            margin-bottom: 16px;
+        }
+
+         .profile-form label {
+             display: block;
+             color: #2D2D2D;
+             font-weight: 500;
+             margin-bottom: 4px;
+             font-size: 0.9rem;
+         }
+
+         .profile-form input[type="text"],
+         .profile-form input[type="email"],
+         .profile-form input[type="tel"] {
+             width: 100%;
+             padding: 10px 12px;
+             border: 1px solid #cccccc;
+             border-radius: 4px;
+             font-size: 1rem;
+             box-sizing: border-box; /* Include padding and border in element's total width and height */
+         }
+
+         .profile-form input[type="text"]:focus,
+         .profile-form input[type="email"]:focus,
+         .profile-form input[type="tel"]:focus {
+             outline: none;
+             border-color: #9C6F44; /* Primary color on focus */
+             box-shadow: 0 0 0 0.1rem rgba(156, 111, 68, 0.25); /* Subtle shadow on focus */
+         }
+
+        .profile-message {
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .profile-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .profile-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+         .login-prompt-profile {
+            text-align: center;
+            color: #777777;
+            font-size: 1.1rem;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+         }
+
+    </style>
+</head>
+<body>
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                 <a href="/" class="flex items-center mb-4 md:mb-0 text-dark hover:text-dark transition cursor-pointer">
+                    <div class="logo-container mr-3">
+                        <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                             alt="Arun Karyana Store Logo"
+                             onerror="this.onerror=null; this.src='https://placehold.co/60x60/F8F5F0/9C6F44?text=AK';"
+                             class="rounded-full w-14 h-14 object-cover border-2 border-primary">
+                    </div>
+                    <div>
+                        <h1 class="font-heading text-2xl font-bold">Arun Karyana Store</h1>
+                        <p class="text-xs text-gray-600">Your trusted neighborhood store</p>
+                    </div>
+                </a>
+
+                 <div class="flex-grow"></div> <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="cart-btn" class="text-dark hover:text-accent transition">
+                            <i class="fas fa-shopping-cart text-xl"></i>
+                            <span id="cart-count" class="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                    </div>
+                    <a href="login.html" id="auth-link" class="bg-primary text-white px-4 py-1.5 rounded-md text-sm hover:bg-opacity-90 transition font-medium">Login</a>
+                </div>
+            </div>
+            <nav class="mt-3">
+                <ul class="flex space-x-6 overflow-x-auto pb-2 scrollbar-hide">
+                    <li><a href="/" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Home</a></li>
+                     <li><a href="/#products" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Products</a></li>
+                    <li><a href="/#offers" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Offers</a></li>
+                    <li><a href="/#about" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">About Us</a></li>
+                    <li><a href="/#contact" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Contact</a></li>
+                    <li><a href="order-history.html" id="order-history-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">Order History</a></li>
+                    <li><a href="profile.html" id="profile-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">My Profile</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-12">
+        <div class="text-center mb-12">
+            <h2 class="font-heading text-3xl font-bold mb-2">My Profile</h2>
+            <div class="w-20 h-1 bg-primary mx-auto"></div>
+        </div>
+
+        <div id="profile-content">
+             <p id="loading-profile" class="text-center text-gray-500">Loading profile...</p>
+             <p id="login-prompt-profile" class="login-prompt-profile hidden">Please log in to view your profile.</p>
+             <p id="error-loading-profile" class="login-prompt-profile text-red-600 hidden">Error loading profile. Please try again later.</p>
+
+            <div id="profile-details-container" class="profile-card hidden fade-in">
+                <h3 class="font-heading text-2xl font-bold mb-4">Account Information</h3>
+                <div class="profile-details">
+                    <p><span class="font-medium">Name:</span> <span id="display-name"></span></p>
+                    <p><span class="font-medium">Email:</span> <span id="display-email"></span></p>
+                    <p><span class="font-medium">Phone:</span> <span id="display-phone"></span></p>
+                    <p><span class="font-medium">Member Since:</span> <span id="display-created-at"></span></p>
+                </div>
+
+                 <button id="edit-profile-btn" class="bg-secondary text-dark px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md mt-4">Edit Profile</button>
+            </div>
+
+             <div id="profile-edit-form-container" class="profile-card hidden fade-in">
+                 <h3 class="font-heading text-2xl font-bold mb-4">Edit Profile</h3>
+                 <div id="profile-message" class="profile-message hidden"></div>
+                 <form id="profile-edit-form" class="profile-form">
+                     <div class="form-group">
+                         <label for="edit-name">Name:</label>
+                         <input type="text" id="edit-name" name="name" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="edit-email">Email:</label>
+                         <input type="email" id="edit-email" name="email" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="edit-phone">Phone:</label>
+                         <input type="tel" id="edit-phone" name="phone" required>
+                     </div>
+                     <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md mr-4">Save Changes</button>
+                     <button type="button" id="cancel-edit-btn" class="bg-gray-300 text-dark px-6 py-2 rounded-md font-medium hover:bg-gray-400 transition shadow-md">Cancel</button>
+                 </form>
+             </div>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                         <div class="logo-container mr-4">
+                             <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                                 alt="Arun Karyana Store Logo"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/48x48/2D2D2D/9C6F44?text=AK';"
+                                 class="rounded-full w-12 h-12 object-cover border-2 border-primary">
+                        </div>
+                        <h3 class="font-heading text-xl font-semibold">Arun Karyana Store</h3>
+                    </div>
+                    <p class="text-gray-300 mb-4">Your trusted neighborhood store for all household needs since 1977.</p>
+                    <div class="flex space-x-4">
+                         <a href="#" aria-label="Facebook" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="WhatsApp" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-secondary transition">Home</a></li>
+                         <li><a href="/#products" class="text-gray-300 hover:text-secondary transition">Products</a></li>
+                        <li><a href="/#offers" class="text-gray-300 hover:text-secondary transition">Offers</a></li>
+                        <li><a href="/#about" class="text-gray-300 hover:text-secondary transition">About Us</a></li>
+                        <li><a href="/#contact" class="text-gray-300 hover:text-secondary transition">Contact</a></li>
+                         <li><a href="order-history.html" id="order-history-footer-link" class="text-gray-300 hover:text-secondary transition hidden">Order History</a></li>
+                        <li><a href="profile.html" id="profile-footer-link" class="text-gray-300 hover:text-secondary transition hidden">My Profile</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Customer Service</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">FAQs</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Shipping Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Return Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Terms & Conditions</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Newsletter</h3>
+                    <p class="text-gray-300 mb-4">Subscribe to get updates on new products and special offers.</p>
+                     <form class="flex">
+                        <input type="email" placeholder="Your Email" aria-label="Newsletter Email" class="px-4 py-2 rounded-l focus:outline-none text-dark w-full">
+                        <button type="submit" aria-label="Subscribe to Newsletter" class="bg-primary px-4 py-2 rounded-r hover:bg-opacity-90 transition"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                    <div class="mt-4">
+                        <h4 class="font-medium mb-2">Download Our App</h4>
+                        <div class="flex space-x-2">
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-google-play mr-1"></i> Play Store
+                            </a>
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-apple mr-1"></i> App Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2025 Arun Karyana Store. All rights reserved.</p>
+                <p class="mt-2 text-sm">Designed with <i class="fas fa-heart text-red-500"></i> for the Barara community</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="cart-heading">
+        <div class="absolute right-0 top-0 h-full w-full max-w-sm sm:max-w-md md:max-w-lg bg-white shadow-lg overflow-y-auto">
+            <div class="p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="cart-heading" class="font-heading text-2xl font-bold">Your Cart</h2>
+                    <button id="close-cart" aria-label="Close Cart" class="text-gray-500 hover:text-primary">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="cart-items" class="flex-grow space-y-4 mb-6 min-h-[100px] overflow-y-auto">
+                    <p id="empty-cart-message" class="text-center text-gray-500 py-8">Your cart is empty</p>
+                </div>
+
+                 <div id="customer-info-fields" class="space-y-4 mb-6 hidden">
+                     <h3 class="font-semibold text-lg">Your Details</h3>
+                     <div>
+                        <label for="customer_name" class="block text-gray-700 mb-1 text-sm">Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="customer_name" name="customer_name" form="new_order_form" required placeholder="Enter your full name" autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="customer_phone" class="block text-gray-700 mb-1 text-sm">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="customer_phone" name="customer_phone" form="new_order_form" required placeholder="Enter your phone number" autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                     <div>
+                        <label for="customer_address" class="block text-gray-700 mb-1 text-sm">Delivery Address <span class="text-red-500">*</span></label>
+                        <textarea id="customer_address" name="customer_address" form="new_order_form" required placeholder="Enter your delivery address" rows="3" autocomplete="street-address" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm"></textarea>
+                    </div>
+                </div>
+
+
+                <div class="border-t border-gray-200 pt-4 mt-auto">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-medium">Subtotal:</span>
+                        <span id="cart-subtotal" class="font-medium">₹0</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Delivery Charges:</span>
+                        <span id="delivery-charges">₹40</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold mb-4">
+                        <span>Total:</span>
+                        <span id="cart-total">₹40</span>
+                    </div>
+                     <button id="checkout-btn" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed hidden" disabled>Proceed to Checkout</button>
+                    <a href="/" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition text-center inline-block">Proceed to Checkout (on Home Page)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+
+    <script>
+         // Product Data (Needed for cart item details)
+        const products = [
+            { id: 1, name: "Lux International Soap", price: 83, category: "soaps", image: "https://i.ibb.co/SXTVLFc0/Screenshot-2025-05-04-233546.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Lux+Soap';" },
+            { id: 2, name: "Dove Cream Beauty Bar", price: 60, category: "soaps", image: "https://i.ibb.co/1tnsrsCG/Screenshot-2025-05-04-233853.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Dove+Bar';" },
+            { id: 3, name: "Tata Salt (1kg)", price: 27, category: "food", image: "https://i.ibb.co/0Vjxb9BW/Screenshot-2025-05-04-233959.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Tata+Salt';" },
+            { id: 4, name: "Fortune Sunflower Oil (1L)", price: 157, category: "food", image: "https://i.ibb.co/8LQ47qtQ/Screenshot-2025-05-04-234101.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Cooking+Oil';" },
+            { id: 5, name: "Tata Tea Gold (500g)", price: 215, category: "beverages", image: "https://i.ibb.co/jk5rjgnx/Screenshot-2025-05-04-234155.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Tea';" },
+            { id: 6, name: "Nescafe Classic Coffee (100g)", price: 285, category: "beverages", image: "https://i.ibb.co/zTgPrhJ0/Screenshot-2025-05-04-234245.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Coffee';" },
+            { id: 7, name: "Head & Shoulders Shampoo (180ml)", price: 138, category: "personal-care", image: "https://i.ibb.co/5XkCdLn6/Screenshot-2025-05-04-234334.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Shampoo';" },
+            { id: 8, name: "Colgate Toothpaste (100g)", price: 73, category: "personal-care", image: "https://i.ibb.co/ksmMDzB2/Screenshot-2025-05-04-234423.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Toothpaste';" },
+            { id: 9, name: "Surf Excel Matic Powder (1kg)", price: 175, category: "soaps", image: "https://i.ibb.co/xKPBGhYs/Screenshot-2025-05-04-234625.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Detergent';" },
+            { id: 10, name: "Aashirvaad Atta (5kg)", price: 250, category: "food", image: "https://i.ibb.co/fz1BHxGH/Screenshot-2025-05-04-234719.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Atta';" },
+            { id: 11, name: "Maggi Noodles (Pack of 4)", price: 56, category: "food", image: "https://i.ibb.co/wxX6H6K/Screenshot-2025-05-04-234752.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Noodles';" },
+            { id: 12, name: "Patanjali Dant Kanti (100g)", price: 60, category: "personal-care", image: "https://i.ibb.co/Qvbsst5t/Screenshot-2025-05-04-234828.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Toothpaste';" }
+        ];
+
+
+        // --- Cart Functionality (Copied from index.html) ---
+        let cart = []; // Initialize empty cart array
+        const deliveryThreshold = 500; // Minimum order value for free delivery
+        const deliveryFee = 40; // Delivery fee if below threshold
+
+        // Your Replit backend URL (replace with your actual URL)
+        const backendBaseUrl = 'https://18226f98-78e8-4b6f-acb0-539aa6643784-00-dn7iak79e1lu.pike.replit.dev'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+
+        // Get the logged-in user ID from local storage
+        let loggedInUserId = localStorage.getItem('loggedInUserId');
+
+        // DOM Elements for Cart (Copied from index.html)
+        const cartBtn = document.getElementById('cart-btn');
+        const closeCartBtn = document.getElementById('close-cart');
+        const cartModal = document.getElementById('cart-modal');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartCountEl = document.getElementById('cart-count');
+        const cartSubtotalEl = document.getElementById('cart-subtotal');
+        const deliveryChargesEl = document.getElementById('delivery-charges');
+        const cartTotalEl = document.getElementById('cart-total');
+        const emptyCartMessage = document.getElementById('empty-cart-message');
+         // Checkout button is hidden on this page, but the element exists
+        const checkoutBtn = document.getElementById('checkout-btn');
+
+
+        // Function to update cart display (Copied from index.html)
+        function updateCartDisplay() {
+            cartItemsContainer.innerHTML = ''; // Clear current cart items
+
+            if (cart.length === 0) {
+                emptyCartMessage.style.display = 'block';
+                 // Disable checkout button and customer info fields if cart is empty
+                checkoutBtn.disabled = true;
+                checkoutBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                 // Customer info fields are hidden by default on this page
+            } else {
+                emptyCartMessage.style.display = 'none';
+                 // Enable checkout button (though it's hidden)
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                 // Customer info fields are hidden by default on this page
+
+                // Loop through cart items and display them
+                cart.forEach(item => {
+                    const cartItemHTML = `
+                    <div class="cart-item flex items-center justify-between p-3 border-b border-gray-200 fade-in">
+                        <div class="flex items-center overflow-hidden mr-2">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded mr-3 flex-shrink-0" onerror="${item.onerror}">
+                            <div class="overflow-hidden">
+                                <p class="font-medium truncate" title="${item.name}">${item.name}</p>
+                                <p class="text-sm text-gray-600">₹${item.price} x ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <button class="quantity-change text-gray-500 hover:text-primary p-1" data-id="${item.id}" data-change="-1" aria-label="Decrease quantity">-</button>
+                            <span class="font-medium w-6 text-center">${item.quantity}</span>
+                            <button class="quantity-change text-gray-500 hover:text-primary p-1" data-id="${item.id}" data-change="1" aria-label="Increase quantity">+</button>
+                            <button class="remove-from-cart text-red-500 hover:text-red-700 ml-2 p-1" data-id="${item.id}" aria-label="Remove item"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    `;
+                    cartItemsContainer.insertAdjacentHTML('beforeend', cartItemHTML);
+                });
+                // Attach listeners to newly added cart item buttons
+                attachCartActionListeners();
+            }
+
+            // Update cart summary (count, subtotal, total)
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountEl.textContent = totalItems;
+
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            cartSubtotalEl.textContent = `₹${subtotal.toFixed(2)}`; // Format to 2 decimal places
+
+            // Calculate delivery fee based on subtotal
+            const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+            deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
+
+            const total = subtotal + currentDeliveryFee;
+            cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+
+            // If logged in, save cart to backend; otherwise, save to local storage
+            if (loggedInUserId) {
+                 saveCartToBackend(); // Save to backend if user is logged in
+            } else {
+                 saveCartToLocalStorage(); // Save to local storage if not logged in
+            }
+             // Note: We don't update product card quantities on this page
+        }
+
+        // Function to change quantity (Copied from index.html)
+        function changeQuantity(productId, change) {
+            const cartItemIndex = cart.findIndex(item => item.id === productId);
+            if (cartItemIndex === -1) return;
+
+            cart[cartItemIndex].quantity += change;
+
+            if (cart[cartItemIndex].quantity <= 0) {
+                const removedItemName = cart[cartItemIndex].name;
+                cart.splice(cartItemIndex, 1);
+                 showToast(`${removedItemName} removed from cart`);
+            } else {
+                 const updatedItem = cart[cartItemIndex];
+                 showToast(`${updatedItem.name} quantity updated to ${updatedItem.quantity}`);
+            }
+            updateCartDisplay(); // Refresh cart display (this also saves the cart)
+        }
+
+        // Function to remove from cart (Copied from index.html)
+        function removeFromCart(productId) {
+            const cartItemIndex = cart.findIndex(item => item.id === productId);
+            if (cartItemIndex > -1) {
+                 const removedItemName = cart[cartItemIndex].name;
+                 cart.splice(cartItemIndex, 1);
+                 updateCartDisplay(); // Refresh cart display (this also saves the cart)
+                 showToast(`${removedItemName} removed from cart`);
+            }
+        }
+
+         // Function to attach cart action listeners (Copied from index.html)
+         function attachCartActionListeners() {
+             // Use event delegation on the cart items container
+            cartItemsContainer.removeEventListener('click', handleCartItemsClick); // Remove old listener if any
+            cartItemsContainer.addEventListener('click', handleCartItemsClick); // Add new listener
+        }
+
+        function handleCartItemsClick(e) {
+            const quantityButton = e.target.closest('.quantity-change');
+            const removeButton = e.target.closest('.remove-from-cart');
+
+            if (quantityButton) {
+                const productId = parseInt(quantityButton.getAttribute('data-id'));
+                const change = parseInt(quantityButton.getAttribute('data-change'));
+                changeQuantity(productId, change);
+            } else if (removeButton) {
+                const productId = parseInt(removeButton.getAttribute('data-id'));
+                removeFromCart(productId);
+            }
+        }
+
+
+        // Function to save cart to backend (Copied from index.html)
+        async function saveCartToBackend() {
+            if (!loggedInUserId) {
+                console.warn("Attempted to save cart to backend, but no user is logged in.");
+                return;
+            }
+            const backendUrl = `${backendBaseUrl}/cart/update`;
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: loggedInUserId, items: cart })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    console.log("Cart saved to backend successfully.");
+                } else {
+                    console.error("Failed to save cart to backend:", result.message || response.statusText);
+                }
+            } catch (error) {
+                console.error("Error saving cart to backend:", error);
+            }
+        }
+
+        // Function to load cart from backend (Copied from index.html)
+        async function loadCartFromBackend() {
+            if (!loggedInUserId) {
+                console.log("No user logged in, loading cart from local storage.");
+                loadCartFromLocalStorage();
+                return;
+            }
+            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    console.log("Cart loaded from backend successfully:", result.cart);
+                    cart = result.cart;
+                    updateCartDisplay();
+                } else {
+                    console.warn("Failed to load cart from backend or no cart found:", result.message || response.statusText);
+                    console.log("Falling back to local storage cart.");
+                    loadCartFromLocalStorage();
+                    updateCartDisplay();
+                }
+            } catch (error) {
+                console.error("Error loading cart from backend:", error);
+                console.log("Falling back to local storage cart due to fetch error.");
+                loadCartFromLocalStorage();
+                updateCartDisplay();
+            }
+        }
+
+        // Function to save cart to local storage (Copied from index.html)
+        function saveCartToLocalStorage() {
+            localStorage.setItem('arunKaryanaCart', JSON.stringify(cart));
+            console.log("Cart saved to local storage.");
+        }
+
+        // Function to load cart from local storage (Copied from index.html)
+        function loadCartFromLocalStorage() {
+            const savedCart = localStorage.getItem('arunKaryanaCart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+                console.log("Cart loaded from local storage.");
+            } else {
+                 cart = [];
+                 console.log("No cart found in local storage. Initializing empty cart.");
+            }
+        }
+
+        // Function to show toast notification (Copied from index.html)
+        function showToast(message) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-dark text-white px-4 py-2 rounded shadow-lg fade-in flex items-center';
+             toast.innerHTML = `<i class="fas fa-check-circle text-accent mr-2"></i> <span>${message}</span>`;
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease-out forwards';
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 2500);
+        }
+
+
+        // --- Authentication Link Display (Copied from index.html) ---
+        // Get Auth/Navigation Links
+        const authLink = document.getElementById('auth-link');
+        const orderHistoryNavLink = document.getElementById('order-history-nav-link');
+        const orderHistoryFooterLink = document.getElementById('order-history-footer-link');
+        const profileNavLink = document.getElementById('profile-nav-link');
+        const profileFooterLink = document.getElementById('profile-footer-link');
+
+
+        function updateAuthLink() {
+            if (loggedInUserId) {
+                authLink.textContent = 'Logout';
+                authLink.href = '#';
+                authLink.removeEventListener('click', handleLoginLinkClick);
+                authLink.addEventListener('click', handleLogoutLinkClick);
+
+                if (orderHistoryNavLink) orderHistoryNavLink.classList.remove('hidden');
+                if (orderHistoryFooterLink) orderHistoryFooterLink.classList.remove('hidden');
+                if (profileNavLink) profileNavLink.classList.remove('hidden');
+                if (profileFooterLink) profileFooterLink.classList.remove('hidden');
+
+            } else {
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html';
+                 authLink.removeEventListener('click', handleLogoutLinkClick);
+                 authLink.addEventListener('click', handleLoginLinkClick);
+
+                 if (orderHistoryNavLink) orderHistoryNavLink.classList.add('hidden');
+                 if (orderHistoryFooterLink) orderHistoryFooterLink.classList.add('hidden');
+                 if (profileNavLink) profileNavLink.classList.add('hidden');
+                 if (profileFooterLink) profileFooterLink.classList.add('hidden');
+            }
+        }
+
+        function handleLogoutLinkClick(event) {
+            event.preventDefault();
+            localStorage.removeItem('loggedInUserId');
+            loggedInUserId = null;
+            cart = [];
+            saveCartToLocalStorage();
+            updateCartDisplay();
+            updateAuthLink();
+            showToast("Logged out successfully.");
+            console.log("User logged out. User ID removed from localStorage.");
+        }
+
+         function handleLoginLinkClick(event) {
+             console.log("Login link clicked. Redirecting to login page.");
+         }
+
+
+        // --- Profile Specific Logic ---
+        const profileDetailsContainer = document.getElementById('profile-details-container');
+        const profileEditFormContainer = document.getElementById('profile-edit-form-container');
+        const profileEditForm = document.getElementById('profile-edit-form');
+        const editProfileBtn = document.getElementById('edit-profile-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const profileMessageDiv = document.getElementById('profile-message');
+
+        // Display elements
+        const displayNameEl = document.getElementById('display-name');
+        const displayEmailEl = document.getElementById('display-email');
+        const displayPhoneEl = document.getElementById('display-phone');
+        const displayCreatedAtEl = document.getElementById('display-created-at');
+
+        // Edit form input elements
+        const editNameInput = document.getElementById('edit-name');
+        const editEmailInput = document.getElementById('edit-email');
+        const editPhoneInput = document.getElementById('edit-phone');
+
+        // Status messages
+        const loadingProfileMessage = document.getElementById('loading-profile');
+        const loginPromptProfile = document.getElementById('login-prompt-profile');
+        const errorLoadingProfile = document.getElementById('error-loading-profile');
+
+
+        // Function to show a specific profile status message and hide others
+        function showProfileStatus(statusElement) {
+            loadingProfileMessage.classList.add('hidden');
+            loginPromptProfile.classList.add('hidden');
+            errorLoadingProfile.classList.add('hidden');
+            profileDetailsContainer.classList.add('hidden');
+            profileEditFormContainer.classList.add('hidden');
+            profileMessageDiv.classList.add('hidden'); // Hide message div when changing views
+
+            if (statusElement) {
+                statusElement.classList.remove('hidden');
+            }
+        }
+
+        // Function to show messages (success/error)
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = `profile-message ${type}`; // Apply success or error class
+            element.classList.remove('hidden');
+        }
+
+
+        // Function to fetch user profile data
+        async function fetchUserProfile() {
+            // Check if user is logged in
+            if (!loggedInUserId) {
+                showProfileStatus(loginPromptProfile);
+                console.log("No user logged in. Cannot fetch profile.");
+                return; // Stop if no user ID
+            }
+
+            showProfileStatus(loadingProfileMessage); // Show loading message
+
+            const backendUrl = `${backendBaseUrl}/profile/${loggedInUserId}`; // Endpoint to get profile for a specific user
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success && result.user) {
+                    const user = result.user;
+                    console.log(`Fetched profile for user ${loggedInUserId}:`, user);
+
+                    displayUserProfile(user); // Display the fetched profile data
+                    showProfileStatus(profileDetailsContainer); // Show the details view
+
+                } else {
+                    console.error("Failed to fetch profile:", result.message || response.statusText);
+                    showProfileStatus(errorLoadingProfile); // Show error message
+                }
+
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+                showProfileStatus(errorLoadingProfile); // Show error message
+            }
+        }
+
+        // Function to display user profile data
+        function displayUserProfile(user) {
+            displayNameEl.textContent = user.name || 'N/A';
+            displayEmailEl.textContent = user.email || 'N/A';
+            displayPhoneEl.textContent = user.phone || 'N/A';
+
+            // Format the created_at date
+            const createdAtDate = user.created_at ? new Date(user.created_at).toLocaleString('en-IN', {
+                 year: 'numeric',
+                 month: 'long',
+                 day: 'numeric',
+                 hour: '2-digit',
+                 minute: '2-digit',
+                 hour12: true // Use 12-hour format with AM/PM
+             }) : 'N/A';
+            displayCreatedAtEl.textContent = createdAtDate;
+
+            // Populate the edit form with current data
+            editNameInput.value = user.name || '';
+            editEmailInput.value = user.email || '';
+            editPhoneInput.value = user.phone || '';
+        }
+
+        // Event listener for Edit Profile button
+        editProfileBtn.addEventListener('click', () => {
+            showProfileStatus(profileEditFormContainer); // Show the edit form
+        });
+
+        // Event listener for Cancel button in edit form
+        cancelEditBtn.addEventListener('click', () => {
+            // Reset form fields to current displayed values before hiding
+            editNameInput.value = displayNameEl.textContent !== 'N/A' ? displayNameEl.textContent : '';
+            editEmailInput.value = displayEmailEl.textContent !== 'N/A' ? displayEmailEl.textContent : '';
+            editPhoneInput.value = displayPhoneEl.textContent !== 'N/A' ? displayPhoneEl.textContent : '';
+
+            showProfileStatus(profileDetailsContainer); // Show the details view
+        });
+
+
+        // Event listener for the profile edit form submission
+        profileEditForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            // Basic validation
+            if (!editNameInput.value || !editEmailInput.value || !editPhoneInput.value) {
+                 showMessage(profileMessageDiv, "Please fill in all required fields.", "error");
+                 return;
+            }
+
+            // Collect updated data
+            const updatedProfileData = {
+                user_id: loggedInUserId, // Include the user ID
+                name: editNameInput.value,
+                email: editEmailInput.value,
+                phone: editPhoneInput.value
+                // Add other fields here if needed
+            };
+
+            const backendUrl = `${backendBaseUrl}/profile/update`; // Endpoint to update profile
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedProfileData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage(profileMessageDiv, result.message || "Profile updated successfully!", "success");
+                    console.log("Profile updated successfully.");
+                    // Update the displayed details after successful update
+                    displayNameEl.textContent = updatedProfileData.name;
+                    displayEmailEl.textContent = updatedProfileData.email;
+                    displayPhoneEl.textContent = updatedProfileData.phone;
+
+                    // Optionally re-fetch profile data to ensure display is in sync (though not strictly needed if form fields are updated)
+                    // fetchUserProfile();
+                } else {
+                    // Handle errors from the backend
+                    console.error("Failed to update profile:", result.message || response.statusText);
+                    showMessage(profileMessageDiv, result.message || `Failed to update profile. Status: ${response.status}`, "error");
+                }
+
+            } catch (error) {
+                // Handle network errors
+                console.error("Error updating profile:", error);
+                showMessage(profileMessageDiv, "An error occurred while updating your profile. Please try again.", "error");
+            }
+        });
+
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAuthLink(); // Update the Login/Logout and other links on page load
+            loadCartFromBackend(); // Load the cart when the page loads
+            // updateCartDisplay() is called by loadCartFromBackend
+
+            fetchUserProfile(); // Fetch and display user profile when the page loads
+        });
+
+        // Cart Modal Toggle Listeners
+        cartBtn.addEventListener('click', () => cartModal.classList.remove('hidden'));
+        closeCartBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
+        // Close cart if clicking the background overlay
+        cartModal.addEventListener('click', (e) => {
+            if (e.target === cartModal) {
+                cartModal.classList.add('hidden');
+            }
+        });
+
+
+    </script>
+
+</body>
+</html>

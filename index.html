@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arun Karyana Store - Premium Groceries in Barara</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Original Color Palette
+                        primary: '#9C6F44', // Warm Brown
+                        secondary: '#E8C07D', // Light Gold
+                        accent: '#B88B4A', // Deeper Gold/Brown
+                        dark: '#2D2D2D', // Dark Grey
+                        light: '#F8F5F0' // Off-White
+                    },
+                    fontFamily: {
+                        // Keeping the updated typography
+                        heading: ['"Playfair Display"', 'serif'],
+                        body: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F8F5F0; /* Using original light color */
+            color: #2D2D2D; /* Using original dark color */
+        }
+        .logo-container {
+            position: relative;
+            display: inline-block;
+        }
+        /* Decorative rings around the logo */
+        .logo-container::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 2px solid #E8C07D; /* Using original secondary color */
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.7;
+        }
+        .logo-container::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 1px dashed #9C6F44; /* Using original primary color */
+            border-radius: 50%;
+            z-index: -2;
+            opacity: 0.4;
+        }
+        /* Underline effect on navigation links */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #9C6F44; /* Using original primary color */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        /* Hover effect for product cards */
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+         /* Active state for category buttons */
+        .category-btn.active {
+            background-color: #9C6F44; /* Using original primary color */
+            color: white;
+        }
+        /* Fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+         /* Slide-up animation */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+         }
+         /* Hero Entrance Animation */
+         @keyframes heroEntrance {
+             from { opacity: 0; transform: translateY(30px); }
+             to { opacity: 1; transform: translateY(0); }
+         }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+         .slide-up {
+             animation: slideUp 0.6s ease-out forwards;
+         }
+         .hero-animate {
+             animation: heroEntrance 0.8s ease-out forwards;
+             opacity: 0; /* Start invisible */
+         }
+         .hero-animate.delay-1 { animation-delay: 0.1s; }
+         .hero-animate.delay-2 { animation-delay: 0.2s; }
+         .hero-animate.delay-3 { animation-delay: 0.3s; }
+         .hero-animate.delay-4 { animation-delay: 0.4s; }
+         .hero-animate.delay-5 { animation-delay: 0.5s; }
+
+
+        /* Hide scrollbar */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Hero section background pattern - Original dotted */
+        .hero-pattern {
+            background-image: radial-gradient(#E8C07D 1px, transparent 1px); /* Original dotted pattern */
+            background-size: 20px 20px;
+            background-position: 0 0;
+            background-repeat: repeat;
+            background-color: #F8F5F0; /* Ensure a fallback background color */
+        }
+
+        /* Products section background - Distinct pattern and subtle texture */
+        #products {
+             /* Using a subtle diagonal line pattern */
+             background-image:
+                 linear-gradient(45deg, rgba(156, 111, 68, 0.05) 25%, transparent 25%, transparent 75%, rgba(156, 111, 68, 0.05) 75%, rgba(156, 111, 68, 0.05)),
+                 linear-gradient(-45deg, rgba(156, 111, 68, 0.05) 25%, transparent 25%, transparent 75%, rgba(156, 111, 68, 0.05) 75%, rgba(156, 111, 68, 0.05));
+             background-size: 30px 30px, 30px 30px; /* Size of the pattern tiles */
+             background-position: 0 0, 15px 15px; /* Offset one pattern to create the grid */
+             background-color: #F8F5F0; /* Ensure the light background color */
+             /* Optionally add a subtle gradient overlay if desired, but keeping it clean for distinction */
+             /* background-image: linear-gradient(to bottom, rgba(248, 245, 240, 0.9), rgba(248, 245, 240, 0.8)), linear-gradient(45deg, rgba(156, 111, 68, 0.05) 25%, transparent 25%, transparent 75%, rgba(156, 111, 68, 0.05) 75%, rgba(156, 111, 68, 0.05)), linear-gradient(-45deg, rgba(156, 111, 68, 0.05) 25%, transparent 25%, transparent 75%, rgba(156, 111, 68, 0.05) 75%, rgba(156, 111, 68, 0.05)); */
+             /* background-size: cover, 30px 30px, 30px 30px; */
+             /* background-position: center center, 0 0, 15px 15px; */
+             /* background-repeat: no-repeat, repeat, repeat; */
+        }
+
+
+         /* Fade out animation for toast */
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+         /* Specific style for cart items on hover */
+        .cart-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Added basic responsive styling adjustments */
+        @media (max-width: 640px) {
+            .hero-pattern {
+                padding-top: 2rem; /* Adjust padding on small screens */
+                padding-bottom: 2rem;
+            }
+            .hero-pattern h2 {
+                font-size: 2rem; /* Adjust heading size */
+            }
+             .hero-pattern p {
+                font-size: 1rem; /* Adjust body text size */
+                margin-left: 0; /* Remove left margin on small screens */
+            }
+             .hero-pattern .ml-26 {
+                margin-left: 0; /* Remove large left margin on small screens */
+                justify-content: center; /* Center buttons */
+            }
+            .hero-pattern .flex-col {
+                align-items: center; /* Center items in column layout */
+            }
+            .hero-pattern .md\:w-1\/2 {
+                width: 100%; /* Full width on small screens */
+            }
+            .product-card .h-48 {
+                height: 180px; /* Slightly smaller image height on mobile */
+            }
+             .cart-modal .max-w-sm {
+                max-width: 100%; /* Full width for cart modal on very small screens */
+            }
+             .cart-modal .right-0 {
+                right: 0;
+                left: 0;
+            }
+             .cart-modal .p-6 {
+                 padding: 1rem; /* Reduce padding */
+             }
+             .cart-item {
+                 flex-direction: column; /* Stack cart item content */
+                 align-items: flex-start;
+             }
+             .cart-item .overflow-hidden {
+                 margin-bottom: 0.5rem;
+             }
+             .cart-item .flex-shrink-0 {
+                 width: 100%; /* Full width for quantity controls */
+                 justify-content: space-between; /* Distribute quantity controls */
+             }
+             .cart-item .ml-2 {
+                 margin-left: 0; /* Remove left margin on remove button */
+             }
+             .contact-info, .contact-form {
+                 padding: 1rem; /* Adjust padding in contact section */
+             }
+             .footer .grid-cols-1 {
+                 grid-template-columns: 1fr; /* Stack footer columns */
+             }
+             .footer > div {
+                 margin-bottom: 1.5rem; /* Add space between stacked footer sections */
+             }
+             .footer > div:last-child {
+                 margin-bottom: 0;
+             }
+        }
+         @media (min-width: 641px) and (max-width: 768px) {
+             .cart-modal .max-w-sm {
+                max-width: 80%; /* Adjust cart modal width on small tablets */
+             }
+         }
+          @media (min-width: 769px) and (max-width: 1024px) {
+             .cart-modal .max-w-sm {
+                max-width: 60%; /* Adjust cart modal width on larger tablets */
+             }
+         }
+         /* General adjustments for inputs and buttons in modals */
+        #cart-modal input, #cart-modal textarea {
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 1rem; /* py-2 px-4 */
+        }
+         #cart-modal button {
+            font-size: 1rem; /* text-base */
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+         }
+
+        /* Product Image Specific Styles */
+        .product-card img {
+            object-fit: contain; /* Ensure the whole image is visible */
+            cursor: pointer; /* Indicate it's clickable */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transition for hover */
+        }
+
+        .product-card img:hover {
+            transform: scale(1.05); /* Slightly enlarge on hover */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Add a shadow on hover */
+        }
+
+        /* Modal for Full Image View */
+        #image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Dark overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Ensure it's on top */
+            opacity: 0; /* Start hidden */
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        #image-modal.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #image-modal .modal-content {
+            position: relative;
+            max-width: 90%; /* Max width of the image */
+            max-height: 90%; /* Max height of the image */
+        }
+
+        #image-modal img {
+            display: block; /* Remove extra space below image */
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Ensure full image is visible in modal */
+        }
+
+        #image-modal .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+            z-index: 1010; /* Above the image */
+             text-shadow: 0 0 5px rgba(0,0,0,0.5); /* Add shadow for visibility */
+        }
+
+        /* Search Dropdown Styles */
+        .search-container {
+            position: relative; /* Needed for absolute positioning of dropdown */
+        }
+
+        #search-results-dropdown {
+            position: absolute;
+            top: 100%; /* Position below the search input */
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-height: 200px; /* Limit height and make it scrollable */
+            overflow-y: auto;
+            z-index: 30; /* Ensure it's above other content but below modal */
+            display: none; /* Hidden by default */
+        }
+
+        #search-results-dropdown.visible {
+            display: block;
+        }
+
+        #search-results-dropdown .dropdown-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        #search-results-dropdown .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        #search-results-dropdown .dropdown-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        #search-results-dropdown .no-results {
+            padding: 10px 15px;
+            color: #777;
+            font-style: italic;
+        }
+
+        /* Product Card Quantity Controls - Refined */
+        .product-card .quantity-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+        }
+
+        .product-card .add-to-cart-btn {
+            background-color: #B88B4A; /* Using original accent color */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 500; /* font-medium */
+            transition: background-color 0.2s ease;
+            text-align: center;
+            width: 100%; /* Make button full width initially */
+            display: block; /* Ensure it takes full width */
+        }
+
+        .product-card .add-to-cart-btn:hover {
+            background-color: #a37b42; /* Slightly darker accent on hover */
+        }
+
+        .product-card .quantity-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%; /* Make quantity controls full width */
+        }
+
+        .product-card .quantity-buttons button {
+             padding: 0.5rem 1rem; /* Adjusted padding */
+             border: 1px solid #ccc;
+             color: #555;
+             transition: color 0.2s ease, border-color 0.2s ease;
+             background-color: #fff;
+        }
+
+         .product-card .quantity-buttons button:hover:not(:disabled) {
+             color: #9C6F44; /* Hover color using original primary */
+             border-color: #9C6F44; /* Hover border color using original primary */
+         }
+
+        .product-card .quantity-buttons button:first-child {
+            border-radius: 0.375rem 0 0 0.375rem; /* rounded-l-md */
+            border-right: none;
+        }
+
+        .product-card .quantity-buttons button:last-child {
+            border-radius: 0 0.375rem 0.375rem 0; /* rounded-r-md */
+            border-left: none;
+        }
+
+        .product-card .quantity-buttons span {
+            padding: 0.5rem 0; /* Adjusted padding */
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            font-weight: 500;
+            text-align: center;
+            flex-grow: 1; /* Allow span to take available space */
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <a href="/" class="flex items-center mb-4 md:mb-0 text-dark hover:text-dark transition cursor-pointer">
+                    <div class="logo-container mr-3">
+                        <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                             alt="Arun Karyana Store Logo"
+                             onerror="this.onerror=null; this.src='https://placehold.co/60x60/F8F5F0/9C6F44?text=AK';"
+                             class="rounded-full w-14 h-14 object-cover border-2 border-primary">
+                    </div>
+                    <div>
+                        <h1 class="font-heading text-2xl font-bold">Arun Karyana Store</h1>
+                        <p class="text-xs text-gray-600">Your trusted neighborhood store</p>
+                    </div>
+                </a>
+
+                <div class="search-container flex items-center w-full md:w-1/3 lg:w-1/4 relative mb-4 md:mb-0">
+                    <input type="text" id="search-input" placeholder="Search products..." class="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-primary text-sm pr-10">
+                    <i class="fas fa-search absolute right-3 text-gray-500"></i>
+                    <div id="search-results-dropdown" class="hidden">
+                        </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="cart-btn" class="text-dark hover:text-accent transition">
+                            <i class="fas fa-shopping-cart text-xl"></i>
+                            <span id="cart-count" class="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                    </div>
+                    <a href="login.html" id="auth-link" class="bg-primary text-white px-4 py-1.5 rounded-md text-sm hover:bg-opacity-90 transition font-medium">Login</a>
+                </div>
+            </div>
+            <nav class="mt-3">
+                <ul class="flex space-x-6 overflow-x-auto pb-2 scrollbar-hide">
+                    <li><a href="#" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Home</a></li>
+                    <li><a href="#products" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Products</a></li>
+                    <li><a href="#offers" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Offers</a></li>
+                    <li><a href="#about" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">About Us</a></li>
+                    <li><a href="#contact" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Contact</a></li>
+                    <li><a href="order-history.html" id="order-history-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">Order History</a></li>
+                    <li><a href="profile.html" id="profile-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">My Profile</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero-pattern py-16">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-8 md:mb-0">
+                    <div class="flex items-center mb-6 hero-animate">
+                         <div class="logo-container mr-6">
+                             <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                                 alt="Arun Karyana Store Logo"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/80x80/F8F5F0/9C6F44?text=AK';"
+                                 class="rounded-full w-20 h-20 object-cover border-2 border-primary shadow-lg">
+                        </div>
+                        <h2 class="font-heading text-3xl md:text-4xl font-bold text-dark">Premium Household Essentials</h2>
+                    </div>
+                    <p class="text-lg text-gray-700 mb-6 ml-26 hero-animate delay-1">Experience the finest selection of daily essentials at competitive prices.</p>
+                    <div class="ml-26 flex space-x-4 hero-animate delay-2">
+                        <a href="#products" class="bg-primary text-white px-6 py-2.5 rounded-md font-medium hover:bg-opacity-90 transition shadow-md inline-block">Shop Now</a>
+                        <a href="#about" class="border-2 border-primary text-primary px-6 py-2.5 rounded-md font-medium hover:bg-primary hover:text-white transition inline-block">Learn More</a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex justify-center hero-animate delay-3">
+                    <div class="relative">
+                        <div class="absolute -inset-4 bg-secondary rounded-lg opacity-20 -rotate-3"></div>
+                        <div class="bg-white p-4 rounded-lg shadow-xl relative">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-light p-3 rounded-lg flex items-center hero-animate delay-4">
+                                    <i class="fas fa-truck text-accent text-xl mr-2"></i>
+                                    <span class="text-sm font-medium">Free Delivery</span>
+                                </div>
+                                <div class="bg-light p-3 rounded-lg flex items-center hero-animate delay-5">
+                                    <i class="fas fa-percentage text-accent text-xl mr-2"></i>
+                                    <span class="text-sm font-medium">Daily Offers</span>
+                                </div>
+                                <div class="bg-light p-3 rounded-lg flex items-center hero-animate delay-4">
+                                    <i class="fas fa-coins text-accent text-xl mr-2"></i>
+                                    <span class="text-sm font-medium">Loyalty Points</span>
+                                </div>
+                                <div class="bg-light p-3 rounded-lg flex items-center hero-animate delay-5">
+                                    <i class="fas fa-headset text-accent text-xl mr-2"></i>
+                                    <span class="text-sm font-medium">24/7 Support</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="py-16">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="font-heading text-3xl font-bold mb-2">Our Products</h2>
+                <div class="w-20 h-1 bg-primary mx-auto"></div>
+            </div>
+
+            <div class="flex overflow-x-auto pb-4 mb-8 space-x-2 scrollbar-hide">
+                <button class="category-btn active px-4 py-2 rounded-full bg-primary text-white whitespace-nowrap fade-in" data-category="all">All Items</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="soaps">Soaps & Detergents</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="food">Food Items</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="beverages">Beverages</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="personal-care">Personal Care</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="product-grid">
+                </div>
+        </div>
+    </section>
+
+    <section id="offers" class="py-16 bg-light">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="font-heading text-3xl font-bold mb-2">Special Offers</h2>
+                <div class="w-20 h-1 bg-primary mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
+                    <div class="bg-primary rounded-full p-4 mr-6">
+                        <i class="fas fa-percentage text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">10% Off on First Order</h3>
+                        <p class="text-gray-600">Use code WELCOME10 at checkout</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
+                    <div class="bg-primary rounded-full p-4 mr-6">
+                        <i class="fas fa-truck text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Free Delivery</h3>
+                        <p class="text-gray-600">On orders above ₹500</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
+                    <div class="bg-primary rounded-full p-4 mr-6">
+                        <i class="fas fa-gift text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Buy 2 Get 1 Free</h3>
+                        <p class="text-gray-600">On selected personal care products</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
+                    <div class="bg-primary rounded-full p-4 mr-6">
+                        <i class="fas fa-coins text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Loyalty Points</h3>
+                        <p class="text-gray-600">Earn 5% back on every purchase</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-8 md:mb-0">
+                    <div class="relative">
+                        <div class="absolute -inset-4 bg-secondary rounded-lg opacity-20 rotate-3"></div>
+                        <div class="bg-white p-4 rounded-lg shadow-xl relative">
+                            <div class="flex items-center mb-6">
+                                 <div class="logo-container mr-6">
+                                     <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                                         alt="Arun Karyana Store Logo"
+                                         onerror="this.onerror=null; this.src='https://placehold.co/64x64/F8F5F0/9C6F44?text=AK';"
+                                         class="rounded-full w-16 h-16 object-cover border-2 border-primary">
+                                </div>
+                                <h2 class="font-heading text-2xl font-bold">About Arun Karyana Store</h2>
+                            </div>
+                            <p class="text-gray-700 mb-4">Established in 1977 by Arun Kumar, Arun Karyana Store has been serving the Barara community with quality household products at reasonable prices.</p>
+                            <p class="text-gray-700 mb-4">Our mission is to provide our customers with a wide range of daily essentials while maintaining the highest standards of quality and service.</p>
+                            <div class="bg-light p-4 rounded-lg border-l-4 border-primary mb-4">
+                                <p class="text-gray-700 italic">"We believe in building relationships with our customers through trust and quality service."</p>
+                            </div>
+                            <p class="text-gray-700">Visit our physical store to experience our warm hospitality and extensive product range.</p>
+                            <a href="https://www.google.com/maps/search/?api=1&query=Arun+Karyana+Store,+Railway+Road,+Barara,+Ambala,+Haryana+133201" target="_blank" class="mt-6 bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md inline-block">Visit Our Store</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:w-1/2 md:pl-12">
+                    <div class="bg-light p-8 rounded-lg">
+                        <h3 class="font-heading text-2xl font-bold mb-6">Our Values</h3>
+                        <div class="space-y-6">
+                            <div class="flex">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-full mr-4">
+                                    <i class="fas fa-star text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-1">Quality Assurance</h4>
+                                    <p class="text-gray-600">We source only the best products from trusted suppliers to ensure quality.</p>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-full mr-4">
+                                    <i class="fas fa-rupee-sign text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-1">Fair Pricing</h4>
+                                    <p class="text-gray-600">Competitive prices without compromising on product quality.</p>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-full mr-4">
+                                    <i class="fas fa-hands-helping text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-1">Customer Service</h4>
+                                    <p class="text-gray-600">Friendly and knowledgeable staff ready to assist you.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-16 bg-light">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="font-heading text-3xl font-bold mb-2">What Our Customers Say</h2>
+                <div class="w-20 h-1 bg-primary mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="Customer Priya Sharma" onerror="this.onerror=null; this.src='https://placehold.co/48x48/cccccc/666666?text=P';" class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-semibold">Priya Sharma</h4>
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"The best grocery store in Barara! Always fresh products and reasonable prices. Arun ji is very helpful and knows exactly what his customers need."</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Customer Rahul Verma" onerror="this.onerror=null; this.src='https://placehold.co/48x48/cccccc/666666?text=R';" class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-semibold">Rahul Verma</h4>
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"I've been shopping here for years. The quality of products is consistently good, and they often have special offers that help save money."</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Customer Neha Gupta" onerror="this.onerror=null; this.src='https://placehold.co/48x48/cccccc/666666?text=N';" class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-semibold">Neha Gupta</h4>
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"Their home delivery service is a lifesaver! I can order all my household essentials online and get them delivered the same day. Highly recommended!"</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="font-heading text-3xl font-bold mb-2">Contact Us</h2>
+                <div class="w-20 h-1 bg-primary mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Store Information</h3>
+                    <div class="space-y-4">
+                         <div class="flex items-start">
+                            <i class="fas fa-map-marker-alt text-primary mt-1 mr-4 w-4 text-center"></i>
+                            <p>Arun Karyana Store, Railway Road, Barara, Ambala, Haryana 133201</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-phone-alt text-primary mr-4 w-4 text-center"></i>
+                            <p>+91 94168 91710</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-envelope text-primary mr-4 w-4 text-center"></i>
+                            <p>contact@arunkaryanastore.com</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-primary mr-4 w-4 text-center"></i>
+                            <p>Open 7 days a week</p>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mt-8 mb-4">Opening Hours</h3>
+                    <div class="space-y-2">
+                        <p class="flex justify-between"><span>Monday - Friday</span> <span>8:00 AM - 9:00 PM</span></p>
+                        <p class="flex justify-between"><span>Saturday</span> <span>8:00 AM - 10:00 PM</span></p>
+                        <p class="flex justify-between"><span>Sunday</span> <span>9:00 AM - 8:00 PM</span></p>
+                    </div>
+                    <div class="mt-8">
+                        <h3 class="text-xl font-semibold mb-4">Find Us on Map</h3>
+                        <div class="bg-light rounded-lg overflow-hidden w-full h-48 mx-auto">
+                             <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d215.48897172288514!2d77.03929385143907!3d30.21358324180523!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v1746186395396!5m2!1sen!2sin"
+                                width="100%"
+                                height="100%"
+                                style="border:0;"
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                                aria-label="Google Map of Arun Karyana Store">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Connect With Us</h3>
+                    <div class="flex space-x-4 mb-8">
+                        <a href="#" aria-label="Facebook" class="bg-light p-3 rounded-full hover:bg-primary hover:text-white transition text-primary"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram" class="bg-light p-3 rounded-full hover:bg-primary hover:text-white transition text-primary"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter" class="bg-light p-3 rounded-full hover:bg-primary hover:text-white transition text-primary"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="WhatsApp" class="bg-light p-3 rounded-full hover:bg-primary hover:text-white transition text-primary"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-4">Send Us a Message</h3>
+                     <form class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-gray-700 mb-1 text-sm">Your Name</label>
+                            <input type="text" id="name" name="name" placeholder="Enter your name" autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-gray-700 mb-1 text-sm">Your Email</label>
+                             <input type="email" id="email" name="email" placeholder="Enter your email" autocomplete="email" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-gray-700 mb-1 text-sm">Phone Number</label>
+                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label for="message" class="block text-gray-700 mb-1 text-sm">Your Message</label>
+                            <textarea id="message" name="message" placeholder="Enter your message" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"></textarea>
+                        </div>
+                        <button type="submit" name="submit" class="bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                         <div class="logo-container mr-4">
+                             <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                                 alt="Arun Karyana Store Logo"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/48x48/2D2D2D/9C6F44?text=AK';"
+                                 class="rounded-full w-12 h-12 object-cover border-2 border-primary">
+                        </div>
+                        <h3 class="font-heading text-xl font-semibold">Arun Karyana Store</h3>
+                    </div>
+                    <p class="text-gray-300 mb-4">Your trusted neighborhood store for all household needs since 1977.</p>
+                    <div class="flex space-x-4">
+                         <a href="#" aria-label="Facebook" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="WhatsApp" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-secondary transition">Home</a></li>
+                        <li><a href="#products" class="text-gray-300 hover:text-secondary transition">Products</a></li>
+                        <li><a href="#offers" class="text-gray-300 hover:text-secondary transition">Offers</a></li>
+                        <li><a href="#about" class="text-gray-300 hover:text-secondary transition">About Us</a></li>
+                        <li><a href="#contact" class="text-gray-300 hover:text-secondary transition">Contact</a></li>
+                         <li><a href="order-history.html" id="order-history-footer-link" class="text-gray-300 hover:text-secondary transition hidden">Order History</a></li>
+                        <li><a href="profile.html" id="profile-footer-link" class="text-gray-300 hover:text-secondary transition hidden">My Profile</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Customer Service</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">FAQs</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Shipping Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Return Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Terms & Conditions</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Newsletter</h3>
+                    <p class="text-gray-300 mb-4">Subscribe to get updates on new products and special offers.</p>
+                     <form class="flex">
+                        <input type="email" placeholder="Your Email" aria-label="Newsletter Email" class="px-4 py-2 rounded-l focus:outline-none text-dark w-full">
+                        <button type="submit" aria-label="Subscribe to Newsletter" class="bg-primary px-4 py-2 rounded-r hover:bg-opacity-90 transition"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                    <div class="mt-4">
+                        <h4 class="font-medium mb-2">Download Our App</h4>
+                        <div class="flex space-x-2">
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-google-play mr-1"></i> Play Store
+                            </a>
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-apple mr-1"></i> App Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2025 Arun Karyana Store. All rights reserved.</p>
+                <p class="mt-2 text-sm">Designed with <i class="fas fa-heart text-red-500"></i> for the Barara community</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="cart-heading">
+        <div class="absolute right-0 top-0 h-full w-full max-w-sm sm:max-w-md md:max-w-lg bg-white shadow-lg overflow-y-auto">
+            <div class="p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="cart-heading" class="font-heading text-2xl font-bold">Your Cart</h2>
+                    <button id="close-cart" aria-label="Close Cart" class="text-gray-500 hover:text-primary">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="cart-items" class="flex-grow space-y-4 mb-6 min-h-[100px] overflow-y-auto">
+                    <p id="empty-cart-message" class="text-center text-gray-500 py-8">Your cart is empty</p>
+                </div>
+
+                <div id="customer-info-fields" class="space-y-4 mb-6">
+                     <h3 class="font-semibold text-lg">Your Details</h3>
+                     <div>
+                        <label for="customer_name" class="block text-gray-700 mb-1 text-sm">Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="customer_name" name="customer_name" form="new_order_form" required placeholder="Enter your full name" autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="customer_phone" class="block text-gray-700 mb-1 text-sm">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="customer_phone" name="customer_phone" form="new_order_form" required placeholder="Enter your phone number" autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                     <div>
+                        <label for="customer_address" class="block text-gray-700 mb-1 text-sm">Delivery Address <span class="text-red-500">*</span></label>
+                        <textarea id="customer_address" name="customer_address" form="new_order_form" required placeholder="Enter your delivery address" rows="3" autocomplete="street-address" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm"></textarea>
+                    </div>
+                </div>
+
+
+                <div class="border-t border-gray-200 pt-4 mt-auto">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-medium">Subtotal:</span>
+                        <span id="cart-subtotal" class="font-medium">₹0</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Delivery Charges:</span>
+                        <span id="delivery-charges">₹40</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold mb-4">
+                        <span>Total:</span>
+                        <span id="cart-total">₹40</span>
+                    </div>
+                    <button id="checkout-btn" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>Proceed to Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="order-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="alertdialog" aria-modal="true" aria-labelledby="order-heading">
+        <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+            <div class="text-center">
+                <div class="bg-green-100 rounded-full p-4 inline-block mb-4">
+                    <i class="fas fa-check-circle text-green-500 text-4xl"></i>
+                </div>
+                <h2 id="order-heading" class="font-heading text-2xl font-bold mb-2">Order Placed Successfully!</h2>
+                <p class="text-gray-600 mb-6">Thank you for shopping with Arun Karyana Store. Your order will be delivered soon.</p>
+                <button id="close-order-modal" class="bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition">Continue Shopping</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Full Product Image">
+        <div class="modal-content">
+            <button id="close-image-modal" aria-label="Close image modal" class="close-btn">×</button>
+            <img id="full-image" src="" alt="Full size product image">
+        </div>
+    </div>
+
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+    <form name="new_order" id="new_order_form" netlify netlify-honeypot="bot-field" hidden>
+        <input type="hidden" name="form-name" value="new_order" />
+        <input type="hidden" name="bot-field" />
+        <input type="hidden" name="order_details" id="order_details_input">
+        <input type="hidden" name="customer_name" id="hidden_customer_name">
+        <input type="hidden" name="customer_phone" id="hidden_customer_phone">
+        <input type="hidden" name="customer_address" id="hidden_customer_address">
+    </form>
+
+
+    <script>
+        // Product Data (using actual image URLs and updated prices)
+        const products = [
+            { id: 1, name: "Lux International Soap", price: 83, category: "soaps", image: "https://i.ibb.co/SXTVLFc0/Screenshot-2025-05-04-233546.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Lux+Soap';" },
+            { id: 2, name: "Dove Cream Beauty Bar", price: 60, category: "soaps", image: "https://i.ibb.co/1tnsrsCG/Screenshot-2025-05-04-233853.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Dove+Bar';" },
+            { id: 3, name: "Tata Salt (1kg)", price: 27, category: "food", image: "https://i.ibb.co/0Vjxb9BW/Screenshot-2025-05-04-233959.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Tata+Salt';" },
+            { id: 4, name: "Fortune Sunflower Oil (1L)", price: 157, category: "food", image: "https://i.ibb.co/8LQ47qtQ/Screenshot-2025-05-04-234101.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Cooking+Oil';" },
+            { id: 5, name: "Tata Tea Gold (500g)", price: 215, category: "beverages", image: "https://i.ibb.co/jk5rjgnx/Screenshot-2025-05-04-234155.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Tea';" },
+            { id: 6, name: "Nescafe Classic Coffee (100g)", price: 285, category: "beverages", image: "https://i.ibb.co/zTgPrhJ0/Screenshot-2025-05-04-234245.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Coffee';" },
+            { id: 7, name: "Head & Shoulders Shampoo (180ml)", price: 138, category: "personal-care", image: "https://i.ibb.co/5XkCdLn6/Screenshot-2025-05-04-234334.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Shampoo';" },
+            { id: 8, name: "Colgate Toothpaste (100g)", price: 73, category: "personal-care", image: "https://i.ibb.co/ksmMDzB2/Screenshot-2025-05-04-234423.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Toothpaste';" },
+            { id: 9, name: "Surf Excel Matic Powder (1kg)", price: 175, category: "soaps", image: "https://i.ibb.co/xKPBGhYs/Screenshot-2025-05-04-234625.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Detergent';" },
+            { id: 10, name: "Aashirvaad Atta (5kg)", price: 250, category: "food", image: "https://i.ibb.co/fz1BHxGH/Screenshot-2025-05-04-234719.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Atta';" },
+            { id: 11, name: "Maggi Noodles (Pack of 4)", price: 56, category: "food", image: "https://i.ibb.co/wxX6H6K/Screenshot-2025-05-04-234752.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Noodles';" },
+            { id: 12, name: "Patanjali Dant Kanti (100g)", price: 60, category: "personal-care", image: "https://i.ibb.co/Qvbsst5t/Screenshot-2025-05-04-234828.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Toothpaste';" }
+        ];
+
+        // DOM Elements
+        const productGrid = document.getElementById('product-grid');
+        const cartBtn = document.getElementById('cart-btn');
+        const closeCartBtn = document.getElementById('close-cart');
+        const cartModal = document.getElementById('cart-modal');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartCountEl = document.getElementById('cart-count');
+        const cartSubtotalEl = document.getElementById('cart-subtotal');
+        const deliveryChargesEl = document.getElementById('delivery-charges');
+        const cartTotalEl = document.getElementById('cart-total');
+        const emptyCartMessage = document.getElementById('empty-cart-message');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        // Removed orderModal and closeOrderModalBtn as we will redirect instead
+        // const orderModal = document.getElementById('order-modal');
+        // const closeOrderModalBtn = document.getElementById('close-order-modal');
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        const toastContainer = document.getElementById('toast-container');
+        const searchInput = document.getElementById('search-input'); // Get the search input element
+        const searchResultsDropdown = document.getElementById('search-results-dropdown'); // Get the dropdown element
+
+
+        // Customer Info Input Fields
+        const customerNameInput = document.getElementById('customer_name');
+        const customerPhoneInput = document.getElementById('customer_phone');
+        const customerAddressInput = document.getElementById('customer_address');
+
+        // Hidden Netlify Form Elements
+        const orderForm = document.querySelector('form[name="new_order"]');
+        const orderDetailsInput = document.getElementById('order_details_input');
+        const hiddenCustomerNameInput = document.getElementById('hidden_customer_name');
+        const hiddenCustomerPhoneInput = document.getElementById('hidden_customer_phone');
+        const hiddenCustomerAddressInput = document.getElementById('hidden_customer_address');
+
+        // Image Modal Elements
+        const imageModal = document.getElementById('image-modal');
+        const fullImage = document.getElementById('full-image');
+        const closeImageModalBtn = document.getElementById('close-image-modal');
+
+        // Auth/Navigation Links
+        const authLink = document.getElementById('auth-link'); // Get the auth link element
+        // Get the Order History navigation link element
+        const orderHistoryNavLink = document.getElementById('order-history-nav-link');
+        // Get the Order History footer link element
+        const orderHistoryFooterLink = document.getElementById('order-history-footer-link');
+        // Get the new profile navigation links
+        const profileNavLink = document.getElementById('profile-nav-link');
+        const profileFooterLink = document.getElementById('profile-footer-link');
+
+
+        let cart = []; // Initialize empty cart array
+        const deliveryThreshold = 500; // Minimum order value for free delivery
+        const deliveryFee = 40; // Delivery fee if below threshold
+
+        // Your Replit backend URL (replace with your actual URL)
+        const backendBaseUrl = 'https://18226f98-78e8-4b6f-acb0-539aa6643784-00-dn7iak79e1lu.pike.replit.dev'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+
+        // Get the logged-in user ID from local storage
+        let loggedInUserId = localStorage.getItem('loggedInUserId');
+
+
+        // --- Authentication Link Display ---
+        function updateAuthLink() {
+            if (loggedInUserId) {
+                // If logged in, show Logout
+                authLink.textContent = 'Logout';
+                authLink.href = '#'; // Prevent navigation, handle logout with JS
+                authLink.removeEventListener('click', handleLoginLinkClick); // Remove login listener
+                authLink.addEventListener('click', handleLogoutLinkClick); // Add logout listener
+
+                // Show Order History and Profile links
+                if (orderHistoryNavLink) orderHistoryNavLink.classList.remove('hidden');
+                if (orderHistoryFooterLink) orderHistoryFooterLink.classList.remove('hidden');
+                if (profileNavLink) profileNavLink.classList.remove('hidden'); // Show profile link
+                if (profileFooterLink) profileFooterLink.classList.remove('hidden'); // Show profile link
+
+
+            } else {
+                // If not logged in, show Login
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html'; // Link to login page
+                 authLink.removeEventListener('click', handleLogoutLinkClick); // Remove logout listener
+                 authLink.addEventListener('click', handleLoginLinkClick); // Add login listener (though default href works)
+
+                 // Hide Order History and Profile links
+                 if (orderHistoryNavLink) orderHistoryNavLink.classList.add('hidden');
+                 if (orderHistoryFooterLink) orderHistoryFooterLink.classList.add('hidden');
+                 if (profileNavLink) profileNavLink.classList.add('hidden'); // Hide profile link
+                 if (profileFooterLink) profileFooterLink.classList.add('hidden'); // Hide profile link
+            }
+        }
+
+        // Handle Logout Link Click
+        function handleLogoutLinkClick(event) {
+            event.preventDefault(); // Prevent default link behavior
+            // Clear user ID from local storage
+            localStorage.removeItem('loggedInUserId');
+            loggedInUserId = null; // Update the variable
+            cart = []; // Clear the local cart on logout (optional, but common)
+            saveCartToLocalStorage(); // Clear local storage cart
+            updateCartDisplay(); // Update the cart display
+            updateAuthLink(); // Update the link to show "Login"
+            showToast("Logged out successfully.");
+            console.log("User logged out. User ID removed from localStorage.");
+        }
+
+         // Handle Login Link Click (primarily for removing logout listener if needed)
+         function handleLoginLinkClick(event) {
+             // Default link behavior will navigate to login.html
+             console.log("Login link clicked. Redirecting to login page.");
+         }
+
+
+        // --- Product Display ---
+        function displayProducts(filteredProducts) {
+            productGrid.innerHTML = ''; // Clear existing products before adding new ones
+            const productsToDisplay = filteredProducts || products; // Use filtered list or all products
+
+            if (productsToDisplay.length === 0) {
+                // Display message if no products match the filter
+                productGrid.innerHTML = `<p class="text-center text-gray-500 col-span-full">No products found.</p>`;
+                return;
+            }
+
+            // Loop through products and create HTML card for each
+            productsToDisplay.forEach(product => {
+                // Find the current quantity of this product in the cart
+                const cartItem = cart.find(item => item.id === product.id);
+                const currentQuantity = cartItem ? cartItem.quantity : 0;
+
+                // Added slide-up animation class
+                const productCard = `
+                    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300 slide-up flex flex-col" data-product-id="${product.id}">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-contain cursor-pointer" onerror="${product.onerror}" data-product-id="${product.id}">
+                        <div class="p-4 flex flex-col flex-grow">
+                            <h3 class="text-lg font-semibold mb-2 flex-grow">${product.name}</h3>
+                            <p class="text-primary font-bold text-xl mb-3">₹${product.price}</p>
+
+                            <div class="quantity-controls">
+                                ${currentQuantity === 0
+                                    ? `<button class="add-to-cart-btn" data-id="${product.id}">Add to Cart</button>`
+                                    : `<div class="quantity-buttons">
+                                        <button class="quantity-change-product" data-id="${product.id}" data-change="-1" aria-label="Decrease quantity">-</button>
+                                        <span class="product-quantity">${currentQuantity}</span>
+                                        <button class="quantity-change-product" data-id="${product.id}" data-change="1" aria-label="Increase quantity">+</button>
+                                    </div>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+                productGrid.insertAdjacentHTML('beforeend', productCard);
+            });
+
+             // Re-attach event listeners after updating the grid content
+            attachAddToCartListeners(); // This will now attach listeners to the new quantity buttons and image clicks
+        }
+
+        // Function to update quantity display on product cards
+        function updateProductCardQuantities() {
+            products.forEach(product => {
+                // Find the product card element using its data-id attribute
+                const productCard = productGrid.querySelector(`.product-card[data-product-id="${product.id}"]`);
+                if (productCard) {
+                     const quantityControlsDiv = productCard.querySelector('.quantity-controls');
+                     const cartItem = cart.find(item => item.id === product.id);
+                     const currentQuantity = cartItem ? cartItem.quantity : 0;
+
+                     // Update the HTML based on the current quantity
+                     if (quantityControlsDiv) {
+                         quantityControlsDiv.innerHTML = `
+                             ${currentQuantity === 0
+                                 ? `<button class="add-to-cart-btn" data-id="${product.id}">Add to Cart</button>`
+                                 : `<div class="quantity-buttons">
+                                     <button class="quantity-change-product" data-id="${product.id}" data-change="-1" aria-label="Decrease quantity">-</button>
+                                     <span class="product-quantity">${currentQuantity}</span>
+                                     <button class="quantity-change-product" data-id="${product.id}" data-change="1" aria-label="Increase quantity">+</button>
+                                 </div>`
+                             }
+                         `;
+                     }
+                }
+            });
+             // Re-attach listeners to the updated product card buttons
+             attachAddToCartListeners();
+        }
+
+
+        // --- Category Filtering ---
+        function filterProductsByCategory(category) {
+             // Remove active class from all category buttons
+             categoryBtns.forEach(b => {
+                 b.classList.remove('active', 'bg-primary', 'text-white');
+                 b.classList.add('bg-light', 'text-dark');
+             });
+
+             // Add active class to the clicked button
+             const activeBtn = document.querySelector(`.category-btn[data-category="${category}"]`);
+             if (activeBtn) {
+                 activeBtn.classList.add('active', 'bg-primary', 'text-white');
+                 activeBtn.classList.remove('bg-light', 'text-dark');
+             }
+
+             // Get the current search query
+             const currentSearchQuery = searchInput.value.toLowerCase();
+
+             // Filter products based on selected category
+             const categoryFiltered = (category === 'all') ? products : products.filter(p => p.category === category);
+
+             // Apply current search filter to category filtered results
+             const searchAndCategoryFiltered = currentSearchQuery
+                 ? categoryFiltered.filter(product => product.name.toLowerCase().includes(currentSearchQuery))
+                 : categoryFiltered; // If query is empty, show all products in the current category
+
+             displayProducts(searchAndCategoryFiltered); // Display the filtered products
+         }
+
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const category = btn.getAttribute('data-category');
+                filterProductsByCategory(category); // Use the new function
+            });
+        });
+
+        // --- Search Functionality ---
+        function performSearch(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            // Get the currently active category
+            const activeCategoryBtn = document.querySelector('.category-btn.active');
+            const currentCategory = activeCategoryBtn ? activeCategoryBtn.getAttribute('data-category') : 'all';
+
+            // Filter by category first, then by search query
+            const categoryFiltered = (currentCategory === 'all') ? products : products.filter(p => p.category === currentCategory);
+
+            const searchFiltered = lowerCaseQuery
+                ? categoryFiltered.filter(product => product.name.toLowerCase().includes(lowerCaseQuery))
+                : categoryFiltered; // If query is empty, show all products in the current category
+
+            return searchFiltered;
+        }
+
+        function updateSearchResultsDropdown(query) {
+            searchResultsDropdown.innerHTML = ''; // Clear previous results
+            const lowerCaseQuery = query.toLowerCase();
+
+            if (lowerCaseQuery.length === 0) {
+                searchResultsDropdown.classList.remove('visible');
+                return;
+            }
+
+             // Get the currently active category
+             const activeCategoryBtn = document.querySelector('.category-btn.active');
+             const currentCategory = activeCategoryBtn ? activeCategoryBtn.getAttribute('data-category') : 'all';
+
+             // Filter products based on current category and search query
+             const relevantProducts = (currentCategory === 'all') ? products : products.filter(p => p.category === currentCategory);
+
+            const matchingProducts = relevantProducts.filter(product =>
+                product.name.toLowerCase().includes(lowerCaseQuery)
+            );
+
+            if (matchingProducts.length > 0) {
+                matchingProducts.forEach(product => {
+                    const item = document.createElement('div');
+                    item.classList.add('dropdown-item');
+                    item.textContent = product.name;
+                    item.setAttribute('data-product-id', product.id); // Store product ID
+                    searchResultsDropdown.appendChild(item);
+                });
+                searchResultsDropdown.classList.add('visible');
+            } else {
+                const noResultsItem = document.createElement('div');
+                noResultsItem.classList.add('no-results');
+                noResultsItem.textContent = 'No products found';
+                searchResultsDropdown.appendChild(noResultsItem);
+                searchResultsDropdown.classList.add('visible');
+            }
+        }
+
+        // Event listener for typing in the search input (updates dropdown)
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value;
+            updateSearchResultsDropdown(query); // Update the dropdown
+        });
+
+        // Event listener for clicking on a dropdown item
+        searchResultsDropdown.addEventListener('click', (e) => {
+            const clickedItem = e.target.closest('.dropdown-item');
+            if (clickedItem) {
+                const productId = parseInt(clickedItem.getAttribute('data-product-id'));
+                // Filter the grid to show only the selected product
+                const selectedProduct = products.find(p => p.id === productId);
+                if (selectedProduct) {
+                    displayProducts([selectedProduct]); // Display only the selected product
+
+                    // Scroll to the product grid section
+                    const productsSection = document.getElementById('products');
+                    if (productsSection) {
+                         productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+                searchInput.value = clickedItem.textContent; // Set search input value to selected item
+                searchResultsDropdown.classList.remove('visible'); // Hide the dropdown
+            }
+        });
+
+        // Event listener for pressing Enter in the search input
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent default form submission
+                const query = searchInput.value;
+                filterProductsBySearch(query); // Filter the main grid based on the full query
+                searchResultsDropdown.classList.remove('visible'); // Hide the dropdown
+
+                // Scroll to the products section after filtering
+                 const productsSection = document.getElementById('products');
+                 if (productsSection) {
+                      productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                 }
+            }
+        });
+
+        // Hide dropdown when clicking anywhere else on the page
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                searchResultsDropdown.classList.remove('visible');
+            }
+        });
+
+
+        // --- Cart Functionality ---
+        function updateCartDisplay() {
+            cartItemsContainer.innerHTML = ''; // Clear current cart items
+
+            if (cart.length === 0) {
+                // Show empty cart message and disable checkout
+                emptyCartMessage.style.display = 'block';
+                // Disable checkout button and customer info fields if cart is empty
+                checkoutBtn.disabled = true;
+                checkoutBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                 document.getElementById('customer-info-fields').classList.add('hidden'); // Hide customer info fields
+            } else {
+                // Hide empty cart message and enable checkout
+                emptyCartMessage.style.display = 'none';
+                // Enable checkout button and show customer info fields if cart is not empty
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                 document.getElementById('customer-info-fields').classList.remove('hidden'); // Show customer info fields
+
+
+                // Loop through cart items and display them
+                cart.forEach(item => {
+                    const cartItemHTML = `
+                    <div class="cart-item flex items-center justify-between p-3 border-b border-gray-200 fade-in">
+                        <div class="flex items-center overflow-hidden mr-2">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded mr-3 flex-shrink-0" onerror="${item.onerror}">
+                            <div class="overflow-hidden">
+                                <p class="font-medium truncate" title="${item.name}">${item.name}</p>
+                                <p class="text-sm text-gray-600">₹${item.price} x ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <button class="quantity-change text-gray-500 hover:text-primary p-1" data-id="${item.id}" data-change="-1" aria-label="Decrease quantity">-</button>
+                            <span class="font-medium w-6 text-center">${item.quantity}</span>
+                            <button class="quantity-change text-gray-500 hover:text-primary p-1" data-id="${item.id}" data-change="1" aria-label="Increase quantity">+</button>
+                            <button class="remove-from-cart text-red-500 hover:text-red-700 ml-2 p-1" data-id="${item.id}" aria-label="Remove item"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    `;
+                    cartItemsContainer.insertAdjacentHTML('beforeend', cartItemHTML);
+                });
+                // Attach listeners to newly added cart item buttons
+                attachCartActionListeners();
+            }
+
+            // Update cart summary (count, subtotal, total)
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountEl.textContent = totalItems;
+
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            cartSubtotalEl.textContent = `₹${subtotal.toFixed(2)}`; // Format to 2 decimal places
+
+            // Calculate delivery fee based on subtotal
+            const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+            deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
+
+            const total = subtotal + currentDeliveryFee;
+            cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+
+            // If logged in, save cart to backend; otherwise, save to local storage
+            if (loggedInUserId) {
+                 saveCartToBackend(); // Save to backend if user is logged in
+            } else {
+                 saveCartToLocalStorage(); // Save to local storage if not logged in
+            }
+
+
+            // Update quantities displayed on product cards
+            updateProductCardQuantities();
+        }
+
+        // Function to update quantity display on product cards
+        function updateProductCardQuantities() {
+            products.forEach(product => {
+                // Find the product card element using its data-id attribute
+                const productCard = productGrid.querySelector(`.product-card[data-product-id="${product.id}"]`);
+                if (productCard) {
+                     const quantityControlsDiv = productCard.querySelector('.quantity-controls');
+                     const cartItem = cart.find(item => item.id === product.id);
+                     const currentQuantity = cartItem ? cartItem.quantity : 0;
+
+                     // Update the HTML based on the current quantity
+                     if (quantityControlsDiv) {
+                         quantityControlsDiv.innerHTML = `
+                             ${currentQuantity === 0
+                                 ? `<button class="add-to-cart-btn" data-id="${product.id}">Add to Cart</button>`
+                                 : `<div class="quantity-buttons">
+                                     <button class="quantity-change-product" data-id="${product.id}" data-change="-1" aria-label="Decrease quantity">-</button>
+                                     <span class="product-quantity">${currentQuantity}</span>
+                                     <button class="quantity-change-product" data-id="${product.id}" data-change="1" aria-label="Increase quantity">+</button>
+                                 </div>`
+                             }
+                         `;
+                     }
+                }
+            });
+             // Re-attach listeners to the updated product card buttons
+             attachAddToCartListeners();
+        }
+
+
+        function changeQuantity(productId, change) {
+            const cartItemIndex = cart.findIndex(item => item.id === productId);
+            if (cartItemIndex === -1) return; // Exit if item not in cart
+
+            cart[cartItemIndex].quantity += change; // Adjust quantity
+
+            if (cart[cartItemIndex].quantity <= 0) {
+                // Remove item if quantity drops to 0 or less
+                const removedItemName = cart[cartItemIndex].name;
+                cart.splice(cartItemIndex, 1);
+                 showToast(`${removedItemName} removed from cart`);
+            } else {
+                 // Show toast for quantity change
+                 const updatedItem = cart[cartItemIndex];
+                 showToast(`${updatedItem.name} quantity updated to ${updatedItem.quantity}`);
+            }
+            updateCartDisplay(); // Refresh cart display (this also saves the cart)
+        }
+
+         // New function to handle quantity change from product cards
+         function changeProductQuantity(productId, change) {
+             const product = products.find(p => p.id === productId);
+             if (!product) return;
+
+             const cartItemIndex = cart.findIndex(item => item.id === productId);
+
+             if (cartItemIndex === -1) {
+                 // Item not in cart, add it
+                 if (change > 0) { // Only add if change is positive
+                     cart.push({ ...product, quantity: change });
+                     showToast(`${product.name} added to cart`);
+                 }
+             } else {
+                 // Item is in cart, change quantity
+                 cart[cartItemIndex].quantity += change;
+                 if (cart[cartItemIndex].quantity <= 0) {
+                     // Remove if quantity is 0 or less
+                     const removedItemName = cart[cartItemIndex].name;
+                     cart.splice(cartItemIndex, 1);
+                     showToast(`${removedItemName} removed from cart`);
+                 } else {
+                      const updatedItem = cart[cartItemIndex];
+                      showToast(`${updatedItem.name} quantity updated to ${updatedItem.quantity}`);
+                 }
+             }
+             updateCartDisplay(); // Update cart display and product card quantities (this also saves the cart)
+         }
+
+
+        function removeFromCart(productId) {
+            const cartItemIndex = cart.findIndex(item => item.id === productId);
+            if (cartItemIndex > -1) {
+                 const removedItemName = cart[cartItemIndex].name;
+                 cart.splice(cartItemIndex, 1); // Remove item from cart array
+                 updateCartDisplay(); // Refresh cart display (this also saves the cart)
+                 showToast(`${removedItemName} removed from cart`); // Show confirmation
+            }
+        }
+
+        // --- Persistent Cart Backend Interaction ---
+
+        // Function to save cart to backend
+        async function saveCartToBackend() {
+            if (!loggedInUserId) {
+                console.warn("Attempted to save cart to backend, but no user is logged in.");
+                return; // Don't save if no user ID
+            }
+
+            console.log("Saving cart to backend for user:", loggedInUserId);
+
+            const backendUrl = `${backendBaseUrl}/cart/update`;
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_id: loggedInUserId, items: cart })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    console.log("Cart saved to backend successfully.");
+                } else {
+                    console.error("Failed to save cart to backend:", result.message || response.statusText);
+                    // Optionally show a toast or message to the user about sync issues
+                }
+
+            } catch (error) {
+                console.error("Error saving cart to backend:", error);
+                // Optionally show a toast or message to the user about sync issues
+            }
+        }
+
+        // Function to load cart from backend
+        async function loadCartFromBackend() {
+            if (!loggedInUserId) {
+                console.log("No user logged in, loading cart from local storage.");
+                loadCartFromLocalStorage(); // Fallback to local storage if not logged in
+                return;
+            }
+
+            console.log("Attempting to load cart from backend for user:", loggedInUserId);
+
+            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    console.log("Cart loaded from backend successfully:", result.cart);
+                    cart = result.cart; // Replace current cart with backend cart
+                    updateCartDisplay(); // Update the display with the loaded cart
+                } else {
+                    console.warn("Failed to load cart from backend or no cart found:", result.message || response.statusText);
+                    // If backend fails or no cart is found, load from local storage as a fallback
+                    console.log("Falling back to local storage cart.");
+                    loadCartFromLocalStorage();
+                    updateCartDisplay();
+                }
+
+            } catch (error) {
+                console.error("Error loading cart from backend:", error);
+                // If fetch fails, load from local storage as a fallback
+                console.log("Falling back to local storage cart due to fetch error.");
+                loadCartFromLocalStorage();
+                updateCartDisplay();
+            }
+        }
+
+
+        // --- Local Storage (Fallback/Guest Cart) ---
+        function saveCartToLocalStorage() {
+            localStorage.setItem('arunKaryanaCart', JSON.stringify(cart));
+            console.log("Cart saved to local storage.");
+        }
+
+        function loadCartFromLocalStorage() {
+            const savedCart = localStorage.getItem('arunKaryanaCart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+                console.log("Cart loaded from local storage.");
+            } else {
+                 cart = []; // Ensure cart is an empty array if nothing in local storage
+                 console.log("No cart found in local storage. Initializing empty cart.");
+            }
+        }
+
+
+        // --- Event Listeners ---
+        function attachAddToCartListeners() {
+             // Use event delegation on the product grid for efficiency
+            productGrid.removeEventListener('click', handleProductGridClick); // Remove old listener if any
+            productGrid.addEventListener('click', handleProductGridClick); // Add new listener
+        }
+
+         function handleProductGridClick(e) {
+            // Check if the clicked element or its parent is a quantity change button or Add to Cart button
+            const quantityButton = e.target.closest('.quantity-change-product');
+            const addToCartButton = e.target.closest('.add-to-cart-btn');
+            const clickedImage = e.target.closest('.product-card img'); // Check if an image was clicked
+
+
+            if (quantityButton) {
+                const productId = parseInt(quantityButton.getAttribute('data-id'));
+                const change = parseInt(quantityButton.getAttribute('data-change'));
+                changeProductQuantity(productId, change); // Call the function
+            } else if (addToCartButton) {
+                 const productId = parseInt(addToCartButton.getAttribute('data-id'));
+                 changeProductQuantity(productId, 1); // Add one to cart
+            }
+             else if (clickedImage) {
+                 // If an image is clicked, show the full image modal
+                 showFullImageModal(clickedImage.src, clickedImage.alt);
+            }
+         }
+
+
+        function attachCartActionListeners() {
+             // Use event delegation on the cart items container
+            cartItemsContainer.removeEventListener('click', handleCartItemsClick); // Remove old listener if any
+            cartItemsContainer.addEventListener('click', handleCartItemsClick); // Add new listener
+        }
+
+        function handleCartItemsClick(e) {
+            const quantityButton = e.target.closest('.quantity-change');
+            const removeButton = e.target.closest('.remove-from-cart');
+
+            if (quantityButton) {
+                const productId = parseInt(quantityButton.getAttribute('data-id'));
+                const change = parseInt(quantityButton.getAttribute('data-change'));
+                changeQuantity(productId, change); // Call the function
+            } else if (removeButton) {
+                const productId = parseInt(removeButton.getAttribute('data-id'));
+                removeFromCart(productId); // Call the function
+            }
+        }
+
+
+        // Cart Modal Toggle Listeners
+        cartBtn.addEventListener('click', () => cartModal.classList.remove('hidden'));
+        closeCartBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
+        // Close cart if clicking the background overlay
+        cartModal.addEventListener('click', (e) => {
+            if (e.target === cartModal) {
+                cartModal.classList.add('hidden');
+            }
+        });
+
+        // Checkout Process Listener - Now submits to backend
+        checkoutBtn.addEventListener('click', async () => { // Added async keyword
+            console.log("Checkout button clicked.");
+
+            // Basic validation for customer details
+            if (!customerNameInput.value || !customerPhoneInput.value || !customerAddressInput.value) {
+                showToast("Please fill in all your details to proceed.");
+                console.log("Customer details missing.");
+                return; // Stop the checkout process
+            }
+
+            if (cart.length > 0) {
+                console.log("Cart is not empty. Proceeding with checkout.");
+
+                // 1. Collect and format order details
+                const orderDetails = cart.map(item => {
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity
+                    };
+                });
+
+                const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+                const total = subtotal + currentDeliveryFee;
+
+                // Include customer details in the order data
+                const orderData = {
+                    customer: {
+                        name: customerNameInput.value,
+                        phone: customerPhoneInput.value,
+                        address: customerAddressInput.value
+                    },
+                    items: orderDetails,
+                    subtotal: subtotal,
+                    deliveryFee: currentDeliveryFee,
+                    total: total,
+                    // Add user_id to order data if logged in
+                    user_id: loggedInUserId || null // Include user ID if available
+                };
+
+                console.log("Order data prepared for backend:", orderData);
+
+
+                // 2. Send data to the Flask Backend's /submit-order endpoint
+                const backendUrl = `${backendBaseUrl}/submit-order`;
+
+                try {
+                    const response = await fetch(backendUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    console.log("Backend response received:", response);
+
+                    const result = await response.json();
+                    console.log("Backend response JSON:", result);
+
+
+                    // 3. Handle the response from the backend
+                    if (response.ok) { // Check if the HTTP status code is in the 2xx range (e.g., 201 Created)
+                        if (result.success) {
+                            console.log('Order submitted successfully to backend.');
+
+                            // --- START: Add this block with extra logging ---
+                            console.log("Checking backend result for order_id...");
+                            if (result.order_id) { // Check if backend returned the order ID
+                                console.log("Backend returned order_id:", result.order_id); // Log the ID from backend
+                                sessionStorage.setItem('lastOrderId', result.order_id); // Store the ID in sessionStorage
+                                console.log("Order ID stored in sessionStorage IMMEDIATELY after setting:", sessionStorage.getItem('lastOrderId')); // Log what was just set
+                            } else {
+                                console.warn("Backend did not return an order_id in the success response.");
+                                console.log("Value of lastOrderId in sessionStorage after backend response (order_id missing):", sessionStorage.getItem('lastOrderId')); // Log value if order_id was missing
+                            }
+                            // --- END: Add this block ---
+
+
+                            // Clear cart and customer fields after successful submission
+                            cart = []; // Clear the cart array
+                            // If logged in, clear the backend cart too
+                            if (loggedInUserId) {
+                                console.log("Attempting to save/clear cart for logged in user:", loggedInUserId); // Log before cart update
+                                // This saveCartToBackend call might be happening too quickly before redirect,
+                                // potentially overwriting sessionStorage if saveCartToBackend also uses sessionStorage for some reason (it shouldn't)
+                                // Or if the loadCartFromBackend on thank you page is interfering.
+                                await saveCartToBackend(); // This function uses loggedInUserId
+                                console.log("Cart update finished."); // Log after cart update
+                            } else {
+                                console.log("Saving/clearing cart for guest user."); // Log before local storage cart update
+                                saveCartToLocalStorage(); // This function uses local storage
+                                console.log("Local storage cart update finished."); // Log after local storage cart update
+                            }
+
+                            // Clear customer input fields (optional, but good practice)
+                            customerNameInput.value = '';
+                            customerPhoneInput.value = '';
+                            customerAddressInput.value = '';
+                            updateCartDisplay(); // Update the cart display to show empty cart
+
+                            console.log("Redirecting to thank-you.html"); // Log before redirect
+                            // Redirect to the thank you page
+                            window.location.href = "/thank-you.html";
+
+                        } else {
+                            // Backend returned success: false (e.g., validation failed on backend)
+                            console.error('Backend reported failure:', result.message);
+                            showToast(result.message || 'Order submission failed.');
+                        }
+                    } else {
+                         // Handle HTTP errors (e.g., 400 Bad Request, 500 Internal Server Error)
+                         console.error('HTTP error during order submission:', response.status, response.statusText);
+                         showToast(result.message || `Order submission failed: ${response.status}`);
+                    }
+
+                } catch (error) {
+                    // Handle network errors (e.g., backend not running, incorrect URL)
+                    console.error('Error during order submission fetch:', error);
+                    showToast("An error occurred during order submission. Please try again.");
+                }
+
+            } else {
+                console.log("Cart is empty. Cannot proceed to checkout.");
+                showToast("Your cart is empty."); // Inform the user
+            }
+        });
+
+
+         // --- Toast Notification ---
+         function showToast(message) {
+            const toast = document.createElement('div');
+            // Styling the toast notification
+            toast.className = 'bg-dark text-white px-4 py-2 rounded shadow-lg fade-in flex items-center';
+             toast.innerHTML = `
+                <i class="fas fa-check-circle text-accent mr-2"></i> <span>${message}</span>
+            `;
+            toast.setAttribute('role', 'status'); // Accessibility role
+            toast.setAttribute('aria-live', 'polite'); // Accessibility: announce politely
+
+            toastContainer.appendChild(toast); // Add toast to its container
+
+            // Automatically remove the toast after a delay
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease-out forwards'; // Apply fade out animation
+                // Remove the element from DOM after fade out animation completes
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 2500); // Toast visible for 2.5 seconds
+        }
+
+        // --- Full Image Modal Functions ---
+        function showFullImageModal(imageUrl, altText) {
+            fullImage.src = imageUrl;
+            fullImage.alt = altText;
+            imageModal.classList.remove('hidden');
+            // Use a small timeout to allow the display change before adding visible class for transition
+            setTimeout(() => {
+                imageModal.classList.add('visible');
+            }, 10);
+        }
+
+        function hideFullImageModal() {
+             imageModal.classList.remove('visible');
+             // Use a timeout to allow the fade out transition to complete before hiding
+             setTimeout(() => {
+                imageModal.classList.add('hidden');
+                fullImage.src = ''; // Clear the image source
+                fullImage.alt = ''; // Clear the alt text
+             }, 300); // Match this duration to the CSS transition time
+        }
+
+        // Event listeners for the full image modal
+        closeImageModalBtn.addEventListener('click', hideFullImageModal);
+        // Close modal if clicking the background overlay
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) {
+                hideFullImageModal();
+            }
+        });
+
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', async () => { // Added async here
+            updateAuthLink(); // Update the Login/Logout link on page load
+
+            // Load cart based on login status
+            if (loggedInUserId) {
+                await loadCartFromBackend(); // Load from backend if logged in
+            } else {
+                loadCartFromLocalStorage(); // Load from local storage if not logged in
+            }
+
+            displayProducts(); // Display all products initially
+            // updateCartDisplay() is called by loadCartFromBackend/loadCartFromLocalStorage
+
+            // Ensure the "All Items" button is active on load
+            const allItemsButton = document.querySelector('.category-btn[data-category="all"]');
+            if (allItemsButton) {
+                allItemsButton.classList.add('active', 'bg-primary', 'text-white');
+                allItemsButton.classList.remove('bg-light', 'text-dark');
+            }
+        });
+
+        // Helper function to scroll to an element
+        function scrollToElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Modified filterProductsBySearch to filter the grid and scroll to products section
+        function filterProductsBySearch(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            // Get the currently active category
+            const activeCategoryBtn = document.querySelector('.category-btn.active');
+            const currentCategory = activeCategoryBtn ? activeCategoryBtn.getAttribute('data-category') : 'all';
+
+            // Filter by category first, then by search query
+            const categoryFiltered = (currentCategory === 'all') ? products : products.filter(p => p.category === currentCategory);
+
+            const searchFiltered = lowerCaseQuery
+                ? categoryFiltered.filter(product => product.name.toLowerCase().includes(lowerCaseQuery))
+                : categoryFiltered; // If query is empty, show all products in the current category
+
+            displayProducts(searchFiltered); // Display the search-filtered products
+
+            // Scroll to the products section after filtering
+            scrollToElement('products');
+        }
+
+
+    </script>
+
+</body>
+</html>

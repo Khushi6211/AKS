@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Register - Arun Karyana Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Replicating the Tailwind config from the main page for consistency
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Original Color Palette
+                        primary: '#9C6F44', // Warm Brown
+                        secondary: '#E8C07D', // Light Gold
+                        accent: '#B88B4A', // Deeper Gold/Brown
+                        dark: '#2D2D2D', // Dark Grey
+                        light: '#F8F5F0' // Off-White
+                    },
+                    fontFamily: {
+                        // Keeping the updated typography
+                        heading: ['"Playfair Display"', 'serif'],
+                        body: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F8F5F0; /* Using original light color */
+            color: #2D2D2D; /* Using original dark color */
+        }
+         .logo-container {
+             position: relative;
+             display: inline-block;
+         }
+         /* Decorative rings around the logo */
+         .logo-container::after {
+             content: '';
+             position: absolute;
+             top: -5px;
+             left: -5px;
+             right: -5px;
+             bottom: -5px;
+             border: 2px solid #E8C07D; /* Using original secondary color */
+             border-radius: 50%;
+             z-index: -1;
+             opacity: 0.7;
+         }
+         .logo-container::before {
+             content: '';
+             position: absolute;
+             top: -10px;
+             left: -10px;
+             right: -10px;
+             bottom: -10px;
+             border: 1px dashed #9C6F44; /* Using original primary color */
+             border-radius: 50%;
+             z-index: -2;
+             opacity: 0.4;
+         }
+        /* Underline effect on navigation links */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #9C6F44; /* Using original primary color */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+         /* Fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+         .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+         /* Specific style for cart items on hover */
+        .cart-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Added basic responsive styling adjustments */
+        @media (max-width: 640px) {
+             .cart-modal .max-w-sm {
+                max-width: 100%; /* Full width for cart modal on very small screens */
+            }
+             .cart-modal .right-0 {
+                right: 0;
+                left: 0;
+            }
+             .cart-modal .p-6 {
+                 padding: 1rem; /* Reduce padding */
+             }
+             .cart-item {
+                 flex-direction: column; /* Stack cart item content */
+                 align-items: flex-start;
+             }
+             .cart-item .overflow-hidden {
+                 margin-bottom: 0.5rem;
+             }
+             .cart-item .flex-shrink-0 {
+                 width: 100%; /* Full width for quantity controls */
+                 justify-content: space-between; /* Distribute quantity controls */
+             }
+             .cart-item .ml-2 {
+                 margin-left: 0; /* Remove left margin on remove button */
+             }
+             .footer .grid-cols-1 {
+                 grid-template-columns: 1fr; /* Stack footer columns */
+             }
+             .footer > div {
+                 margin-bottom: 1.5rem; /* Add space between stacked footer sections */
+             }
+             .footer > div:last-child {
+                 margin-bottom: 0;
+             }
+        }
+         @media (min-width: 641px) and (max-width: 768px) {
+             .cart-modal .max-w-sm {
+                max-width: 80%; /* Adjust cart modal width on small tablets */
+             }
+         }
+          @media (min-width: 769px) and (max-width: 1024px) {
+             .cart-modal .max-w-sm {
+                max-width: 60%; /* Adjust cart modal width on larger tablets */
+             }
+         }
+         /* General adjustments for inputs and buttons in modals */
+        #cart-modal input, #cart-modal textarea {
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 1rem; /* py-2 px-4 */
+        }
+         #cart-modal button {
+            font-size: 1rem; /* text-base */
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+         }
+
+         /* Form container styling */
+         .form-container {
+             background-color: #ffffff;
+             border-radius: 8px;
+             padding: 24px;
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+             max-width: 400px; /* Limit form width */
+             margin: 0 auto; /* Center the form */
+         }
+
+         .form-group {
+             margin-bottom: 16px;
+         }
+
+         .form-group label {
+             display: block;
+             color: #2D2D2D;
+             font-weight: 500;
+             margin-bottom: 4px;
+             font-size: 0.9rem;
+         }
+
+         .form-group input[type="text"],
+         .form-group input[type="email"],
+         .form-group input[type="password"],
+         .form-group input[type="tel"] {
+             width: 100%;
+             padding: 10px 12px;
+             border: 1px solid #cccccc;
+             border-radius: 4px;
+             font-size: 1rem;
+             box-sizing: border-box; /* Include padding and border in element's total width and height */
+         }
+
+         .form-group input[type="text"]:focus,
+         .form-group input[type="email"]:focus,
+         .form-group input[type="password"]:focus,
+         .form-group input[type="tel"]:focus {
+             outline: none;
+             border-color: #9C6F44; /* Primary color on focus */
+             box-shadow: 0 0 0 0.1rem rgba(156, 111, 68, 0.25); /* Subtle shadow on focus */
+         }
+
+         .form-message {
+             padding: 12px;
+             margin-bottom: 16px;
+             border-radius: 4px;
+             font-size: 0.9rem;
+             text-align: center;
+         }
+
+         .form-message.success {
+             background-color: #d4edda;
+             color: #155724;
+             border: 1px solid #c3e6cb;
+         }
+
+         .form-message.error {
+             background-color: #f8d7da;
+             color: #721c24;
+             border: 1px solid #f5c6cb;
+         }
+
+         /* Styling for the tab buttons */
+         #show-login-btn, #show-register-btn {
+             border: 1px solid #cccccc;
+             background-color: #f0f0f0; /* Light grey for inactive */
+             color: #555;
+         }
+
+         #show-login-btn.active-tab, #show-register-btn.active-tab {
+             background-color: #9C6F44; /* Primary color for active */
+             color: white;
+             border-color: #9C6F44;
+         }
+
+         #show-login-btn.inactive-tab, #show-register-btn.inactive-tab {
+             background-color: #f0f0f0;
+             color: #555;
+             border-color: #cccccc;
+         }
+
+         #show-login-btn.active-tab {
+             border-right-color: transparent; /* Remove border between active tabs */
+         }
+          #show-register-btn.active-tab {
+             border-left-color: transparent; /* Remove border between active tabs */
+         }
+
+         #show-login-btn {
+             border-radius: 0.375rem 0 0 0.375rem; /* rounded-l-md */
+         }
+         #show-register-btn {
+             border-radius: 0 0.375rem 0.375rem 0; /* rounded-r-md */
+         }
+
+
+    </style>
+</head>
+<body>
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                 <a href="/" class="flex items-center mb-4 md:mb-0 text-dark hover:text-dark transition cursor-pointer">
+                    <div class="logo-container mr-3">
+                        <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                             alt="Arun Karyana Store Logo"
+                             onerror="this.onerror=null; this.src='https://placehold.co/60x60/F8F5F0/9C6F44?text=AK';"
+                             class="rounded-full w-14 h-14 object-cover border-2 border-primary">
+                    </div>
+                    <div>
+                        <h1 class="font-heading text-2xl font-bold">Arun Karyana Store</h1>
+                        <p class="text-xs text-gray-600">Your trusted neighborhood store</p>
+                    </div>
+                </a>
+
+                 <div class="flex-grow"></div> <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="cart-btn" class="text-dark hover:text-accent transition">
+                            <i class="fas fa-shopping-cart text-xl"></i>
+                            <span id="cart-count" class="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                    </div>
+                    <a href="login.html" id="auth-link" class="bg-primary text-white px-4 py-1.5 rounded-md text-sm hover:bg-opacity-90 transition font-medium">Login</a>
+                </div>
+            </div>
+            <nav class="mt-3">
+                <ul class="flex space-x-6 overflow-x-auto pb-2 scrollbar-hide">
+                    <li><a href="/" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Home</a></li>
+                    <li><a href="/#products" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Products</a></li>
+                    <li><a href="/#offers" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Offers</a></li>
+                    <li><a href="/#about" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">About Us</a></li>
+                    <li><a href="/#contact" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Contact</a></li>
+                    <li><a href="order-history.html" id="order-history-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">Order History</a></li>
+                    <li><a href="profile.html" id="profile-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">My Profile</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-12">
+        <div class="text-center mb-8">
+            <h2 class="font-heading text-3xl font-bold mb-2">Account Access</h2>
+            <div class="w-20 h-1 bg-primary mx-auto"></div>
+        </div>
+
+        <div class="form-container">
+            <div class="flex justify-center mb-6">
+                <button id="show-login-btn" class="px-4 py-2 mr-2 rounded-md font-medium transition">Login</button>
+                <button id="show-register-btn" class="px-4 py-2 ml-2 rounded-md font-medium transition">Register</button>
+            </div>
+
+            <div id="login-message" class="form-message hidden"></div>
+            <div id="register-message" class="form-message hidden"></div>
+
+            <form id="login-form" class="space-y-4">
+                <div class="form-group">
+                    <label for="login-email-phone" class="block text-gray-700 mb-1 text-sm font-medium">Email or Phone:</label>
+                    <input type="text" id="login-email-phone" name="email_phone" required autocomplete="username" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                <div class="form-group">
+                    <label for="login-password" class="block text-gray-700 mb-1 text-sm font-medium">Password:</label>
+                    <input type="password" id="login-password" name="password" required autocomplete="current-password" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-primary text-white py-2 rounded-md font-medium hover:bg-opacity-90 transition">Login</button>
+                </div>
+            </form>
+
+            <form id="register-form" class="space-y-4 hidden">
+                 <div class="form-group">
+                    <label for="register-name" class="block text-gray-700 mb-1 text-sm font-medium">Name:</label>
+                    <input type="text" id="register-name" name="name" required autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                <div class="form-group">
+                    <label for="register-email" class="block text-gray-700 mb-1 text-sm font-medium">Email:</label>
+                    <input type="email" id="register-email" name="email" required autocomplete="email" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                 <div class="form-group">
+                    <label for="register-phone" class="block text-gray-700 mb-1 text-sm font-medium">Phone Number:</label>
+                    <input type="tel" id="register-phone" name="phone" required autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                <div class="form-group">
+                    <label for="register-password" class="block text-gray-700 mb-1 text-sm font-medium">Password:</label>
+                    <input type="password" id="register-password" name="password" required autocomplete="new-password" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm-password" class="block text-gray-700 mb-1 text-sm font-medium">Confirm Password:</label>
+                    <input type="password" id="register-confirm-password" name="confirm_password" required autocomplete="new-password" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-secondary text-dark py-2 rounded-md font-medium hover:bg-opacity-90 transition">Register</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                         <div class="logo-container mr-4">
+                             <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png"
+                                 alt="Arun Karyana Store Logo"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/48x48/2D2D2D/9C6F44?text=AK';"
+                                 class="rounded-full w-12 h-12 object-cover border-2 border-primary">
+                        </div>
+                        <h3 class="font-heading text-xl font-semibold">Arun Karyana Store</h3>
+                    </div>
+                    <p class="text-gray-300 mb-4">Your trusted neighborhood store for all household needs since 1977.</p>
+                    <div class="flex space-x-4">
+                         <a href="#" aria-label="Facebook" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="WhatsApp" class="text-gray-300 hover:text-secondary transition"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-secondary transition">Home</a></li>
+                         <li><a href="/#products" class="text-gray-300 hover:text-secondary transition">Products</a></li>
+                        <li><a href="/#offers" class="text-gray-300 hover:text-secondary transition">Offers</a></li>
+                        <li><a href="/#about" class="text-gray-300 hover:text-secondary transition">About Us</a></li>
+                        <li><a href="/#contact" class="text-gray-300 hover:text-secondary transition">Contact</a></li>
+                         <li><a href="order-history.html" id="order-history-footer-link" class="text-gray-300 hover:text-secondary transition hidden">Order History</a></li>
+                        <li><a href="profile.html" id="profile-footer-link" class="text-gray-300 hover:text-secondary transition hidden">My Profile</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Customer Service</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">FAQs</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Shipping Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Return Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Terms & Conditions</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-heading text-xl font-semibold mb-4">Newsletter</h3>
+                    <p class="text-gray-300 mb-4">Subscribe to get updates on new products and special offers.</p>
+                     <form class="flex">
+                        <input type="email" placeholder="Your Email" aria-label="Newsletter Email" class="px-4 py-2 rounded-l focus:outline-none text-dark w-full">
+                        <button type="submit" aria-label="Subscribe to Newsletter" class="bg-primary px-4 py-2 rounded-r hover:bg-opacity-90 transition"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                    <div class="mt-4">
+                        <h4 class="font-medium mb-2">Download Our App</h4>
+                        <div class="flex space-x-2">
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-google-play mr-1"></i> Play Store
+                            </a>
+                            <a href="#" class="bg-black text-white px-3 py-1.5 rounded text-sm flex items-center">
+                                <i class="fab fa-apple mr-1"></i> App Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2025 Arun Karyana Store. All rights reserved.</p>
+                <p class="mt-2 text-sm">Designed with <i class="fas fa-heart text-red-500"></i> for the Barara community</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="cart-heading">
+        <div class="absolute right-0 top-0 h-full w-full max-w-sm sm:max-w-md md:max-w-lg bg-white shadow-lg overflow-y-auto">
+            <div class="p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="cart-heading" class="font-heading text-2xl font-bold">Your Cart</h2>
+                    <button id="close-cart" aria-label="Close Cart" class="text-gray-500 hover:text-primary">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="cart-items" class="flex-grow space-y-4 mb-6 min-h-[100px] overflow-y-auto">
+                    <p id="empty-cart-message" class="text-center text-gray-500 py-8">Your cart is empty</p>
+                </div>
+
+                 <div id="customer-info-fields" class="space-y-4 mb-6 hidden">
+                     <h3 class="font-semibold text-lg">Your Details</h3>
+                     <div>
+                        <label for="customer_name" class="block text-gray-700 mb-1 text-sm">Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="customer_name" name="customer_name" form="new_order_form" required placeholder="Enter your full name" autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="customer_phone" class="block text-gray-700 mb-1 text-sm">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="customer_phone" name="customer_phone" form="new_order_form" required placeholder="Enter your phone number" autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
+                    </div>
+                     <div>
+                        <label for="customer_address" class="block text-gray-700 mb-1 text-sm">Delivery Address <span class="text-red-500">*</span></label>
+                        <textarea id="customer_address" name="customer_address" form="new_order_form" required placeholder="Enter your delivery address" rows="3" autocomplete="street-address" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm"></textarea>
+                    </div>
+                </div>
+
+
+                <div class="border-t border-gray-200 pt-4 mt-auto">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-medium">Subtotal:</span>
+                        <span id="cart-subtotal" class="font-medium">₹0</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Delivery Charges:</span>
+                        <span id="delivery-charges">₹40</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold mb-4">
+                        <span>Total:</span>
+                        <span id="cart-total">₹40</span>
+                    </div>
+                     <button id="checkout-btn" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed hidden" disabled>Proceed to Checkout</button>
+                     <a href="/" class="w-full bg-primary text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition text-center inline-block hidden">Proceed to Checkout (on Home Page)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+
+    <script>
+        // Your Replit backend URL (replace with your actual URL)
+        const backendBaseUrl = 'https://18226f98-78e8-4b6f-acb0-539aa6643784-00-dn7iak79e1lu.pike.repl.co'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+
+        // Get the logged-in user ID from local storage (Needed for updateAuthLink)
+        let loggedInUserId = localStorage.getItem('loggedInUserId');
+
+        // DOM Elements for Auth Forms
+        const showLoginBtn = document.getElementById('show-login-btn');
+        const showRegisterBtn = document.getElementById('show-register-btn');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginMessageDiv = document.getElementById('login-message');
+        const registerMessageDiv = document.getElementById('register-message');
+
+        // Cart DOM Elements (Needed for updateAuthLink and potential future cart display)
+        const cartBtn = document.getElementById('cart-btn');
+        const cartCountEl = document.getElementById('cart-count');
+        const authLink = document.getElementById('auth-link');
+        const orderHistoryNavLink = document.getElementById('order-history-nav-link');
+        const orderHistoryFooterLink = document.getElementById('order-history-footer-link');
+        const profileNavLink = document.getElementById('profile-nav-link');
+        const profileFooterLink = document.getElementById('profile-footer-link');
+
+        // Cart Modal Elements (Needed to allow opening the modal, even if empty)
+        const cartModal = document.getElementById('cart-modal');
+        const closeCartBtn = document.getElementById('close-cart');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const emptyCartMessage = document.getElementById('empty-cart-message');
+        const cartSubtotalEl = document.getElementById('cart-subtotal');
+        const deliveryChargesEl = document.getElementById('delivery-charges');
+        const cartTotalEl = document.getElementById('cart-total');
+
+
+        // Function to show a specific form and hide the other
+        function showForm(formElement) {
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            loginMessageDiv.classList.add('hidden'); // Hide messages when switching forms
+            registerMessageDiv.classList.add('hidden');
+
+            formElement.classList.remove('hidden');
+
+            // Update button styles
+            if (formElement === loginForm) {
+                showLoginBtn.classList.add('active-tab');
+                showLoginBtn.classList.remove('inactive-tab');
+                showRegisterBtn.classList.add('inactive-tab');
+                showRegisterBtn.classList.remove('active-tab');
+            } else {
+                showRegisterBtn.classList.add('active-tab');
+                showRegisterBtn.classList.remove('inactive-tab');
+                showLoginBtn.classList.add('inactive-tab');
+                showLoginBtn.classList.remove('active-tab');
+            }
+        }
+
+        // Helper function to show login form
+        function showLoginForm() {
+            showForm(loginForm);
+        }
+
+        // Helper function to show register form
+        function showRegisterForm() {
+            showForm(registerForm);
+        }
+
+        // Function to show messages (success/error)
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = `form-message ${type}`; // Apply success or error class
+            element.classList.remove('hidden');
+        }
+
+
+        // --- Authentication Link Display (Copied from index.html) ---
+        function updateAuthLink() {
+            if (loggedInUserId) {
+                authLink.textContent = 'Logout';
+                authLink.href = '#';
+                // No login/logout event listeners needed on this page
+                // authLink.removeEventListener('click', handleLoginLinkClick);
+                // authLink.addEventListener('click', handleLogoutLinkClick);
+
+                if (orderHistoryNavLink) orderHistoryNavLink.classList.remove('hidden');
+                if (orderHistoryFooterLink) orderHistoryFooterLink.classList.remove('hidden');
+                if (profileNavLink) profileNavLink.classList.remove('hidden');
+                if (profileFooterLink) profileFooterLink.classList.remove('hidden');
+
+            } else {
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html';
+                // No login/logout event listeners needed on this page
+                // authLink.removeEventListener('click', handleLogoutLinkClick);
+                // authLink.addEventListener('click', handleLoginLinkClick);
+
+                 if (orderHistoryNavLink) orderHistoryNavLink.classList.add('hidden');
+                 if (orderHistoryFooterLink) orderHistoryFooterLink.classList.add('hidden');
+                 if (profileNavLink) profileNavLink.classList.add('hidden');
+                 if (profileFooterLink) profileFooterLink.classList.add('hidden');
+            }
+        }
+        // Note: handleLogoutLinkClick and handleLoginLinkClick are not needed on this page
+
+
+        // --- Cart Functionality (Simplified for Login page) ---
+        // Only need to load the cart count, no modal interaction or saving needed
+        let cart = []; // Initialize empty cart array
+
+        // Function to load cart from backend (Simplified)
+        async function loadCartFromBackend() {
+            if (!loggedInUserId) {
+                console.log("No user logged in, cannot load cart count from backend.");
+                loadCartFromLocalStorage(); // Load count from local storage if available
+                return;
+            }
+            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    console.log("Cart loaded from backend successfully for count display:", result.cart);
+                    cart = result.cart; // Update the cart array (needed for count calculation)
+                    updateCartCountDisplay(); // Update only the count
+                } else {
+                    console.warn("Failed to load cart from backend for count display:", result.message || response.statusText);
+                    console.log("Falling back to local storage cart for count display.");
+                    loadCartFromLocalStorage();
+                    updateCartCountDisplay();
+                }
+            } catch (error) {
+                console.error("Error loading cart from backend for count display:", error);
+                console.log("Falling back to local storage cart for count display due to fetch error.");
+                loadCartFromLocalStorage();
+                updateCartCountDisplay();
+            }
+        }
+
+         // Function to load cart from local storage (Simplified)
+         function loadCartFromLocalStorage() {
+             const savedCart = localStorage.getItem('arunKaryanaCart');
+             if (savedCart) {
+                 cart = JSON.parse(savedCart);
+                 console.log("Cart loaded from local storage for count display.");
+             } else {
+                  cart = [];
+                  console.log("No cart found in local storage. Initializing empty cart for count display.");
+             }
+         }
+
+        // Function to update *only* the cart count display
+        function updateCartCountDisplay() {
+             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+             cartCountEl.textContent = totalItems;
+             console.log("Cart count updated to:", totalItems);
+        }
+
+        // No need for saveCartToBackend or saveCartToLocalStorage on this page
+
+        // Cart Modal Toggle Listeners (Still needed to allow opening the modal, even if empty)
+        // These declarations were previously duplicated and are now correctly moved to the top of the script.
+        // const cartModal = document.getElementById('cart-modal');
+        // const closeCartBtn = document.getElementById('close-cart');
+        // const cartItemsContainer = document.getElementById('cart-items');
+        // const emptyCartMessage = document.getElementById('empty-cart-message');
+        // const cartSubtotalEl = document.getElementById('cart-subtotal');
+        // const deliveryChargesEl = document.getElementById('delivery-charges');
+        // const cartTotalEl = document.getElementById('cart-total');
+
+
+        cartBtn.addEventListener('click', () => {
+            // When cart button is clicked, update the modal content based on the current 'cart' array
+            updateCartModalContent(); // New function to populate modal
+            cartModal.classList.remove('hidden');
+        });
+
+        closeCartBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
+        // Close cart if clicking the background overlay
+        cartModal.addEventListener('click', (e) => {
+            if (e.target === cartModal) {
+                cartModal.classList.add('hidden');
+            }
+        });
+
+         // New function to populate the cart modal content
+         function updateCartModalContent() {
+             cartItemsContainer.innerHTML = ''; // Clear current cart items
+
+             if (cart.length === 0) {
+                 emptyCartMessage.style.display = 'block';
+             } else {
+                 emptyCartMessage.style.display = 'none';
+
+                 cart.forEach(item => {
+                     const cartItemHTML = `
+                     <div class="cart-item flex items-center justify-between p-3 border-b border-gray-200">
+                         <div class="flex items-center overflow-hidden mr-2">
+                             <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded mr-3 flex-shrink-0" onerror="${item.onerror}">
+                             <div class="overflow-hidden">
+                                 <p class="font-medium truncate" title="${item.name}">${item.name}</p>
+                                 <p class="text-sm text-gray-600">₹${item.price} x ${item.quantity}</p>
+                             </div>
+                         </div>
+                         <div class="flex items-center space-x-2 flex-shrink-0 text-gray-500">
+                             <span>Qty: ${item.quantity}</span>
+                         </div>
+                     </div>
+                     `;
+                     cartItemsContainer.insertAdjacentHTML('beforeend', cartItemHTML);
+                 });
+                 // No need to attach action listeners here as actions are disabled
+             }
+
+             // Update cart summary in the modal
+             const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+             cartSubtotalEl.textContent = `₹${subtotal.toFixed(2)}`;
+
+             const deliveryThreshold = 500; // Define threshold again if not globally accessible
+             const deliveryFee = 40; // Define fee again if not globally accessible
+             const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+             deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
+
+             const total = subtotal + currentDeliveryFee;
+             cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+         }
+
+
+        // Event listeners for form tabs
+        showLoginBtn.addEventListener('click', showLoginForm);
+        showRegisterBtn.addEventListener('click', showRegisterForm);
+
+        // Event listener for Login Form Submission
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            // Clear previous messages
+            loginMessageDiv.classList.add('hidden');
+            registerMessageDiv.classList.add('hidden');
+
+            const email = document.getElementById('login-email-phone').value; // Changed to login-email-phone
+            const password = document.getElementById('login-password').value;
+
+            // Basic validation
+            if (!email || !password) {
+                showMessage(loginMessageDiv, "Please enter both email/phone and password.", "error");
+                return;
+            }
+
+            const backendUrl = `${backendBaseUrl}/login`; // Your backend login endpoint
+            console.log("Attempting login with URL:", backendUrl); // Debug log
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email_phone: email, password: password }) // Changed to email_phone
+                });
+
+                console.log("Login fetch response received:", response); // Debug log
+                const result = await response.json();
+                console.log("Login response JSON:", result); // Debug log
+
+
+                if (response.ok) { // Check if the HTTP status code is in the 2xx range
+                    if (result.success) {
+                        showMessage(loginMessageDiv, result.message, "success");
+
+                        // Store the user ID in local storage
+                        localStorage.setItem('loggedInUserId', result.user_id);
+                        console.log("User ID stored in localStorage:", result.user_id);
+
+                        // Redirect the user to the main page after successful login
+                        console.log("Login successful, redirecting to /"); // Debug log
+                        window.location.href = "/"; // Redirect to index.html
+
+                         loginForm.reset(); // Clear the form fields after successful login
+
+                    } else {
+                        // Backend returned success: false (e.g., invalid credentials)
+                        console.error("Login failed:", result.message); // Debug log
+                        showMessage(loginMessageDiv, result.message, "error");
+                    }
+                } else {
+                     // Handle HTTP errors (e.g., 401 Unauthorized, 500 Internal Server Error)
+                     // The backend sends error messages in the JSON response
+                     console.error("Login HTTP error:", response.status, response.statusText, result.message); // Debug log
+                     showMessage(loginMessageDiv, result.message || `Error: ${response.status}`, "error");
+                }
+
+            } catch (error) {
+                // Handle network errors (e.g., backend not running, incorrect URL)
+                console.error('Error during login fetch:', error); // Debug log
+                showMessage(loginMessageDiv, "An error occurred during login. Please try again.", "error");
+            }
+        });
+
+        // Event listener for Register Form Submission
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            // Clear previous messages
+            loginMessageDiv.classList.add('hidden');
+            registerMessageDiv.classList.add('hidden');
+
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const phone = document.getElementById('register-phone').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+
+            // Basic validation
+             if (!name || !email || !phone || !password || !confirmPassword) {
+                 showMessage(registerMessageDiv, "Please fill in all fields.", "error");
+                 return;
+             }
+             if (password !== confirmPassword) {
+                showMessage(registerMessageDiv, "Password and Confirm Password do not match.", "error");
+                return;
+            }
+            if (password.length < 6) {
+                showMessage(registerMessageDiv, "Password must be at least 6 characters long.", "error");
+                return;
+            }
+
+
+            const backendUrl = `${backendBaseUrl}/register`; // Your backend register endpoint
+            console.log("Attempting registration with URL:", backendUrl); // Debug log
+
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, phone, password, confirm_password: confirmPassword })
+                });
+
+                console.log("Register fetch response received:", response); // Debug log
+                const result = await response.json();
+                console.log("Register response JSON:", result); // Debug log
+
+
+                if (response.ok) { // Check if the HTTP status code is in the 2xx range (e.g., 201 Created)
+                    if (result.success) {
+                        showMessage(registerMessageDiv, result.message, "success");
+                        registerForm.reset(); // Clear the form fields after successful registration
+                        // Optionally switch back to login form after successful registration
+                        // showLoginForm();
+                        console.log("Registration successful."); // Debug log
+                    } else {
+                        // Backend returned success: false (e.g., email already exists)
+                        console.error("Registration failed:", result.message); // Debug log
+                        showMessage(registerMessageDiv, result.message, "error");
+                    }
+                } else {
+                    // Handle HTTP errors (e.g., 400 Bad Request, 500 Internal Server Error)
+                    // The backend sends error messages in the JSON response
+                     console.error("Register HTTP error:", response.status, response.statusText, result.message); // Debug log
+                     showMessage(registerMessageDiv, result.message || `Error: ${response.status}`, "error");
+                }
+
+            } catch (error) {
+                // Handle network errors (e.g., backend not running, incorrect URL)
+                console.error('Error during registration fetch:', error); // Debug log
+                showMessage(registerMessageDiv, "An error occurred during registration. Please try again.", "error");
+            }
+        });
+
+
+        // Show the login form by default when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            showLoginForm(); // Show login form initially
+            updateAuthLink(); // Update auth links
+            // Load cart count for display in the header icon
+            // Cart functionality simplified for login page - only load count
+            let cart = []; // Initialize empty cart array for count calculation
+            const savedCart = localStorage.getItem('arunKaryanaCart'); // Check local storage first
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+            }
+            // If logged in, attempt to load from backend to get the latest count
+            if (loggedInUserId) {
+                 loadCartFromBackend(); // This function will update cart[] and call updateCartCountDisplay()
+             } else {
+                 updateCartCountDisplay(); // Just update count from local storage if not logged in
+             }
+        });
+
+
+    </script>
+
+</body>
+</html>
