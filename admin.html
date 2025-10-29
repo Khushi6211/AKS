@@ -421,6 +421,7 @@
             flex-grow: 1; /* Allow span to take available space */
         }
     </style>
+    <script src="config.js"></script>
 </head>
 <body>
     <header class="bg-white shadow-sm sticky top-0 z-40">
@@ -997,7 +998,7 @@
         const deliveryFee = 40; // Delivery fee if below threshold
 
         // Your Replit backend URL (replace with your actual URL)
-        const backendBaseUrl = 'https://18226f98-78e8-4b6f-acb0-539aa6643784-00-dn7iak79e1lu.pike.repl.co'; // Your Replit backend URL
+        const backendBaseUrl = window.APP_CONFIG.BACKEND_URL; // Your Replit backend URL
 
         // Get the logged-in user ID from local storage
         let loggedInUserId = localStorage.getItem('loggedInUserId');

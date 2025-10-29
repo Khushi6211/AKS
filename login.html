@@ -248,6 +248,7 @@
 
 
     </style>
+    <script src="config.js"></script>
 </head>
 <body>
     <header class="bg-white shadow-sm sticky top-0 z-40">
@@ -472,7 +473,7 @@
 
     <script>
         // Your Replit backend URL (replace with your actual URL)
-        const backendBaseUrl = 'https://18226f98-78e8-4b6f-acb0-539aa6643784-00-dn7iak79e1lu.pike.repl.co'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+        const backendBaseUrl = window.APP_CONFIG.BACKEND_URL; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
 
         // Get the logged-in user ID from local storage (Needed for updateAuthLink)
         let loggedInUserId = localStorage.getItem('loggedInUserId');
