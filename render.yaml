@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: arun-karyana-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MONGO_USERNAME
+        sync: false
+      - key: MONGO_PASSWORD
+        sync: false
+      - key: MONGO_CLUSTER_URI
+        sync: false
+      - key: MONGO_PARAMS
+        value: "/?retryWrites=true&w=majority&appName=MyStoreCluster"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: "https://arun-karyana-store.netlify.app"
