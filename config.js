@@ -12,7 +12,7 @@
 
 const CONFIG = {
     // ⚠️ REPLACE THIS WITH YOUR RENDER.COM URL AFTER DEPLOYMENT
-    BACKEND_URL: 'https://YOUR-APP-NAME.onrender.com',
+    BACKEND_URL: 'https://arun-karyana-backend.onrender.com',
     
     // Other configuration
     DELIVERY_FEE: 40,
