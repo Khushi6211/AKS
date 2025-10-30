@@ -317,7 +317,7 @@
 
     <script>
         // Your Replit backend URL (replace with your actual URL)
-        const backendBaseUrl = window.APP_CONFIG.BACKEND_URL; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+        const backendBaseUrl = window.APP_CONFIG?.BACKEND_URL || 'https://arun-karyana-backend.onrender.com'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
 
         // DOM Elements
         const loadingMessage = document.getElementById('loading-message');

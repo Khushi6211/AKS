@@ -468,7 +468,7 @@
         const deliveryFee = 40; // Delivery fee if below threshold
 
         // Your Replit backend URL (replace with your actual URL)
-        const backendBaseUrl = window.APP_CONFIG.BACKEND_URL; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+        const backendBaseUrl = window.APP_CONFIG?.BACKEND_URL || 'https://arun-karyana-backend.onrender.com'; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
 
         // Get the logged-in user ID from local storage
         let loggedInUserId = localStorage.getItem('loggedInUserId');

@@ -396,7 +396,7 @@
     </div>
 
     <script>
-        const backendBaseUrl = window.APP_CONFIG.BACKEND_URL;
+        const backendBaseUrl = window.APP_CONFIG?.BACKEND_URL || 'https://arun-karyana-backend.onrender.com';
         let currentUserId = null;
         let allOrders = [];
         let currentImageData = null;

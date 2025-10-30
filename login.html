@@ -472,8 +472,8 @@
 
 
     <script>
-        // Your Replit backend URL (replace with your actual URL)
-        const backendBaseUrl = window.APP_CONFIG.BACKEND_URL; // !!! REPLACE WITH YOUR ACTUAL REPLIT URL !!!
+        // Backend URL - Updated for Render.com deployment
+        const backendBaseUrl = window.APP_CONFIG?.BACKEND_URL || 'https://arun-karyana-backend.onrender.com';
 
         // Get the logged-in user ID from local storage (Needed for updateAuthLink)
         let loggedInUserId = localStorage.getItem('loggedInUserId');
