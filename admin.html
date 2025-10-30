@@ -403,7 +403,7 @@
 
         // Check authentication on page load
         window.addEventListener('DOMContentLoaded', () => {
-            currentUserId = localStorage.getItem('userId');
+            currentUserId = localStorage.getItem('loggedInUserId');
             if (!currentUserId) {
                 alert('Please login first!');
                 window.location.href = 'login.html';
