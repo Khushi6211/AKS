@@ -743,9 +743,12 @@
                     if (result.success) {
                         showMessage(loginMessageDiv, result.message, "success");
 
-                        // Store the user ID in local storage
+                        // Store the user ID and role in local storage
                         localStorage.setItem('loggedInUserId', result.user_id);
+                        localStorage.setItem('userRole', result.role);
+                        localStorage.setItem('userName', result.name);
                         console.log("User ID stored in localStorage:", result.user_id);
+                        console.log("User role stored in localStorage:", result.role);
 
                         // Redirect the user to the main page after successful login
                         console.log("Login successful, redirecting to /"); // Debug log

@@ -466,6 +466,7 @@
                     <li><a href="#contact" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap">Contact</a></li>
                     <li><a href="order-history.html" id="order-history-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">Order History</a></li>
                     <li><a href="profile.html" id="profile-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">My Profile</a></li>
+                    <li><a href="admin.html" id="admin-nav-link" class="nav-link text-dark hover:text-primary font-medium text-sm whitespace-nowrap hidden">Admin Dashboard</a></li>
                 </ul>
             </nav>
         </div>
@@ -994,6 +995,8 @@
         // Get the new profile navigation links
         const profileNavLink = document.getElementById('profile-nav-link');
         const profileFooterLink = document.getElementById('profile-footer-link');
+        // Get the admin dashboard link
+        const adminNavLink = document.getElementById('admin-nav-link');
 
 
         let cart = []; // Initialize empty cart array
@@ -1022,6 +1025,11 @@
                 if (profileNavLink) profileNavLink.classList.remove('hidden'); // Show profile link
                 if (profileFooterLink) profileFooterLink.classList.remove('hidden'); // Show profile link
 
+                // Show Admin Dashboard link only for admin users
+                const userRole = localStorage.getItem('userRole');
+                if (userRole === 'admin' && adminNavLink) {
+                    adminNavLink.classList.remove('hidden');
+                }
 
             } else {
                 // If not logged in, show Login
@@ -1035,21 +1043,24 @@
                  if (orderHistoryFooterLink) orderHistoryFooterLink.classList.add('hidden');
                  if (profileNavLink) profileNavLink.classList.add('hidden'); // Hide profile link
                  if (profileFooterLink) profileFooterLink.classList.add('hidden'); // Hide profile link
+                 if (adminNavLink) adminNavLink.classList.add('hidden'); // Hide admin link
             }
         }
 
         // Handle Logout Link Click
         function handleLogoutLinkClick(event) {
             event.preventDefault(); // Prevent default link behavior
-            // Clear user ID from local storage
+            // Clear user ID and role from local storage
             localStorage.removeItem('loggedInUserId');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
             loggedInUserId = null; // Update the variable
             cart = []; // Clear the local cart on logout (optional, but common)
             saveCartToLocalStorage(); // Clear local storage cart
             updateCartDisplay(); // Update the cart display
             updateAuthLink(); // Update the link to show "Login"
             showToast("Logged out successfully.");
-            console.log("User logged out. User ID removed from localStorage.");
+            console.log("User logged out. User ID and role removed from localStorage.");
         }
 
          // Handle Login Link Click (primarily for removing logout listener if needed)
