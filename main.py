@@ -111,6 +111,7 @@ db = None
 users_collection = None
 products_collection = None
 orders_collection = None
+offers_collection = None
 carts_collection = None
 
 def initialize_database():
@@ -128,6 +129,7 @@ def initialize_database():
         users_collection = db.users
         products_collection = db.products
         orders_collection = db.orders
+        offers_collection = db.offers
         carts_collection = db.carts
         
         # Test connection
@@ -1297,6 +1299,238 @@ def upload_product_image():
         
     except Exception as e:
         logger.error(f"❌ Error uploading image: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== OFFERS/PROMOTIONS MANAGEMENT ==========
+
+# Get All Offers (Public)
+@app.route('/offers', methods=['GET'])
+def get_offers():
+    """Get all active offers (public endpoint)"""
+    try:
+        # Only return active offers
+        offers = list(offers_collection.find({"active": True}))
+        
+        for offer in offers:
+            offer['_id'] = str(offer['_id'])
+            # Convert dates to ISO format
+            if 'start_date' in offer:
+                offer['start_date'] = offer['start_date'].isoformat() if isinstance(offer['start_date'], datetime.datetime) else offer['start_date']
+            if 'end_date' in offer:
+                offer['end_date'] = offer['end_date'].isoformat() if isinstance(offer['end_date'], datetime.datetime) else offer['end_date']
+        
+        return jsonify({"success": True, "offers": offers}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching offers: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Get All Offers (Including Inactive)
+@app.route('/admin/offers', methods=['GET'])
+@admin_required
+def get_all_offers_admin():
+    """Get all offers including inactive ones (admin only)"""
+    try:
+        offers = list(offers_collection.find({}))
+        
+        for offer in offers:
+            offer['_id'] = str(offer['_id'])
+            # Convert dates to ISO format
+            if 'start_date' in offer:
+                offer['start_date'] = offer['start_date'].isoformat() if isinstance(offer['start_date'], datetime.datetime) else offer['start_date']
+            if 'end_date' in offer:
+                offer['end_date'] = offer['end_date'].isoformat() if isinstance(offer['end_date'], datetime.datetime) else offer['end_date']
+            if 'created_at' in offer:
+                offer['created_at'] = offer['created_at'].isoformat() if isinstance(offer['created_at'], datetime.datetime) else offer['created_at']
+        
+        return jsonify({"success": True, "offers": offers}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching offers: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Add New Offer
+@app.route('/admin/offers/add', methods=['POST'])
+@admin_required
+@limiter.limit("20 per minute")
+def add_offer():
+    """Add new offer (admin only)"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['title', 'description', 'discount_type', 'discount_value']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
+        
+        # Validate discount type
+        if data['discount_type'] not in ['percentage', 'fixed']:
+            return jsonify({"success": False, "message": "Invalid discount_type. Must be 'percentage' or 'fixed'."}), 400
+        
+        # Parse dates if provided
+        start_date = None
+        end_date = None
+        if data.get('start_date'):
+            try:
+                start_date = datetime.datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
+            except:
+                start_date = datetime.datetime.utcnow()
+        
+        if data.get('end_date'):
+            try:
+                end_date = datetime.datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
+            except:
+                pass
+        
+        # Create offer
+        new_offer = {
+            "title": sanitize_string(data['title']),
+            "description": sanitize_string(data['description']),
+            "discount_type": data['discount_type'],
+            "discount_value": float(data['discount_value']),
+            "code": data.get('code', '').upper() if data.get('code') else None,
+            "min_purchase": float(data.get('min_purchase', 0)),
+            "max_discount": float(data.get('max_discount', 0)) if data.get('max_discount') else None,
+            "start_date": start_date or datetime.datetime.utcnow(),
+            "end_date": end_date,
+            "active": data.get('active', True),
+            "image": data.get('image', ''),
+            "created_at": datetime.datetime.utcnow(),
+            "updated_at": datetime.datetime.utcnow()
+        }
+        
+        result = offers_collection.insert_one(new_offer)
+        
+        logger.info(f"✅ Offer added: {new_offer['title']}")
+        return jsonify({
+            "success": True,
+            "message": "Offer added successfully!",
+            "offer_id": str(result.inserted_id)
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"❌ Error adding offer: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Update Offer
+@app.route('/admin/offers/update/<offer_id>', methods=['PUT'])
+@admin_required
+@limiter.limit("20 per minute")
+def update_offer(offer_id):
+    """Update offer (admin only)"""
+    try:
+        data = request.get_json()
+        
+        # Validate offer exists
+        try:
+            query = {"_id": ObjectId(offer_id)}
+        except:
+            return jsonify({"success": False, "message": "Invalid offer ID."}), 400
+        
+        # Build update fields
+        update_fields = {"updated_at": datetime.datetime.utcnow()}
+        
+        if 'title' in data:
+            update_fields['title'] = sanitize_string(data['title'])
+        if 'description' in data:
+            update_fields['description'] = sanitize_string(data['description'])
+        if 'discount_type' in data:
+            if data['discount_type'] not in ['percentage', 'fixed']:
+                return jsonify({"success": False, "message": "Invalid discount_type."}), 400
+            update_fields['discount_type'] = data['discount_type']
+        if 'discount_value' in data:
+            update_fields['discount_value'] = float(data['discount_value'])
+        if 'code' in data:
+            update_fields['code'] = data['code'].upper() if data['code'] else None
+        if 'min_purchase' in data:
+            update_fields['min_purchase'] = float(data['min_purchase'])
+        if 'max_discount' in data:
+            update_fields['max_discount'] = float(data['max_discount']) if data['max_discount'] else None
+        if 'active' in data:
+            update_fields['active'] = data['active']
+        if 'image' in data:
+            update_fields['image'] = data['image']
+        
+        # Handle dates
+        if 'start_date' in data and data['start_date']:
+            try:
+                update_fields['start_date'] = datetime.datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
+            except:
+                pass
+        
+        if 'end_date' in data and data['end_date']:
+            try:
+                update_fields['end_date'] = datetime.datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
+            except:
+                pass
+        
+        result = offers_collection.update_one(query, {"$set": update_fields})
+        
+        if result.matched_count > 0:
+            logger.info(f"✅ Offer updated: {offer_id}")
+            return jsonify({"success": True, "message": "Offer updated successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Offer not found."}), 404
+        
+    except Exception as e:
+        logger.error(f"❌ Error updating offer: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Delete Offer
+@app.route('/admin/offers/delete/<offer_id>', methods=['DELETE'])
+@admin_required
+@limiter.limit("20 per minute")
+def delete_offer(offer_id):
+    """Delete offer (admin only)"""
+    try:
+        try:
+            query = {"_id": ObjectId(offer_id)}
+        except:
+            return jsonify({"success": False, "message": "Invalid offer ID."}), 400
+        
+        result = offers_collection.delete_one(query)
+        
+        if result.deleted_count > 0:
+            logger.info(f"✅ Offer deleted: {offer_id}")
+            return jsonify({"success": True, "message": "Offer deleted successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Offer not found."}), 404
+        
+    except Exception as e:
+        logger.error(f"❌ Error deleting offer: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Toggle Offer Status
+@app.route('/admin/offers/toggle/<offer_id>', methods=['PUT'])
+@admin_required
+@limiter.limit("30 per minute")
+def toggle_offer_status(offer_id):
+    """Toggle offer active/inactive status (admin only)"""
+    try:
+        try:
+            query = {"_id": ObjectId(offer_id)}
+        except:
+            return jsonify({"success": False, "message": "Invalid offer ID."}), 400
+        
+        # Get current offer
+        offer = offers_collection.find_one(query)
+        if not offer:
+            return jsonify({"success": False, "message": "Offer not found."}), 404
+        
+        # Toggle status
+        new_status = not offer.get('active', True)
+        result = offers_collection.update_one(query, {"$set": {"active": new_status, "updated_at": datetime.datetime.utcnow()}})
+        
+        if result.matched_count > 0:
+            status_text = "activated" if new_status else "deactivated"
+            logger.info(f"✅ Offer {status_text}: {offer_id}")
+            return jsonify({"success": True, "message": f"Offer {status_text} successfully!", "active": new_status}), 200
+        else:
+            return jsonify({"success": False, "message": "Failed to update offer status."}), 500
+        
+    except Exception as e:
+        logger.error(f"❌ Error toggling offer status: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Admin: Update Order Status
