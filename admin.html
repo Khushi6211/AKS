@@ -169,12 +169,14 @@
                     </div>
                 </div>
 
-                <div class="stat-card-3 rounded-xl shadow-lg p-6 text-white">
+                <div class="stat-card-3 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:shadow-2xl transition" onclick="navigateToLowStock()">
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-sm opacity-80">Total Products</p>
                             <h3 class="text-3xl font-bold mt-2"><span id="stat-products">0</span></h3>
-                            <p class="text-xs mt-2 opacity-70"><span id="stat-low-stock">0</span> low stock</p>
+                            <button id="low-stock-badge" class="mt-2 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full hover:bg-red-600 transition" onclick="event.stopPropagation(); navigateToLowStock();">
+                                <i class="fas fa-exclamation-triangle mr-1"></i><span id="stat-low-stock">0</span> LOW STOCK
+                            </button>
                         </div>
                         <div class="bg-white bg-opacity-20 rounded-full p-3">
                             <i class="fas fa-box text-2xl"></i>
@@ -263,10 +265,18 @@
         <!-- Products Section -->
         <div id="products-section" class="content-section hidden">
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-800">Products Management</h3>
                     <button onclick="showAddProductModal()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
                         <i class="fas fa-plus mr-2"></i>Add Product
+                    </button>
+                </div>
+                <div class="flex gap-3 mb-6">
+                    <button id="filter-all-products" onclick="filterProducts('all')" class="px-4 py-2 bg-purple-600 text-white rounded-lg transition hover:bg-purple-700">
+                        <i class="fas fa-th mr-2"></i>All Products
+                    </button>
+                    <button id="filter-low-stock" onclick="filterProducts('low-stock')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg transition hover:bg-red-100 hover:text-red-700">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Low Stock Only
                     </button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="products-grid">
@@ -492,6 +502,15 @@
                     document.getElementById('stat-low-stock').textContent = stats.low_stock_products;
                     document.getElementById('stat-customers').textContent = stats.total_customers;
                     
+                    // Update low stock badge appearance
+                    const lowStockBadge = document.getElementById('low-stock-badge');
+                    if (stats.low_stock_products > 0) {
+                        lowStockBadge.className = 'mt-2 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full hover:bg-red-600 transition animate-pulse';
+                    } else {
+                        lowStockBadge.className = 'mt-2 px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full';
+                        lowStockBadge.innerHTML = '<i class="fas fa-check-circle mr-1"></i><span id="stat-low-stock">0</span> All Good!';
+                    }
+                    
                     // Display recent orders
                     const tbody = document.getElementById('recent-orders-tbody');
                     if (stats.recent_orders.length === 0) {
@@ -694,7 +713,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    displayProducts(data.products);
+                    allProducts = data.products;
+                    filterProducts(currentFilter); // Apply current filter
                 }
             })
             .catch(error => console.error('Error loading products:', error));
@@ -707,14 +727,23 @@
                 return;
             }
             
-            grid.innerHTML = products.map(product => `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
+            grid.innerHTML = products.map(product => {
+                const stockValue = product.stock || 0;
+                const isLowStock = stockValue < 10;
+                const stockBadgeClass = isLowStock ? 'bg-red-100 text-red-700 border-red-300' : 'bg-green-100 text-green-700 border-green-300';
+                const stockIcon = isLowStock ? 'fa-exclamation-triangle' : 'fa-check-circle';
+                
+                return `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition ${isLowStock ? 'ring-2 ring-red-500' : ''}">
+                    ${isLowStock ? '<div class="bg-red-600 text-white text-xs font-bold px-3 py-1 text-center"><i class="fas fa-exclamation-triangle mr-1"></i>LOW STOCK ALERT</div>' : ''}
                     <img src="${product.image || 'https://via.placeholder.com/300x300?text=No+Image'}" alt="${product.name}" class="w-full h-48 object-cover">
                     <div class="p-4">
                         <h4 class="font-bold text-lg mb-2 truncate">${product.name}</h4>
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-2xl font-bold text-purple-600">₹${product.price}</span>
-                            <span class="text-sm ${product.stock < 10 ? 'text-red-600' : 'text-green-600'}">${product.stock || 0} in stock</span>
+                            <span class="text-sm font-semibold px-2 py-1 rounded border ${stockBadgeClass}">
+                                <i class="fas ${stockIcon} mr-1"></i>${stockValue} in stock
+                            </span>
                         </div>
                         <p class="text-xs text-gray-500 mb-3 capitalize">${product.category}</p>
                         <div class="flex gap-2">
@@ -727,7 +756,45 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
+        }
+
+        // Store all products for filtering
+        let allProducts = [];
+        let currentFilter = 'all';
+
+        // Navigate to Products section and show low stock items
+        function navigateToLowStock() {
+            // Switch to products section
+            document.querySelectorAll('.content-section').forEach(section => section.classList.add('hidden'));
+            document.getElementById('products-section').classList.remove('hidden');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active-nav'));
+            document.querySelector('.nav-item[data-section="products"]').classList.add('active-nav');
+            
+            // Filter to show only low stock
+            filterProducts('low-stock');
+        }
+
+        // Filter products by stock status
+        function filterProducts(filterType) {
+            currentFilter = filterType;
+            
+            // Update button styles
+            const allBtn = document.getElementById('filter-all-products');
+            const lowStockBtn = document.getElementById('filter-low-stock');
+            
+            if (filterType === 'all') {
+                allBtn.className = 'px-4 py-2 bg-purple-600 text-white rounded-lg transition hover:bg-purple-700';
+                lowStockBtn.className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg transition hover:bg-red-100 hover:text-red-700';
+                displayProducts(allProducts);
+            } else if (filterType === 'low-stock') {
+                allBtn.className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg transition hover:bg-purple-100 hover:text-purple-700';
+                lowStockBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg transition hover:bg-red-700';
+                const lowStockProducts = allProducts.filter(p => (p.stock || 0) < 10);
+                displayProducts(lowStockProducts);
+            }
         }
 
         // Show add product modal
