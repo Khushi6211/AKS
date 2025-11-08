@@ -19,6 +19,8 @@ import datetime
 import re
 import jwt
 import logging
+import hashlib
+import secrets
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
@@ -403,6 +405,73 @@ def send_order_status_update_email(order_data, customer_email, new_status):
     
     return send_email(customer_email, subject, html_content)
 
+def send_password_reset_email(user, reset_url):
+    """Send password reset email with secure token link"""
+    subject = "Reset Your Password - Arun Karyana Store"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🔒 Password Reset Request</h1>
+            <p style="margin: 10px 0 0; font-size: 16px;">Arun Karyana Store</p>
+        </div>
+        
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Dear {user.get('name', 'Customer')},</p>
+            
+            <p>We received a request to reset your password for your Arun Karyana Store account.</p>
+            
+            <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                <p style="margin-bottom: 20px; color: #6b7280;">Click the button below to reset your password:</p>
+                <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Reset Password</a>
+            </div>
+            
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #856404; font-size: 14px;">
+                    ⚠️ <strong>Security Notice:</strong> This link will expire in 1 hour. If you didn't request this reset, please ignore this email.
+                </p>
+            </div>
+            
+            <p style="font-size: 14px; color: #6b7280; margin-top: 25px;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <a href="{reset_url}" style="color: #667eea; word-break: break-all;">{reset_url}</a>
+            </p>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 14px;">Need help? Contact us:</p>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">📞 Phone: +91-XXXXXXXXXX</p>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">📍 Railway Road, Barara, Ambala, Haryana 133201</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    plain_content = f"""
+    Password Reset Request - Arun Karyana Store
+    
+    Dear {user.get('name', 'Customer')},
+    
+    We received a request to reset your password. Click the link below to reset your password:
+    
+    {reset_url}
+    
+    This link will expire in 1 hour.
+    
+    If you didn't request this reset, please ignore this email.
+    
+    Thank you,
+    Arun Karyana Store Team
+    """
+    
+    return send_email(user['email'], subject, html_content, plain_content)
+
 # Security decorator for admin routes
 def admin_required(f):
     @wraps(f)
@@ -559,6 +628,136 @@ def login_user():
     except Exception as e:
         logger.error(f"❌ Login error: {e}")
         return jsonify({"success": False, "message": "An error occurred during login."}), 500
+
+# Forgot Password - Request Reset
+@app.route('/forgot-password', methods=['POST'])
+@limiter.limit("3 per hour")  # Strict rate limit for security
+def forgot_password():
+    """Generate password reset token and send email"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
+        
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({"success": False, "message": "Email is required."}), 400
+        
+        # Validate email format
+        if not validate_email(email):
+            return jsonify({"success": False, "message": "Invalid email format."}), 400
+        
+        # Find user by email
+        user = users_collection.find_one({"email": email})
+        
+        # IMPORTANT: Always return success message even if user doesn't exist
+        # This prevents email enumeration attacks
+        if not user:
+            logger.info(f"⚠️ Password reset requested for non-existent email: {email}")
+            return jsonify({
+                "success": True,
+                "message": "If an account with that email exists, you will receive a password reset link shortly."
+            }), 200
+        
+        # Generate secure random token
+        reset_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(reset_token.encode()).hexdigest()
+        
+        # Store token with 1-hour expiry
+        expiry_time = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        users_collection.update_one(
+            {"_id": user['_id']},
+            {
+                "$set": {
+                    "reset_token": token_hash,
+                    "reset_token_expiry": expiry_time
+                }
+            }
+        )
+        
+        # Send reset email
+        reset_url = f"https://arun-karyana.netlify.app/reset-password.html?token={reset_token}"
+        
+        try:
+            send_password_reset_email(user, reset_url)
+            logger.info(f"✅ Password reset email sent to: {email}")
+        except Exception as email_error:
+            logger.error(f"❌ Failed to send reset email: {email_error}")
+            # Continue even if email fails - user won't know if email exists
+        
+        return jsonify({
+            "success": True,
+            "message": "If an account with that email exists, you will receive a password reset link shortly."
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Forgot password error: {e}")
+        return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
+
+# Reset Password - Validate Token and Update Password
+@app.route('/reset-password', methods=['POST'])
+@limiter.limit("5 per hour")
+def reset_password():
+    """Validate reset token and update password"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
+        
+        token = data.get('token', '').strip()
+        new_password = data.get('password', '')
+        
+        if not token or not new_password:
+            return jsonify({"success": False, "message": "Token and password are required."}), 400
+        
+        # Validate password strength
+        if len(new_password) < 8:
+            return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
+        
+        # Hash the token to compare with stored hash
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        
+        # Find user with valid token
+        user = users_collection.find_one({
+            "reset_token": token_hash,
+            "reset_token_expiry": {"$gt": datetime.datetime.utcnow()}
+        })
+        
+        if not user:
+            logger.warning(f"⚠️ Invalid or expired reset token attempt")
+            return jsonify({
+                "success": False,
+                "message": "Invalid or expired reset link. Please request a new one."
+            }), 400
+        
+        # Hash new password
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Update password and clear reset token
+        users_collection.update_one(
+            {"_id": user['_id']},
+            {
+                "$set": {"password": hashed_password},
+                "$unset": {"reset_token": "", "reset_token_expiry": ""}
+            }
+        )
+        
+        logger.info(f"✅ Password reset successful for user: {user.get('email')}")
+        return jsonify({
+            "success": True,
+            "message": "Password reset successful! You can now login with your new password."
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Reset password error: {e}")
+        return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
 
 # Submit Order
 @app.route('/submit-order', methods=['POST'])
