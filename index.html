@@ -932,21 +932,8 @@
 
 
     <script>
-        // Product Data (using actual image URLs and updated prices)
-        const products = [
-            { id: 1, name: "Lux International Soap", price: 83, category: "soaps", image: "https://i.ibb.co/SXTVLFc0/Screenshot-2025-05-04-233546.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Lux+Soap';" },
-            { id: 2, name: "Dove Cream Beauty Bar", price: 60, category: "soaps", image: "https://i.ibb.co/1tnsrsCG/Screenshot-2025-05-04-233853.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Dove+Bar';" },
-            { id: 3, name: "Tata Salt (1kg)", price: 27, category: "food", image: "https://i.ibb.co/0Vjxb9BW/Screenshot-2025-05-04-233959.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Tata+Salt';" },
-            { id: 4, name: "Fortune Sunflower Oil (1L)", price: 157, category: "food", image: "https://i.ibb.co/8LQ47qtQ/Screenshot-2025-05-04-234101.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Cooking+Oil';" },
-            { id: 5, name: "Tata Tea Gold (500g)", price: 215, category: "beverages", image: "https://i.ibb.co/jk5rjgnx/Screenshot-2025-05-04-234155.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Tea';" },
-            { id: 6, name: "Nescafe Classic Coffee (100g)", price: 285, category: "beverages", image: "https://i.ibb.co/zTgPrhJ0/Screenshot-2025-05-04-234245.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Coffee';" },
-            { id: 7, name: "Head & Shoulders Shampoo (180ml)", price: 138, category: "personal-care", image: "https://i.ibb.co/5XkCdLn6/Screenshot-2025-05-04-234334.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Shampoo';" },
-            { id: 8, name: "Colgate Toothpaste (100g)", price: 73, category: "personal-care", image: "https://i.ibb.co/ksmMDzB2/Screenshot-2025-05-04-234423.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Toothpaste';" },
-            { id: 9, name: "Surf Excel Matic Powder (1kg)", price: 175, category: "soaps", image: "https://i.ibb.co/xKPBGhYs/Screenshot-2025-05-04-234625.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Detergent';" },
-            { id: 10, name: "Aashirvaad Atta (5kg)", price: 250, category: "food", image: "https://i.ibb.co/fz1BHxGH/Screenshot-2025-05-04-234719.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Atta';" },
-            { id: 11, name: "Maggi Noodles (Pack of 4)", price: 56, category: "food", image: "https://i.ibb.co/wxX6H6K/Screenshot-2025-05-04-234752.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Noodles';" },
-            { id: 12, name: "Patanjali Dant Kanti (100g)", price: 60, category: "personal-care", image: "https://i.ibb.co/Qvbsst5t/Screenshot-2025-05-04-234828.jpg", onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Toothpaste';" }
-        ];
+        // Product Data - Loaded dynamically from backend API
+        let products = []; // Initialize as empty array, will be populated from API
 
         // DOM Elements
         const productGrid = document.getElementById('product-grid');
@@ -1069,6 +1056,46 @@
              console.log("Login link clicked. Redirecting to login page.");
          }
 
+
+        // --- Load Products from Backend API ---
+        async function loadProducts() {
+            try {
+                console.log('Fetching products from API...');
+                const response = await fetch(`${backendBaseUrl}/products`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch products: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.products)) {
+                    products = data.products;
+                    console.log(`Successfully loaded ${products.length} products from API`);
+                    
+                    // Transform product data to match frontend format
+                    products = products.map(product => ({
+                        id: product._id, // Use MongoDB _id as product id
+                        name: product.name,
+                        price: product.price,
+                        category: product.category,
+                        image: product.image,
+                        stock: product.stock || 0,
+                        description: product.description || '',
+                        onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Product+Image';"
+                    }));
+                    
+                    return true;
+                } else {
+                    console.error('Invalid response format from products API:', data);
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showToast('Failed to load products. Please refresh the page.', 'error');
+                return false;
+            }
+        }
 
         // --- Product Display ---
         function displayProducts(filteredProducts) {
@@ -1793,6 +1820,9 @@
         // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', async () => { // Added async here
             updateAuthLink(); // Update the Login/Logout link on page load
+
+            // Load products from backend API first
+            await loadProducts();
 
             // Load cart based on login status
             if (loggedInUserId) {
