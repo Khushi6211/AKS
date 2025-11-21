@@ -1854,6 +1854,7 @@
         let appliedPromoCode = null;
         let appliedDiscount = 0;
         let automaticOffer = null;
+        let isCheckingOffers = false; // Flag to prevent multiple simultaneous API calls
 
         // Apply promo code
         async function applyPromoCode() {
@@ -1939,11 +1940,8 @@
             // Hide applied promo display
             document.getElementById('applied-promo').classList.add('hidden');
             
-            // Update cart display
+            // Update cart display (this will automatically trigger checkAutomaticOffers)
             updateCartDisplay();
-            
-            // Check for automatic offers
-            checkAutomaticOffers();
             
             showToast('Promo code removed');
         }
@@ -1955,15 +1953,23 @@
                 return;
             }
 
+            // Skip if already checking (prevent multiple simultaneous calls)
+            if (isCheckingOffers) {
+                return;
+            }
+
             // Calculate cart subtotal
             const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
             
             if (subtotal === 0) {
                 automaticOffer = null;
+                appliedDiscount = 0;
                 document.getElementById('automatic-offer').classList.add('hidden');
                 return;
             }
 
+            isCheckingOffers = true; // Set flag before API call
+            
             try {
                 const response = await fetch(`${backendBaseUrl}/get-applicable-offers`, {
                     method: 'POST',
@@ -1982,10 +1988,7 @@
                     automaticOffer = result.best_offer;
                     appliedDiscount = result.best_discount;
                     
-                    // Update display
-                    updateCartDisplay();
-                    
-                    // Show automatic offer notification
+                    // Show automatic offer notification (without calling updateCartDisplay to avoid infinite loop)
                     const autoOfferDiv = document.getElementById('automatic-offer');
                     const autoOfferTitle = document.getElementById('automatic-offer-title');
                     const autoOfferDesc = document.getElementById('automatic-offer-desc');
@@ -1994,16 +1997,39 @@
                     autoOfferDesc.textContent = `Saved ₹${appliedDiscount.toFixed(2)} automatically!`;
                     autoOfferDiv.classList.remove('hidden');
                     
+                    // Manually update discount display without full cart refresh
+                    const discountRow = document.getElementById('discount-row');
+                    const cartDiscount = document.getElementById('cart-discount');
+                    discountRow.classList.remove('hidden');
+                    cartDiscount.textContent = `-₹${appliedDiscount.toFixed(2)}`;
+                    
+                    // Update total
+                    const subtotalAfterDiscount = Math.max(0, subtotal - appliedDiscount);
+                    const currentDeliveryFee = subtotalAfterDiscount >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+                    const total = subtotalAfterDiscount + currentDeliveryFee;
+                    cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+                    deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
+                    
                 } else {
                     // No automatic offers
                     automaticOffer = null;
                     appliedDiscount = 0;
                     document.getElementById('automatic-offer').classList.add('hidden');
-                    updateCartDisplay();
+                    
+                    // Hide discount row
+                    document.getElementById('discount-row').classList.add('hidden');
+                    
+                    // Recalculate total without discount
+                    const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+                    const total = subtotal + currentDeliveryFee;
+                    cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+                    deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
                 }
             } catch (error) {
                 console.error('Error checking automatic offers:', error);
                 // Silently fail - don't show error to user
+            } finally {
+                isCheckingOffers = false; // Reset flag after API call completes
             }
         }
 
