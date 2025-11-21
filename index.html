@@ -852,10 +852,67 @@
                 </div>
 
 
+                <!-- Promo Code Section -->
+                <div class="border-t border-gray-200 pt-4 mb-4">
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tag text-primary mr-1"></i>Have a Promo Code?
+                        </label>
+                        <div class="flex gap-2">
+                            <input 
+                                type="text" 
+                                id="promo-code-input" 
+                                placeholder="Enter code (e.g., BALE)" 
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm uppercase"
+                                style="text-transform: uppercase;">
+                            <button 
+                                id="apply-promo-btn"
+                                onclick="applyPromoCode()"
+                                class="px-6 py-2 bg-accent text-white rounded-lg hover:bg-primary transition font-medium text-sm whitespace-nowrap">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Applied Promo Display -->
+                    <div id="applied-promo" class="hidden bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-green-800" id="applied-promo-code"></p>
+                                    <p class="text-xs text-green-600" id="applied-promo-desc"></p>
+                                </div>
+                            </div>
+                            <button onclick="removePromoCode()" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Automatic Offer Display -->
+                    <div id="automatic-offer" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                        <div class="flex items-center">
+                            <i class="fas fa-gift text-blue-600 mr-2"></i>
+                            <div>
+                                <p class="text-sm font-medium text-blue-800" id="automatic-offer-title"></p>
+                                <p class="text-xs text-blue-600" id="automatic-offer-desc"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cart Summary -->
                 <div class="border-t border-gray-200 pt-4 mt-auto">
                     <div class="flex justify-between mb-2">
                         <span class="font-medium">Subtotal:</span>
                         <span id="cart-subtotal" class="font-medium">₹0</span>
+                    </div>
+                    <div id="discount-row" class="hidden flex justify-between mb-2 text-green-600">
+                        <span class="font-medium">
+                            <i class="fas fa-tag mr-1"></i>Discount:
+                        </span>
+                        <span id="cart-discount" class="font-medium">-₹0</span>
                     </div>
                     <div class="flex justify-between mb-2">
                         <span>Delivery Charges:</span>
@@ -891,6 +948,20 @@
         </div>
     </div>
 
+    <!-- Offer Details Modal -->
+    <div id="offer-details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" onclick="if(event.target === this) closeOfferModal()">
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl" onclick="event.stopPropagation()">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+                <h2 id="offer-modal-title" class="font-heading text-2xl font-bold text-gray-800"></h2>
+                <button onclick="closeOfferModal()" aria-label="Close offer details" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="offer-modal-content" class="p-6">
+                <!-- Content will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
 
@@ -1107,7 +1178,7 @@
                 return;
             }
 
-            offersGrid.innerHTML = offers.map(offer => {
+            offersGrid.innerHTML = offers.map((offer, index) => {
                 const discountText = offer.discount_type === 'percentage' 
                     ? `${offer.discount_value}% OFF` 
                     : `₹${offer.discount_value} OFF`;
@@ -1133,11 +1204,95 @@
                                 </div>
                                 <p class="text-gray-600">${offer.description}</p>
                                 ${validityText}
+                                <button onclick="showOfferDetails(${index})" class="mt-3 text-primary hover:text-accent font-medium text-sm transition-colors">
+                                    <i class="fas fa-info-circle mr-1"></i>View Details
+                                </button>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
+            
+            // Store offers for modal access
+            window.currentOffers = offers;
+        }
+
+        // Show offer details modal
+        function showOfferDetails(offerIndex) {
+            const offer = window.currentOffers[offerIndex];
+            if (!offer) return;
+            
+            const modal = document.getElementById('offer-details-modal');
+            const modalTitle = document.getElementById('offer-modal-title');
+            const modalContent = document.getElementById('offer-modal-content');
+            
+            // Build modal content
+            const discountText = offer.discount_type === 'percentage' 
+                ? `${offer.discount_value}% OFF` 
+                : `₹${offer.discount_value} OFF`;
+            
+            const offerType = offer.offer_type === 'promo_code' ? 'Promo Code' : 'Automatic';
+            const howToUse = offer.offer_type === 'promo_code' 
+                ? `<li class="flex items-start"><i class="fas fa-keyboard text-primary mr-3 mt-1"></i><span>Enter code <strong class="text-accent">${offer.code}</strong> at checkout</span></li>`
+                : `<li class="flex items-start"><i class="fas fa-magic text-primary mr-3 mt-1"></i><span>Automatically applied when conditions are met</span></li>`;
+            
+            const minPurchase = offer.min_purchase > 0 
+                ? `<li class="flex items-start"><i class="fas fa-shopping-cart text-primary mr-3 mt-1"></i><span>Minimum purchase: <strong>₹${offer.min_purchase}</strong></span></li>`
+                : '';
+            
+            const maxDiscount = offer.max_discount 
+                ? `<li class="flex items-start"><i class="fas fa-tag text-primary mr-3 mt-1"></i><span>Maximum discount: <strong>₹${offer.max_discount}</strong></span></li>`
+                : '';
+            
+            let validity = '';
+            if (offer.start_date && offer.end_date) {
+                const startDate = new Date(offer.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+                const endDate = new Date(offer.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+                validity = `<li class="flex items-start"><i class="far fa-calendar-alt text-primary mr-3 mt-1"></i><span>Valid from <strong>${startDate}</strong> to <strong>${endDate}</strong></span></li>`;
+            } else if (offer.end_date) {
+                const endDate = new Date(offer.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+                validity = `<li class="flex items-start"><i class="far fa-calendar-alt text-primary mr-3 mt-1"></i><span>Valid until <strong>${endDate}</strong></span></li>`;
+            }
+            
+            modalTitle.textContent = offer.title;
+            modalContent.innerHTML = `
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="bg-accent text-white px-4 py-2 rounded-full text-lg font-bold">${discountText}</span>
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">${offerType}</span>
+                    </div>
+                    <p class="text-gray-700 mb-6">${offer.description}</p>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 mb-4">
+                        <h4 class="font-semibold text-lg mb-4 text-gray-800">
+                            <i class="fas fa-info-circle text-primary mr-2"></i>Offer Details
+                        </h4>
+                        <ul class="space-y-3 text-gray-700">
+                            ${howToUse}
+                            ${minPurchase}
+                            ${maxDiscount}
+                            ${validity}
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-lightbulb mr-2"></i>
+                            ${offer.offer_type === 'promo_code' 
+                                ? `Add items to your cart, then enter the promo code <strong>${offer.code}</strong> during checkout to avail this offer.`
+                                : `This offer will be automatically applied to your cart when you meet the minimum purchase requirement.`
+                            }
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Close offer details modal
+        function closeOfferModal() {
+            document.getElementById('offer-details-modal').classList.add('hidden');
         }
 
         // Show message when no offers available
@@ -1421,12 +1576,29 @@
             const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
             cartSubtotalEl.textContent = `₹${subtotal.toFixed(2)}`; // Format to 2 decimal places
 
-            // Calculate delivery fee based on subtotal
-            const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+            // Show/hide discount row
+            const discountRow = document.getElementById('discount-row');
+            const cartDiscount = document.getElementById('cart-discount');
+            
+            if (appliedDiscount > 0) {
+                discountRow.classList.remove('hidden');
+                cartDiscount.textContent = `-₹${appliedDiscount.toFixed(2)}`;
+            } else {
+                discountRow.classList.add('hidden');
+            }
+
+            // Calculate delivery fee based on subtotal (after discount)
+            const subtotalAfterDiscount = Math.max(0, subtotal - appliedDiscount);
+            const currentDeliveryFee = subtotalAfterDiscount >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
             deliveryChargesEl.textContent = currentDeliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`;
 
-            const total = subtotal + currentDeliveryFee;
+            const total = subtotalAfterDiscount + currentDeliveryFee;
             cartTotalEl.textContent = `₹${total.toFixed(2)}`;
+
+            // Check for automatic offers whenever cart updates (only if no promo applied)
+            if (!appliedPromoCode && subtotal > 0) {
+                checkAutomaticOffers();
+            }
 
             // If logged in, save cart to backend; otherwise, save to local storage
             if (loggedInUserId) {
@@ -1678,6 +1850,163 @@
         }
 
 
+        // --- Promo Code and Offer System ---
+        let appliedPromoCode = null;
+        let appliedDiscount = 0;
+        let automaticOffer = null;
+
+        // Apply promo code
+        async function applyPromoCode() {
+            const promoInput = document.getElementById('promo-code-input');
+            const promoCode = promoInput.value.trim().toUpperCase();
+            
+            if (!promoCode) {
+                showToast('Please enter a promo code');
+                return;
+            }
+
+            // Calculate cart subtotal
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            
+            if (subtotal === 0) {
+                showToast('Add items to cart before applying promo code');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/validate-promo-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: promoCode,
+                        cart_total: subtotal
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Promo code is valid
+                    appliedPromoCode = result.offer;
+                    appliedDiscount = result.discount_amount;
+                    automaticOffer = null; // Clear automatic offer if promo applied
+                    
+                    // Update display
+                    updateCartDisplay();
+                    
+                    // Show success message
+                    showToast(result.message || 'Promo code applied successfully!');
+                    
+                    // Display applied promo
+                    const appliedPromoDiv = document.getElementById('applied-promo');
+                    const appliedPromoCode = document.getElementById('applied-promo-code');
+                    const appliedPromoDesc = document.getElementById('applied-promo-desc');
+                    
+                    appliedPromoCode.textContent = `Promo Code: ${promoCode}`;
+                    appliedPromoDesc.textContent = result.offer.title;
+                    appliedPromoDiv.classList.remove('hidden');
+                    
+                    // Hide automatic offer
+                    document.getElementById('automatic-offer').classList.add('hidden');
+                    
+                    // Disable input and button
+                    promoInput.disabled = true;
+                    document.getElementById('apply-promo-btn').disabled = true;
+                    
+                } else {
+                    // Promo code is invalid
+                    showToast(result.message || 'Invalid promo code');
+                }
+            } catch (error) {
+                console.error('Error validating promo code:', error);
+                showToast('Error applying promo code. Please try again.');
+            }
+        }
+
+        // Remove promo code
+        function removePromoCode() {
+            appliedPromoCode = null;
+            appliedDiscount = 0;
+            
+            // Clear input
+            const promoInput = document.getElementById('promo-code-input');
+            promoInput.value = '';
+            promoInput.disabled = false;
+            document.getElementById('apply-promo-btn').disabled = false;
+            
+            // Hide applied promo display
+            document.getElementById('applied-promo').classList.add('hidden');
+            
+            // Update cart display
+            updateCartDisplay();
+            
+            // Check for automatic offers
+            checkAutomaticOffers();
+            
+            showToast('Promo code removed');
+        }
+
+        // Check and apply automatic offers
+        async function checkAutomaticOffers() {
+            // Skip if promo code is already applied
+            if (appliedPromoCode) {
+                return;
+            }
+
+            // Calculate cart subtotal
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            
+            if (subtotal === 0) {
+                automaticOffer = null;
+                document.getElementById('automatic-offer').classList.add('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/get-applicable-offers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cart_total: subtotal
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success && result.best_offer) {
+                    // Automatic offer available
+                    automaticOffer = result.best_offer;
+                    appliedDiscount = result.best_discount;
+                    
+                    // Update display
+                    updateCartDisplay();
+                    
+                    // Show automatic offer notification
+                    const autoOfferDiv = document.getElementById('automatic-offer');
+                    const autoOfferTitle = document.getElementById('automatic-offer-title');
+                    const autoOfferDesc = document.getElementById('automatic-offer-desc');
+                    
+                    autoOfferTitle.textContent = automaticOffer.title;
+                    autoOfferDesc.textContent = `Saved ₹${appliedDiscount.toFixed(2)} automatically!`;
+                    autoOfferDiv.classList.remove('hidden');
+                    
+                } else {
+                    // No automatic offers
+                    automaticOffer = null;
+                    appliedDiscount = 0;
+                    document.getElementById('automatic-offer').classList.add('hidden');
+                    updateCartDisplay();
+                }
+            } catch (error) {
+                console.error('Error checking automatic offers:', error);
+                // Silently fail - don't show error to user
+            }
+        }
+
         // Cart Modal Toggle Listeners
         cartBtn.addEventListener('click', () => cartModal.classList.remove('hidden'));
         closeCartBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
@@ -1721,8 +2050,9 @@
                 });
 
                 const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-                const currentDeliveryFee = subtotal >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
-                const total = subtotal + currentDeliveryFee;
+                const subtotalAfterDiscount = Math.max(0, subtotal - appliedDiscount);
+                const currentDeliveryFee = subtotalAfterDiscount >= deliveryThreshold || subtotal === 0 ? 0 : deliveryFee;
+                const total = subtotalAfterDiscount + currentDeliveryFee;
 
                 // Include customer details in the order data
                 const orderData = {
@@ -1734,6 +2064,17 @@
                     },
                     items: orderDetails,
                     subtotal: subtotal,
+                    discount: appliedDiscount,
+                    discount_source: appliedPromoCode ? {
+                        type: 'promo_code',
+                        code: appliedPromoCode.code,
+                        title: appliedPromoCode.title,
+                        offer_id: appliedPromoCode._id
+                    } : automaticOffer ? {
+                        type: 'automatic',
+                        title: automaticOffer.title,
+                        offer_id: automaticOffer._id
+                    } : null,
                     deliveryFee: currentDeliveryFee,
                     total: total,
                     // Add user_id to order data if logged in
@@ -1781,6 +2122,17 @@
 
                             // Clear cart and customer fields after successful submission
                             cart = []; // Clear the cart array
+                            
+                            // Clear promo code and offers
+                            appliedPromoCode = null;
+                            appliedDiscount = 0;
+                            automaticOffer = null;
+                            document.getElementById('promo-code-input').value = '';
+                            document.getElementById('promo-code-input').disabled = false;
+                            document.getElementById('apply-promo-btn').disabled = false;
+                            document.getElementById('applied-promo').classList.add('hidden');
+                            document.getElementById('automatic-offer').classList.add('hidden');
+                            
                             // If logged in, clear the backend cart too
                             if (loggedInUserId) {
                                 console.log("Attempting to save/clear cart for logged in user:", loggedInUserId); // Log before cart update
