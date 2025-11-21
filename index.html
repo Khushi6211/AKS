@@ -546,42 +546,11 @@
                 <h2 class="font-heading text-3xl font-bold mb-2">Special Offers</h2>
                 <div class="w-20 h-1 bg-primary mx-auto"></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
-                    <div class="bg-primary rounded-full p-4 mr-6">
-                        <i class="fas fa-percentage text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">10% Off on First Order</h3>
-                        <p class="text-gray-600">Use code WELCOME10 at checkout</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
-                    <div class="bg-primary rounded-full p-4 mr-6">
-                        <i class="fas fa-truck text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">Free Delivery</h3>
-                        <p class="text-gray-600">On orders above ₹500</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
-                    <div class="bg-primary rounded-full p-4 mr-6">
-                        <i class="fas fa-gift text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">Buy 2 Get 1 Free</h3>
-                        <p class="text-gray-600">On selected personal care products</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
-                    <div class="bg-primary rounded-full p-4 mr-6">
-                        <i class="fas fa-coins text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">Loyalty Points</h3>
-                        <p class="text-gray-600">Earn 5% back on every purchase</p>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="offers-grid">
+                <!-- Dynamic offers will be loaded here -->
+                <div class="text-center col-span-full py-8">
+                    <i class="fas fa-spinner fa-spin text-primary text-3xl"></i>
+                    <p class="text-gray-600 mt-4">Loading offers...</p>
                 </div>
             </div>
         </div>
@@ -1102,6 +1071,85 @@
                 showToast('Failed to load products. Please refresh the page.', 'error');
                 return false;
             }
+        }
+
+        // --- Load Offers from Backend API ---
+        async function loadOffers() {
+            try {
+                console.log('Fetching offers from API...');
+                const response = await fetch(`${backendBaseUrl}/offers`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch offers: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.offers)) {
+                    console.log(`Successfully loaded ${data.offers.length} offers from API`);
+                    displayOffers(data.offers);
+                } else {
+                    console.error('Invalid response format from offers API:', data);
+                    showNoOffers();
+                }
+            } catch (error) {
+                console.error('Error loading offers:', error);
+                showNoOffers();
+            }
+        }
+
+        // Display Offers on Homepage
+        function displayOffers(offers) {
+            const offersGrid = document.getElementById('offers-grid');
+            
+            if (!offers || offers.length === 0) {
+                showNoOffers();
+                return;
+            }
+
+            offersGrid.innerHTML = offers.map(offer => {
+                const discountText = offer.discount_type === 'percentage' 
+                    ? `${offer.discount_value}% OFF` 
+                    : `₹${offer.discount_value} OFF`;
+                
+                // Format dates if available
+                let validityText = '';
+                if (offer.start_date && offer.end_date) {
+                    const startDate = new Date(offer.start_date).toLocaleDateString('en-IN');
+                    const endDate = new Date(offer.end_date).toLocaleDateString('en-IN');
+                    validityText = `<p class="text-sm text-gray-500 mt-2"><i class="far fa-calendar-alt mr-1"></i>Valid: ${startDate} - ${endDate}</p>`;
+                }
+
+                return `
+                    <div class="bg-white p-6 rounded-lg shadow-md transform hover:scale-[1.02] transition duration-300 border-l-4 border-accent">
+                        <div class="flex items-start">
+                            <div class="bg-primary rounded-full p-4 mr-6 flex-shrink-0">
+                                <i class="fas fa-percentage text-white text-2xl"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="text-xl font-semibold">${offer.title}</h3>
+                                    <span class="bg-accent text-white px-3 py-1 rounded-full text-sm font-bold">${discountText}</span>
+                                </div>
+                                <p class="text-gray-600">${offer.description}</p>
+                                ${validityText}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show message when no offers available
+        function showNoOffers() {
+            const offersGrid = document.getElementById('offers-grid');
+            offersGrid.innerHTML = `
+                <div class="text-center col-span-full py-8">
+                    <i class="fas fa-tag text-gray-400 text-4xl mb-4"></i>
+                    <p class="text-gray-600">No special offers available at the moment.</p>
+                    <p class="text-gray-500 text-sm mt-2">Check back soon for amazing deals!</p>
+                </div>
+            `;
         }
 
         // --- Product Display ---
@@ -1840,6 +1888,9 @@
 
             // Load products from backend API first
             await loadProducts();
+
+            // Load offers from backend API
+            await loadOffers();
 
             // Load cart based on login status
             if (loggedInUserId) {

@@ -731,14 +731,14 @@ def reset_password():
             return jsonify({"success": False, "message": "No data provided."}), 400
         
         token = data.get('token', '').strip()
-        new_password = data.get('password', '')
+        new_password = data.get('new_password', '') or data.get('password', '')  # Accept both field names
         
         if not token or not new_password:
             return jsonify({"success": False, "message": "Token and password are required."}), 400
         
-        # Validate password strength
-        if len(new_password) < 8:
-            return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
+        # Validate password strength (minimum 6 characters, matching frontend)
+        if len(new_password) < 6:
+            return jsonify({"success": False, "message": "Password must be at least 6 characters long."}), 400
         
         # Hash the token to compare with stored hash
         token_hash = hashlib.sha256(token.encode()).hexdigest()
