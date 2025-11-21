@@ -544,15 +544,31 @@
                     </div>
                 </div>
 
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Offer Type <span class="text-red-500">*</span></label>
+                    <select id="offer-type" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" onchange="togglePromoCodeField()">
+                        <option value="automatic">Automatic (Applied automatically when conditions met)</option>
+                        <option value="promo_code">Promo Code (Customer must enter code)</option>
+                    </select>
+                    <p class="text-sm text-gray-500 mt-1">
+                        <span id="offer-type-help-automatic">This offer will be automatically applied when minimum purchase is met.</span>
+                        <span id="offer-type-help-promo" class="hidden">Customer must enter the promo code during checkout.</span>
+                    </p>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Promo Code (Optional)</label>
+                    <div id="promo-code-field">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            Promo Code <span id="promo-code-required" class="text-red-500 hidden">*</span>
+                        </label>
                         <input type="text" id="offer-code" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="e.g., SAVE20" style="text-transform: uppercase;">
+                        <p class="text-sm text-gray-500 mt-1">Leave empty for automatic offers</p>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Minimum Purchase (₹)</label>
-                        <input type="number" id="offer-min-purchase" min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="e.g., 500">
+                        <input type="number" id="offer-min-purchase" min="0" step="0.01" value="0" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="e.g., 500">
+                        <p class="text-sm text-gray-500 mt-1">Set 0 for no minimum</p>
                     </div>
                 </div>
 
@@ -1320,17 +1336,49 @@
             }
         }
 
+        // Toggle promo code field requirement based on offer type
+        function togglePromoCodeField() {
+            const offerType = document.getElementById('offer-type').value;
+            const promoCodeInput = document.getElementById('offer-code');
+            const promoCodeRequired = document.getElementById('promo-code-required');
+            const helpAutomatic = document.getElementById('offer-type-help-automatic');
+            const helpPromo = document.getElementById('offer-type-help-promo');
+            
+            if (offerType === 'promo_code') {
+                promoCodeInput.required = true;
+                promoCodeRequired.classList.remove('hidden');
+                helpAutomatic.classList.add('hidden');
+                helpPromo.classList.remove('hidden');
+            } else {
+                promoCodeInput.required = false;
+                promoCodeRequired.classList.add('hidden');
+                helpAutomatic.classList.remove('hidden');
+                helpPromo.classList.add('hidden');
+            }
+        }
+
         // Save offer
         async function saveOffer(event) {
             event.preventDefault();
             
             const offerId = document.getElementById('offer-id').value;
+            const offerType = document.getElementById('offer-type').value;
+            const promoCode = document.getElementById('offer-code').value?.trim().toUpperCase();
+            
+            // Validate promo code is provided for promo_code type offers
+            if (offerType === 'promo_code' && !promoCode) {
+                alert('Please enter a promo code for promo code type offers.');
+                document.getElementById('offer-code').focus();
+                return;
+            }
+            
             const offerData = {
                 title: document.getElementById('offer-title').value,
                 description: document.getElementById('offer-description').value,
                 discount_type: document.getElementById('offer-discount-type').value,
                 discount_value: parseFloat(document.getElementById('offer-discount-value').value),
-                code: document.getElementById('offer-code').value || null,
+                offer_type: offerType,
+                code: promoCode || null,
                 min_purchase: parseFloat(document.getElementById('offer-min-purchase').value) || 0,
                 start_date: document.getElementById('offer-start-date').value || null,
                 end_date: document.getElementById('offer-end-date').value || null,

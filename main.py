@@ -1415,7 +1415,8 @@ def add_offer():
             "description": sanitize_string(data['description']),
             "discount_type": data['discount_type'],
             "discount_value": float(data['discount_value']),
-            "code": data.get('code', '').upper() if data.get('code') else None,
+            "offer_type": data.get('offer_type', 'automatic'),  # 'automatic' or 'promo_code'
+            "code": data.get('code', '').upper().strip() if data.get('code') else None,
             "min_purchase": float(data.get('min_purchase', 0)),
             "max_discount": float(data.get('max_discount', 0)) if data.get('max_discount') else None,
             "start_date": start_date or datetime.datetime.utcnow(),
@@ -1558,6 +1559,174 @@ def toggle_offer_status(offer_id):
     except Exception as e:
         logger.error(f"❌ Error toggling offer status: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== PROMO CODE VALIDATION & APPLICATION ==========
+
+# Validate Promo Code
+@app.route('/validate-promo-code', methods=['POST'])
+@limiter.limit("20 per minute")
+def validate_promo_code():
+    """Validate promo code and return discount details"""
+    try:
+        if offers_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
+        
+        promo_code = data.get('code', '').upper().strip()
+        cart_total = float(data.get('cart_total', 0))
+        
+        if not promo_code:
+            return jsonify({"success": False, "message": "Please enter a promo code."}), 400
+        
+        if cart_total <= 0:
+            return jsonify({"success": False, "message": "Cart is empty."}), 400
+        
+        # Find active offer with this promo code
+        offer = offers_collection.find_one({
+            "code": promo_code,
+            "active": True,
+            "offer_type": "promo_code",
+            "$or": [
+                {"end_date": None},
+                {"end_date": {"$gte": datetime.datetime.utcnow()}}
+            ]
+        })
+        
+        if not offer:
+            return jsonify({
+                "success": False,
+                "message": f"Invalid promo code '{promo_code}'. Please check and try again."
+            }), 404
+        
+        # Check minimum purchase requirement
+        min_purchase = offer.get('min_purchase', 0)
+        if cart_total < min_purchase:
+            return jsonify({
+                "success": False,
+                "message": f"Minimum purchase of ₹{min_purchase} required to use this promo code. Add ₹{min_purchase - cart_total} more to your cart."
+            }), 400
+        
+        # Calculate discount
+        discount_type = offer['discount_type']
+        discount_value = offer['discount_value']
+        max_discount = offer.get('max_discount', None)
+        
+        if discount_type == 'percentage':
+            discount_amount = (cart_total * discount_value) / 100
+            if max_discount and discount_amount > max_discount:
+                discount_amount = max_discount
+        else:  # fixed
+            discount_amount = discount_value
+        
+        # Ensure discount doesn't exceed cart total
+        discount_amount = min(discount_amount, cart_total)
+        
+        final_total = cart_total - discount_amount
+        
+        logger.info(f"✅ Promo code '{promo_code}' validated. Discount: ₹{discount_amount}")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Promo code '{promo_code}' applied successfully!",
+            "offer": {
+                "_id": str(offer['_id']),
+                "title": offer['title'],
+                "description": offer['description'],
+                "code": promo_code,
+                "discount_type": discount_type,
+                "discount_value": discount_value,
+                "discount_amount": round(discount_amount, 2),
+                "min_purchase": min_purchase,
+                "max_discount": max_discount
+            },
+            "cart_total": cart_total,
+            "discount_amount": round(discount_amount, 2),
+            "final_total": round(final_total, 2)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error validating promo code: {e}")
+        return jsonify({"success": False, "message": "An error occurred. Please try again."}), 500
+
+# Get Applicable Automatic Offers
+@app.route('/get-applicable-offers', methods=['POST'])
+@limiter.limit("30 per minute")
+def get_applicable_offers():
+    """Get all automatic offers applicable to current cart"""
+    try:
+        if offers_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        cart_total = float(data.get('cart_total', 0))
+        
+        if cart_total <= 0:
+            return jsonify({"success": True, "offers": []}), 200
+        
+        # Find all active automatic offers
+        offers = list(offers_collection.find({
+            "active": True,
+            "offer_type": "automatic",
+            "$or": [
+                {"end_date": None},
+                {"end_date": {"$gte": datetime.datetime.utcnow()}}
+            ]
+        }))
+        
+        applicable_offers = []
+        best_discount = 0
+        best_offer = None
+        
+        for offer in offers:
+            min_purchase = offer.get('min_purchase', 0)
+            
+            # Check if cart meets minimum purchase
+            if cart_total >= min_purchase:
+                # Calculate discount
+                discount_type = offer['discount_type']
+                discount_value = offer['discount_value']
+                max_discount = offer.get('max_discount', None)
+                
+                if discount_type == 'percentage':
+                    discount_amount = (cart_total * discount_value) / 100
+                    if max_discount and discount_amount > max_discount:
+                        discount_amount = max_discount
+                else:  # fixed
+                    discount_amount = discount_value
+                
+                # Ensure discount doesn't exceed cart total
+                discount_amount = min(discount_amount, cart_total)
+                
+                offer_data = {
+                    "_id": str(offer['_id']),
+                    "title": offer['title'],
+                    "description": offer['description'],
+                    "discount_type": discount_type,
+                    "discount_value": discount_value,
+                    "discount_amount": round(discount_amount, 2),
+                    "min_purchase": min_purchase
+                }
+                
+                applicable_offers.append(offer_data)
+                
+                # Track best discount
+                if discount_amount > best_discount:
+                    best_discount = discount_amount
+                    best_offer = offer_data
+        
+        return jsonify({
+            "success": True,
+            "offers": applicable_offers,
+            "best_offer": best_offer,
+            "best_discount": round(best_discount, 2) if best_discount > 0 else 0
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting applicable offers: {e}")
+        return jsonify({"success": False, "message": "An error occurred."}), 500
 
 # Admin: Update Order Status
 @app.route('/admin/orders/update-status', methods=['PUT'])
