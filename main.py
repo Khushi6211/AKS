@@ -116,7 +116,7 @@ carts_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, carts_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection
     
     try:
         client = MongoClient(
