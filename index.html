@@ -1595,11 +1595,11 @@
 
 
             if (quantityButton) {
-                const productId = parseInt(quantityButton.getAttribute('data-id'));
+                const productId = quantityButton.getAttribute('data-id'); // Keep as string for MongoDB IDs
                 const change = parseInt(quantityButton.getAttribute('data-change'));
                 changeProductQuantity(productId, change); // Call the function
             } else if (addToCartButton) {
-                 const productId = parseInt(addToCartButton.getAttribute('data-id'));
+                 const productId = addToCartButton.getAttribute('data-id'); // Keep as string for MongoDB IDs
                  changeProductQuantity(productId, 1); // Add one to cart
             }
              else if (clickedImage) {
@@ -1620,11 +1620,11 @@
             const removeButton = e.target.closest('.remove-from-cart');
 
             if (quantityButton) {
-                const productId = parseInt(quantityButton.getAttribute('data-id'));
+                const productId = quantityButton.getAttribute('data-id'); // Keep as string for MongoDB IDs
                 const change = parseInt(quantityButton.getAttribute('data-change'));
                 changeQuantity(productId, change); // Call the function
             } else if (removeButton) {
-                const productId = parseInt(removeButton.getAttribute('data-id'));
+                const productId = removeButton.getAttribute('data-id'); // Keep as string for MongoDB IDs
                 removeFromCart(productId); // Call the function
             }
         }

@@ -278,10 +278,13 @@ def send_order_confirmation_email(order_data, customer_email):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">Thank You for Your Order! 🎉</h1>
+    <body style="font-family: 'Poppins', Arial, sans-serif; line-height: 1.6; color: #2D2D2D; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <!-- Header with Logo and Branding -->
+        <div style="background: linear-gradient(135deg, #9C6F44 0%, #B88B4A 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; margin-bottom: 15px;">
+            <h1 style="margin: 0; font-size: 28px; font-family: 'Playfair Display', serif;">Thank You for Your Order! 🎉</h1>
             <p style="margin: 10px 0 0; font-size: 16px;">Arun Karyana Store</p>
+            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Railway Road, Barara, Ambala, Haryana</p>
         </div>
         
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -289,22 +292,22 @@ def send_order_confirmation_email(order_data, customer_email):
             
             <p>Your order has been successfully placed and will be processed shortly.</p>
             
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h2 style="color: #667eea; margin-top: 0;">Order Details</h2>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9C6F44;">
+                <h2 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Order Details</h2>
                 <p><strong>Order ID:</strong> #{order_data['order_id']}</p>
                 <p><strong>Order Date:</strong> {order_data['order_date']}</p>
                 <p><strong>Status:</strong> <span style="color: #f59e0b;">Pending</span></p>
             </div>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #667eea; margin-top: 0;">Items Ordered</h3>
+                <h3 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Items Ordered</h3>
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f3f4f6;">
-                            <th style="padding: 10px; text-align: left;">Product</th>
-                            <th style="padding: 10px; text-align: center;">Qty</th>
-                            <th style="padding: 10px; text-align: right;">Price</th>
-                            <th style="padding: 10px; text-align: right;">Total</th>
+                        <tr style="background: #F8F5F0;">
+                            <th style="padding: 10px; text-align: left; color: #9C6F44; font-weight: 600;">Product</th>
+                            <th style="padding: 10px; text-align: center; color: #9C6F44; font-weight: 600;">Qty</th>
+                            <th style="padding: 10px; text-align: right; color: #9C6F44; font-weight: 600;">Price</th>
+                            <th style="padding: 10px; text-align: right; color: #9C6F44; font-weight: 600;">Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -319,33 +322,35 @@ def send_order_confirmation_email(order_data, customer_email):
                             <td colspan="3" style="padding: 10px; text-align: right;">Delivery Fee:</td>
                             <td style="padding: 10px; text-align: right;">₹{order_data['delivery_fee']}</td>
                         </tr>
-                        <tr style="background: #f3f4f6;">
+                        <tr style="background: #F8F5F0;">
                             <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold; font-size: 18px;">Total Amount:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 18px; color: #667eea;">₹{order_data['total_amount']}</td>
+                            <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 18px; color: #9C6F44;">₹{order_data['total_amount']}</td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #667eea; margin-top: 0;">Delivery Address</h3>
+                <h3 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Delivery Address</h3>
                 <p style="margin: 5px 0;"><strong>{order_data['customer_name']}</strong></p>
                 <p style="margin: 5px 0;">{order_data['customer_phone']}</p>
                 <p style="margin: 5px 0;">{order_data['customer_address']}</p>
             </div>
             
-            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <p style="margin: 0;"><strong>📦 What's Next?</strong></p>
-                <p style="margin: 10px 0 0;">Our team will process your order and contact you shortly for delivery confirmation.</p>
+            <div style="background: #F8F5F0; border-left: 4px solid #9C6F44; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #9C6F44;"><strong>📦 What's Next?</strong></p>
+                <p style="margin: 10px 0 0; color: #2D2D2D;">Our team will process your order and contact you shortly for delivery confirmation.</p>
             </div>
             
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
             <p style="margin: 5px 0;">📍 Railway Road, Barara, Ambala, Haryana 133201</p>
             
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 14px;">Thank you for shopping with Arun Karyana Store!</p>
-                <p style="color: #6b7280; font-size: 12px; margin-top: 10px;">Serving Barara since 1977</p>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #E8C07D;">
+                <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 15px; display: block;">
+                <p style="color: #9C6F44; font-size: 14px; font-weight: 600;">Thank you for shopping with Arun Karyana Store!</p>
+                <p style="color: #2D2D2D; font-size: 12px; margin-top: 10px;">Serving Barara since 1977</p>
+                <p style="color: #6b7280; font-size: 11px; margin-top: 10px;">Railway Road, Barara, Ambala, Haryana 133201</p>
             </div>
         </div>
     </body>
@@ -373,32 +378,38 @@ def send_order_status_update_email(order_data, customer_email, new_status):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">Order Status Updated</h1>
+    <body style="font-family: 'Poppins', Arial, sans-serif; line-height: 1.6; color: #2D2D2D; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <!-- Header with Logo and Branding -->
+        <div style="background: linear-gradient(135deg, #9C6F44 0%, #B88B4A 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; margin-bottom: 15px;">
+            <h1 style="margin: 0; font-size: 28px; font-family: 'Playfair Display', serif;">Order Status Updated</h1>
             <p style="margin: 10px 0 0; font-size: 16px;">Arun Karyana Store</p>
+            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Railway Road, Barara, Ambala</p>
         </div>
         
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
             <p style="font-size: 16px;">Dear {order_data['customer_name']},</p>
             
-            <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <p style="font-size: 24px; margin: 0; color: #667eea; font-weight: bold;">{status_message}</p>
+            <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center; border-left: 4px solid #9C6F44;">
+                <p style="font-size: 24px; margin: 0; color: #9C6F44; font-weight: bold; font-family: 'Playfair Display', serif;">{status_message}</p>
             </div>
             
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h2 style="color: #667eea; margin-top: 0;">Order Details</h2>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9C6F44;">
+                <h2 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Order Details</h2>
                 <p><strong>Order ID:</strong> #{order_data['order_id']}</p>
-                <p><strong>Total Amount:</strong> ₹{order_data['total_amount']}</p>
-                <p><strong>Current Status:</strong> <span style="color: #667eea; font-weight: bold;">{new_status}</span></p>
+                <p><strong>Total Amount:</strong> <span style="color: #9C6F44; font-weight: bold;">₹{order_data['total_amount']}</span></p>
+                <p><strong>Current Status:</strong> <span style="color: #9C6F44; font-weight: bold;">{new_status}</span></p>
             </div>
             
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
             <p style="margin: 5px 0;">📍 Railway Road, Barara, Ambala, Haryana 133201</p>
             
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 14px;">Thank you for shopping with Arun Karyana Store!</p>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #E8C07D;">
+                <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 15px; display: block;">
+                <p style="color: #9C6F44; font-size: 14px; font-weight: 600;">Thank you for shopping with Arun Karyana Store!</p>
+                <p style="color: #2D2D2D; font-size: 12px; margin-top: 10px;">Serving Barara since 1977</p>
+                <p style="color: #6b7280; font-size: 11px; margin-top: 10px;">Railway Road, Barara, Ambala, Haryana 133201</p>
             </div>
         </div>
     </body>
@@ -419,9 +430,12 @@ def send_password_reset_email(user, reset_url):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🔒 Password Reset Request</h1>
-            <p style="margin: 10px 0 0; font-size: 16px;">Arun Karyana Store</p>
+        <!-- Header with Logo and Branding -->
+        <div style="background: linear-gradient(135deg, #9C6F44 0%, #B88B4A 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; margin-bottom: 15px;">
+            <h1 style="margin: 0; font-size: 28px; font-family: 'Playfair Display', serif;">🔒 Password Reset</h1>
+            <p style="margin: 10px 0 0; font-size: 16px; font-family: 'Poppins', sans-serif;">Arun Karyana Store</p>
+            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Railway Road, Barara, Ambala</p>
         </div>
         
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -431,7 +445,7 @@ def send_password_reset_email(user, reset_url):
             
             <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="margin-bottom: 20px; color: #6b7280;">Click the button below to reset your password:</p>
-                <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Reset Password</a>
+                <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #9C6F44 0%, #B88B4A 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(156, 111, 68, 0.3);">Reset Password</a>
             </div>
             
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
@@ -442,7 +456,7 @@ def send_password_reset_email(user, reset_url):
             
             <p style="font-size: 14px; color: #6b7280; margin-top: 25px;">
                 If the button doesn't work, copy and paste this link into your browser:<br>
-                <a href="{reset_url}" style="color: #667eea; word-break: break-all;">{reset_url}</a>
+                <a href="{reset_url}" style="color: #9C6F44; word-break: break-all;">{reset_url}</a>
             </p>
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
@@ -1308,6 +1322,9 @@ def upload_product_image():
 def get_offers():
     """Get all active offers (public endpoint)"""
     try:
+        if offers_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
         # Only return active offers
         offers = list(offers_collection.find({"active": True}))
         
@@ -1331,6 +1348,9 @@ def get_offers():
 def get_all_offers_admin():
     """Get all offers including inactive ones (admin only)"""
     try:
+        if offers_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
         offers = list(offers_collection.find({}))
         
         for offer in offers:
@@ -1356,6 +1376,9 @@ def get_all_offers_admin():
 def add_offer():
     """Add new offer (admin only)"""
     try:
+        if offers_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
         data = request.get_json()
         
         # Validate required fields
