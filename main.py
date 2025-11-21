@@ -695,8 +695,11 @@ def forgot_password():
             }
         )
         
-        # Send reset email
-        reset_url = f"https://arun-karyana.netlify.app/reset-password.html?token={reset_token}"
+        # Send reset email (use environment variable for frontend URL)
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://arun-karyana.netlify.app')
+        # Remove trailing slash if present
+        frontend_url = frontend_url.rstrip('/')
+        reset_url = f"{frontend_url}/reset-password.html?token={reset_token}"
         
         try:
             send_password_reset_email(user, reset_url)
