@@ -320,6 +320,19 @@
             background-color: #e0e0e0;
         }
 
+        /* Enhanced Profile Styles */
+        #display-profile-pic {
+            transition: all 0.3s ease;
+        }
+
+        #display-profile-pic:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-form select {
+            font-size: 1rem;
+        }
+
     </style>
     <script src="config.js"></script>
 </head>
@@ -376,35 +389,107 @@
              <p id="error-loading-profile" class="login-prompt-profile text-red-600 hidden">Error loading profile. Please try again later.</p>
 
             <div id="profile-details-container" class="profile-card hidden fade-in">
-                <h3 class="font-heading text-2xl font-bold mb-4">Account Information</h3>
-                <div class="profile-details">
-                    <p><span class="font-medium">Name:</span> <span id="display-name"></span></p>
-                    <p><span class="font-medium">Email:</span> <span id="display-email"></span></p>
-                    <p><span class="font-medium">Phone:</span> <span id="display-phone"></span></p>
-                    <p><span class="font-medium">Member Since:</span> <span id="display-created-at"></span></p>
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
+                    <!-- Profile Picture Section -->
+                    <div class="flex flex-col items-center">
+                        <div class="relative">
+                            <img id="display-profile-pic" 
+                                 src="https://via.placeholder.com/150/9C6F44/FFFFFF?text=Upload" 
+                                 alt="Profile Picture" 
+                                 class="w-32 h-32 rounded-full object-cover border-4 border-secondary shadow-lg">
+                            <button onclick="triggerProfilePicUpload()" 
+                                    class="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full hover:bg-opacity-90 transition shadow-md">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Click camera to upload</p>
+                    </div>
+                    
+                    <!-- Profile Info Section -->
+                    <div class="flex-1">
+                        <h3 class="font-heading text-2xl font-bold mb-4">Account Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600">Full Name</p>
+                                <p class="font-medium text-lg" id="display-name">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Email Address</p>
+                                <p class="font-medium" id="display-email">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Phone Number</p>
+                                <p class="font-medium" id="display-phone">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Date of Birth</p>
+                                <p class="font-medium" id="display-dob">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Gender</p>
+                                <p class="font-medium" id="display-gender">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Member Since</p>
+                                <p class="font-medium" id="display-created-at">-</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                 <button id="edit-profile-btn" class="bg-secondary text-dark px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md mt-4">Edit Profile</button>
+                 <button id="edit-profile-btn" class="bg-secondary text-dark px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md">
+                     <i class="fas fa-edit mr-2"></i>Edit Profile
+                 </button>
             </div>
 
              <div id="profile-edit-form-container" class="profile-card hidden fade-in">
                  <h3 class="font-heading text-2xl font-bold mb-4">Edit Profile</h3>
                  <div id="profile-message" class="profile-message hidden"></div>
+                 
+                 <!-- Profile Picture Upload (Hidden Input) -->
+                 <input type="file" id="profile-pic-input" accept="image/*" class="hidden" onchange="uploadProfilePicture(event)">
+                 
                  <form id="profile-edit-form" class="profile-form">
-                     <div class="form-group">
-                         <label for="edit-name">Name:</label>
-                         <input type="text" id="edit-name" name="name" required>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div class="form-group">
+                             <label for="edit-name">Full Name <span class="text-red-500">*</span></label>
+                             <input type="text" id="edit-name" name="name" required placeholder="Enter your full name">
+                         </div>
+                         <div class="form-group">
+                             <label for="edit-email">Email Address <span class="text-red-500">*</span></label>
+                             <input type="email" id="edit-email" name="email" required placeholder="your@email.com">
+                         </div>
+                         <div class="form-group">
+                             <label for="edit-phone">Phone Number <span class="text-red-500">*</span></label>
+                             <input type="tel" id="edit-phone" name="phone" required placeholder="+91 XXXXXXXXXX">
+                         </div>
+                         <div class="form-group">
+                             <label for="edit-dob">Date of Birth</label>
+                             <input type="date" id="edit-dob" name="dob" placeholder="YYYY-MM-DD">
+                         </div>
+                         <div class="form-group">
+                             <label for="edit-gender">Gender</label>
+                             <select id="edit-gender" name="gender" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
+                                 <option value="">Select Gender</option>
+                                 <option value="Male">Male</option>
+                                 <option value="Female">Female</option>
+                                 <option value="Other">Other</option>
+                                 <option value="Prefer not to say">Prefer not to say</option>
+                             </select>
+                         </div>
+                         <div class="form-group">
+                             <label for="edit-alt-phone">Alternate Phone (Optional)</label>
+                             <input type="tel" id="edit-alt-phone" name="alt_phone" placeholder="Optional">
+                         </div>
                      </div>
-                     <div class="form-group">
-                         <label for="edit-email">Email:</label>
-                         <input type="email" id="edit-email" name="email" required>
+                     <div class="flex gap-3 mt-6">
+                         <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md">
+                             <i class="fas fa-save mr-2"></i>Save Changes
+                         </button>
+                         <button type="button" id="cancel-edit-btn" class="bg-gray-300 text-dark px-6 py-2 rounded-md font-medium hover:bg-gray-400 transition shadow-md">
+                             <i class="fas fa-times mr-2"></i>Cancel
+                         </button>
                      </div>
-                     <div class="form-group">
-                         <label for="edit-phone">Phone:</label>
-                         <input type="tel" id="edit-phone" name="phone" required>
-                     </div>
-                     <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md mr-4">Save Changes</button>
-                     <button type="button" id="cancel-edit-btn" class="bg-gray-300 text-dark px-6 py-2 rounded-md font-medium hover:bg-gray-400 transition shadow-md">Cancel</button>
                  </form>
              </div>
 
@@ -548,8 +633,8 @@
 
     <!-- Add/Edit Address Modal -->
     <div id="address-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="address-modal-heading">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center justify-center min-h-screen px-4 py-6">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 id="address-modal-heading" class="font-heading text-2xl font-bold">Add New Address</h3>
                     <button id="close-address-modal" aria-label="Close Modal" class="text-gray-500 hover:text-primary">
@@ -907,11 +992,100 @@
         const displayEmailEl = document.getElementById('display-email');
         const displayPhoneEl = document.getElementById('display-phone');
         const displayCreatedAtEl = document.getElementById('display-created-at');
+        const displayProfilePic = document.getElementById('display-profile-pic');
+        const displayDob = document.getElementById('display-dob');
+        const displayGender = document.getElementById('display-gender');
 
         // Edit form input elements
         const editNameInput = document.getElementById('edit-name');
         const editEmailInput = document.getElementById('edit-email');
         const editPhoneInput = document.getElementById('edit-phone');
+        const editDobInput = document.getElementById('edit-dob');
+        const editGenderInput = document.getElementById('edit-gender');
+        const editAltPhoneInput = document.getElementById('edit-alt-phone');
+        const profilePicInput = document.getElementById('profile-pic-input');
+
+        // Cloudinary configuration
+        const CLOUDINARY_CLOUD_NAME = 'dtpljr4yd';
+        const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
+
+        // Profile Picture Upload Functions
+        function triggerProfilePicUpload() {
+            profilePicInput.click();
+        }
+
+        async function uploadProfilePicture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size must be less than 5MB');
+                return;
+            }
+
+            try {
+                // Show loading state
+                displayProfilePic.style.opacity = '0.5';
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('folder', 'arun_karyana_profiles');
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.secure_url) {
+                    // Update profile picture in backend
+                    await updateProfilePicture(data.secure_url, data.public_id);
+                    
+                    // Update display immediately
+                    displayProfilePic.src = data.secure_url;
+                    showToast('Profile picture updated successfully!');
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                alert('Failed to upload profile picture. Please try again.');
+            } finally {
+                displayProfilePic.style.opacity = '1';
+                profilePicInput.value = ''; // Reset input
+            }
+        }
+
+        async function updateProfilePicture(imageUrl, publicId) {
+            try {
+                const response = await fetch(`${backendBaseUrl}/profile/update-picture`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: loggedInUserId,
+                        profile_picture: imageUrl,
+                        cloudinary_public_id: publicId
+                    })
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Failed to update profile picture');
+                }
+            } catch (error) {
+                console.error('Error updating profile picture:', error);
+                throw error;
+            }
+        }
 
         // Status messages
         const loadingProfileMessage = document.getElementById('loading-profile');
@@ -984,25 +1158,45 @@
 
         // Function to display user profile data
         function displayUserProfile(user) {
-            displayNameEl.textContent = user.name || 'N/A';
-            displayEmailEl.textContent = user.email || 'N/A';
-            displayPhoneEl.textContent = user.phone || 'N/A';
+            displayNameEl.textContent = user.name || '-';
+            displayEmailEl.textContent = user.email || '-';
+            displayPhoneEl.textContent = user.phone || '-';
+            
+            // Display profile picture
+            if (user.profile_picture) {
+                displayProfilePic.src = user.profile_picture;
+            }
+
+            // Display date of birth
+            if (user.dob) {
+                const dobDate = new Date(user.dob);
+                displayDob.textContent = dobDate.toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } else {
+                displayDob.textContent = '-';
+            }
+
+            // Display gender
+            displayGender.textContent = user.gender || '-';
 
             // Format the created_at date
-            const createdAtDate = user.created_at ? new Date(user.created_at).toLocaleString('en-IN', {
+            const createdAtDate = user.created_at ? new Date(user.created_at).toLocaleDateString('en-IN', {
                  year: 'numeric',
                  month: 'long',
-                 day: 'numeric',
-                 hour: '2-digit',
-                 minute: '2-digit',
-                 hour12: true // Use 12-hour format with AM/PM
-             }) : 'N/A';
+                 day: 'numeric'
+             }) : '-';
             displayCreatedAtEl.textContent = createdAtDate;
 
             // Populate the edit form with current data
             editNameInput.value = user.name || '';
             editEmailInput.value = user.email || '';
             editPhoneInput.value = user.phone || '';
+            editDobInput.value = user.dob || '';
+            editGenderInput.value = user.gender || '';
+            editAltPhoneInput.value = user.alt_phone || '';
         }
 
         // Event listener for Edit Profile button
@@ -1033,11 +1227,13 @@
 
             // Collect updated data
             const updatedProfileData = {
-                user_id: loggedInUserId, // Include the user ID
+                user_id: loggedInUserId,
                 name: editNameInput.value,
                 email: editEmailInput.value,
-                phone: editPhoneInput.value
-                // Add other fields here if needed
+                phone: editPhoneInput.value,
+                dob: editDobInput.value || null,
+                gender: editGenderInput.value || null,
+                alt_phone: editAltPhoneInput.value || null
             };
 
             const backendUrl = `${backendBaseUrl}/profile/update`; // Endpoint to update profile
