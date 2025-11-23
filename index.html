@@ -556,7 +556,25 @@
         </div>
     </section>
 
-    <section id="about" class="py-16 bg-white">
+    <!-- Customer Reviews Section -->
+    <section id="reviews" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="font-heading text-3xl font-bold mb-2">What Our Customers Say</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-3"></div>
+                <p class="text-gray-600">Hear from our happy customers</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="reviews-grid">
+                <!-- Dynamic reviews will be loaded here -->
+                <div class="text-center col-span-full py-8">
+                    <i class="fas fa-spinner fa-spin text-primary text-3xl"></i>
+                    <p class="text-gray-600 mt-4">Loading reviews...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-16 bg-light">
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row items-center">
                 <div class="md:w-1/2 mb-8 md:mb-0">
@@ -833,6 +851,24 @@
 
                 <div id="customer-info-fields" class="space-y-4 mb-6">
                      <h3 class="font-semibold text-lg">Your Details</h3>
+                     
+                     <!-- Saved Addresses Section (for logged-in users) -->
+                     <div id="saved-addresses-section" class="hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    <i class="fas fa-map-marker-alt text-primary mr-1"></i>Delivery Address
+                                </label>
+                                <button type="button" onclick="toggleAddressMode()" id="address-mode-toggle" class="text-xs text-primary hover:text-accent">
+                                    Use new address
+                                </button>
+                            </div>
+                            <select id="saved-address-selector" onchange="loadSelectedAddress()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm">
+                                <option value="">Select a saved address</option>
+                            </select>
+                        </div>
+                     </div>
+                     
                      <div>
                         <label for="customer_name" class="block text-gray-700 mb-1 text-sm">Name <span class="text-red-500">*</span></label>
                         <input type="text" id="customer_name" name="customer_name" form="new_order_form" required placeholder="Enter your full name" autocomplete="name" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
@@ -845,7 +881,7 @@
                         <label for="customer_phone" class="block text-gray-700 mb-1 text-sm">Phone Number <span class="text-red-500">*</span></label>
                         <input type="tel" id="customer_phone" name="customer_phone" form="new_order_form" required placeholder="Enter your phone number" autocomplete="tel" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm">
                     </div>
-                     <div>
+                     <div id="address-input-container">
                         <label for="customer_address" class="block text-gray-700 mb-1 text-sm">Delivery Address <span class="text-red-500">*</span></label>
                         <textarea id="customer_address" name="customer_address" form="new_order_form" required placeholder="Enter your delivery address" rows="3" autocomplete="street-address" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary text-sm"></textarea>
                     </div>
@@ -1303,6 +1339,83 @@
                     <i class="fas fa-tag text-gray-400 text-4xl mb-4"></i>
                     <p class="text-gray-600">No special offers available at the moment.</p>
                     <p class="text-gray-500 text-sm mt-2">Check back soon for amazing deals!</p>
+                </div>
+            `;
+        }
+
+        // --- Customer Reviews ---
+        async function loadFeaturedReviews() {
+            try {
+                console.log('Fetching featured reviews from API...');
+                const response = await fetch(`${backendBaseUrl}/reviews/featured`);
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.reviews)) {
+                    console.log(`Successfully loaded ${data.reviews.length} reviews from API`);
+                    displayReviews(data.reviews);
+                } else {
+                    console.error('Invalid response format from reviews API:', data);
+                    showNoReviews();
+                }
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+                showNoReviews();
+            }
+        }
+
+        function displayReviews(reviews) {
+            const reviewsGrid = document.getElementById('reviews-grid');
+            
+            if (!reviews || reviews.length === 0) {
+                showNoReviews();
+                return;
+            }
+
+            reviewsGrid.innerHTML = reviews.map(review => {
+                // Create star rating HTML
+                const stars = Array.from({length: 5}, (_, i) => {
+                    return i < review.rating 
+                        ? '<i class="fas fa-star text-yellow-500"></i>'
+                        : '<i class="far fa-star text-gray-300"></i>';
+                }).join('');
+                
+                // Format date
+                const reviewDate = review.created_at 
+                    ? new Date(review.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : '';
+                
+                // Truncate long reviews
+                const reviewText = review.review_text.length > 150 
+                    ? review.review_text.substring(0, 150) + '...'
+                    : review.review_text;
+                
+                return `
+                    <div class="bg-light p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-3">
+                                ${review.user_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">${review.user_name}</h4>
+                                <div class="flex items-center">
+                                    ${stars}
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mb-4 italic">"${reviewText}"</p>
+                        <p class="text-sm text-gray-500">${reviewDate}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showNoReviews() {
+            const reviewsGrid = document.getElementById('reviews-grid');
+            reviewsGrid.innerHTML = `
+                <div class="text-center col-span-full py-8">
+                    <i class="fas fa-comments text-gray-400 text-4xl mb-4"></i>
+                    <p class="text-gray-600">No customer reviews yet.</p>
+                    <p class="text-gray-500 text-sm mt-2">Be the first to share your experience!</p>
                 </div>
             `;
         }
@@ -1800,6 +1913,124 @@
         }
 
 
+        // --- Profile and Address Management ---
+        let userProfile = null;
+        let userAddresses = [];
+        let usingSavedAddress = true;
+
+        async function loadUserProfile() {
+            if (!loggedInUserId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/profile/${loggedInUserId}`);
+                const data = await response.json();
+
+                if (data.success && data.user) {
+                    userProfile = data.user;
+                    userAddresses = data.user.addresses || [];
+                    
+                    // Auto-fill basic details
+                    autoFillCustomerDetails();
+                    
+                    // Show saved addresses if available
+                    if (userAddresses.length > 0) {
+                        showSavedAddresses();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+            }
+        }
+
+        function autoFillCustomerDetails() {
+            if (!userProfile) return;
+
+            // Auto-fill name, email, phone
+            document.getElementById('customer_name').value = userProfile.name || '';
+            document.getElementById('customer_email').value = userProfile.email || '';
+            document.getElementById('customer_phone').value = userProfile.phone || '';
+            
+            console.log('✅ Customer details auto-filled from profile');
+        }
+
+        function showSavedAddresses() {
+            const savedAddressesSection = document.getElementById('saved-addresses-section');
+            const addressSelector = document.getElementById('saved-address-selector');
+            
+            if (!savedAddressesSection || !addressSelector) return;
+            
+            // Clear existing options
+            addressSelector.innerHTML = '<option value="">Select a saved address</option>';
+            
+            // Add addresses to dropdown
+            userAddresses.forEach(address => {
+                const option = document.createElement('option');
+                option.value = address.address_id;
+                option.textContent = `${address.label} - ${address.full_address.substring(0, 40)}...`;
+                
+                // Select default address
+                if (address.address_id === userProfile.default_address_id) {
+                    option.selected = true;
+                }
+                
+                addressSelector.appendChild(option);
+            });
+            
+            // Show the section
+            savedAddressesSection.classList.remove('hidden');
+            
+            // Load default address
+            if (userProfile.default_address_id) {
+                loadSelectedAddress();
+            }
+        }
+
+        function loadSelectedAddress() {
+            const addressSelector = document.getElementById('saved-address-selector');
+            const selectedAddressId = addressSelector.value;
+            
+            if (!selectedAddressId) {
+                // Clear address field if no selection
+                document.getElementById('customer_address').value = '';
+                return;
+            }
+            
+            // Find the selected address
+            const selectedAddress = userAddresses.find(addr => addr.address_id === selectedAddressId);
+            
+            if (selectedAddress) {
+                // Format full address
+                const fullAddressText = `${selectedAddress.full_address}\n${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`;
+                document.getElementById('customer_address').value = fullAddressText;
+                
+                // Update phone if address has one
+                if (selectedAddress.phone) {
+                    document.getElementById('customer_phone').value = selectedAddress.phone;
+                }
+                
+                console.log('✅ Address loaded:', selectedAddress.label);
+            }
+        }
+
+        function toggleAddressMode() {
+            usingSavedAddress = !usingSavedAddress;
+            const toggleBtn = document.getElementById('address-mode-toggle');
+            const addressSelector = document.getElementById('saved-address-selector');
+            const addressInput = document.getElementById('customer_address');
+            
+            if (usingSavedAddress) {
+                toggleBtn.textContent = 'Use new address';
+                addressSelector.disabled = false;
+                loadSelectedAddress(); // Load selected address
+            } else {
+                toggleBtn.textContent = 'Use saved address';
+                addressSelector.disabled = true;
+                addressInput.value = ''; // Clear for manual entry
+            }
+        }
+
         // --- Event Listeners ---
         function attachAddToCartListeners() {
              // Use event delegation on the product grid for efficiency
@@ -2270,9 +2501,13 @@
             // Load offers from backend API
             await loadOffers();
 
+            // Load featured reviews from backend API
+            await loadFeaturedReviews();
+
             // Load cart based on login status
             if (loggedInUserId) {
                 await loadCartFromBackend(); // Load from backend if logged in
+                await loadUserProfile(); // Load user profile and addresses for auto-fill
             } else {
                 loadCartFromLocalStorage(); // Load from local storage if not logged in
             }
