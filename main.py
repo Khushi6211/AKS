@@ -27,6 +27,7 @@ import cloudinary.uploader
 import cloudinary.api
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
+from twilio.rest import Client as TwilioClient
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -59,6 +60,20 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
 # Configure SendGrid (optional - only if API key is provided)
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
 SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@arunkaryana.com')
+
+# Configure Twilio WhatsApp (optional - only if credentials are provided)
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')  # Twilio Sandbox number
+
+# Initialize Twilio client
+twilio_client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    try:
+        twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        logger.info("✅ Twilio WhatsApp client initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Twilio client: {e}")
 
 # Configure logging
 logging.basicConfig(
@@ -256,6 +271,91 @@ def send_email(to_email, subject, html_content, plain_content=None):
     except Exception as e:
         logger.error(f"❌ SendGrid email error: {e}")
         return {"success": False, "message": str(e)}
+
+# Twilio WhatsApp helper functions
+def send_whatsapp_message(to_phone, message_body):
+    """Send WhatsApp message via Twilio"""
+    try:
+        if not twilio_client:
+            logger.warning("Twilio not configured - WhatsApp message not sent")
+            return {"success": False, "message": "WhatsApp service not configured"}
+        
+        # Ensure phone number has whatsapp: prefix
+        if not to_phone.startswith('whatsapp:'):
+            to_phone = f"whatsapp:{to_phone}"
+        
+        message = twilio_client.messages.create(
+            from_=TWILIO_WHATSAPP_FROM,
+            body=message_body,
+            to=to_phone
+        )
+        
+        logger.info(f"✅ WhatsApp message sent to {to_phone}")
+        return {"success": True, "message_sid": message.sid}
+    except Exception as e:
+        logger.error(f"❌ Twilio WhatsApp error: {e}")
+        return {"success": False, "message": str(e)}
+
+def send_order_confirmation_whatsapp(order_data, customer_phone):
+    """Send order confirmation via WhatsApp"""
+    message = f"""🎉 *Order Confirmation - Arun Karyana Store*
+
+Dear {order_data['customer_name']},
+
+Your order has been successfully placed!
+
+*Order Details:*
+📝 Order ID: #{order_data['order_id']}
+💰 Total Amount: ₹{order_data['total_amount']:.2f}
+📦 Status: Pending
+
+We'll notify you once your order is processed.
+
+Thank you for shopping with us! 🛒
+
+*Arun Karyana Store*
+Railway Road, Barara, Ambala
+📞 +91-94168-91710"""
+    
+    return send_whatsapp_message(customer_phone, message)
+
+def send_order_status_update_whatsapp(order_data, customer_phone, new_status, cancellation_reason=None):
+    """Send order status update via WhatsApp"""
+    
+    # Status emojis and messages
+    status_config = {
+        'Pending': {'emoji': '⏳', 'message': 'Your order is pending confirmation.'},
+        'Processing': {'emoji': '📦', 'message': 'Your order is being processed.'},
+        'Out for Delivery': {'emoji': '🚚', 'message': 'Your order is out for delivery!'},
+        'Delivered': {'emoji': '✅', 'message': 'Your order has been delivered successfully!'},
+        'Cancelled': {'emoji': '❌', 'message': 'Your order has been cancelled.'}
+    }
+    
+    config = status_config.get(new_status, {'emoji': '📋', 'message': f'Order status: {new_status}'})
+    
+    message = f"""{config['emoji']} *Order Status Update - Arun Karyana Store*
+
+Dear {order_data['customer_name']},
+
+{config['message']}
+
+*Order Details:*
+📝 Order ID: #{order_data['order_id']}
+💰 Amount: ₹{order_data['total_amount']:.2f}
+📦 Status: *{new_status}*"""
+    
+    if cancellation_reason:
+        message += f"\n\n*Cancellation Reason:*\n{cancellation_reason}"
+    
+    message += f"""
+
+Thank you for choosing Arun Karyana Store! 🛒
+
+*Arun Karyana Store*
+Railway Road, Barara, Ambala
+📞 +91-94168-91710"""
+    
+    return send_whatsapp_message(customer_phone, message)
 
 def send_order_confirmation_email(order_data, customer_email):
     """Send order confirmation email"""
@@ -851,6 +951,7 @@ def submit_order():
                 "order_date": datetime.datetime.utcnow().strftime('%B %d, %Y at %I:%M %p')
             }
             send_order_confirmation_email(order_email_data, sanitized_customer['email'])
+            send_order_confirmation_whatsapp(order_email_data, sanitized_customer['phone'])
         
         logger.info(f"✅ Order placed: {order_id}")
         return jsonify({
@@ -2304,16 +2405,26 @@ def update_order_status():
         )
         
         if result.modified_count > 0:
+            order_data = {
+                "order_id": str(order['_id']),
+                "customer_name": order['customer_info'].get('name', 'Customer'),
+                "total_amount": order.get('total_amount', 0)
+            }
+            
             # Send email notification if customer has email
             if order.get('customer_info', {}).get('email'):
-                order_data = {
-                    "order_id": str(order['_id']),
-                    "customer_name": order['customer_info'].get('name', 'Customer'),
-                    "total_amount": order.get('total_amount', 0)
-                }
                 send_order_status_update_email(
                     order_data,
                     order['customer_info']['email'],
+                    new_status,
+                    cancellation_reason
+                )
+            
+            # Send WhatsApp notification if customer has phone
+            if order.get('customer_info', {}).get('phone'):
+                send_order_status_update_whatsapp(
+                    order_data,
+                    order['customer_info']['phone'],
                     new_status,
                     cancellation_reason
                 )
