@@ -352,11 +352,15 @@
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4">
                     <h3 class="text-xl font-bold text-gray-800">Products Management</h3>
-                    <button onclick="showAddProductModal()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap">
-                        <i class="fas fa-plus mr-2"></i><span class="hidden sm:inline">Add </span>Product
-                    </button>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button onclick="showBulkUploadModal()" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition whitespace-nowrap">
+                            <i class="fas fa-file-excel mr-2"></i><span class="hidden sm:inline">Bulk Upload</span>
+                        </button>
+                        <button onclick="showAddProductModal()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap">
+                            <i class="fas fa-plus mr-2"></i><span class="hidden sm:inline">Add </span>Product
+                        </button>
+                    </div>
+                </div>                <div class="flex flex-col sm:flex-row gap-3 mb-6">
                     <button id="filter-all-products" onclick="filterProducts('all')" class="px-4 py-3 bg-purple-600 text-white rounded-lg transition hover:bg-purple-700 text-sm sm:text-base">
                         <i class="fas fa-th mr-2"></i>All Products
                     </button>
@@ -498,6 +502,86 @@
                         <i class="fas fa-save mr-2"></i>Save Product
                     </button>
                     <button type="button" onclick="closeModal('product-modal')" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div id="bulk-upload-modal" class="modal">
+        <div class="modal-content max-w-3xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800">Bulk Upload Products</h3>
+                <button onclick="closeModal('bulk-upload-modal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                        <div>
+                            <p class="font-medium text-blue-800 mb-2">Instructions for Excel Upload:</p>
+                            <ol class="text-sm text-blue-700 list-decimal ml-4 space-y-1">
+                                <li>Download the template Excel file below</li>
+                                <li>Fill in product details: Name, Price, Stock, Category, Description</li>
+                                <li>Save the file and upload it here</li>
+                                <li>Product images can be uploaded manually later</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mb-6">
+                    <button onclick="downloadTemplate()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-download mr-2"></i>Download Template
+                    </button>
+                    <a href="https://docs.google.com/spreadsheets/d/1example/edit" target="_blank" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fab fa-google mr-2"></i>Google Sheets Template
+                    </a>
+                </div>
+            </div>
+            
+            <form id="bulk-upload-form" onsubmit="handleBulkUpload(event)">
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Upload Excel File</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-500 transition cursor-pointer" onclick="document.getElementById('excel-input').click()">
+                        <input type="file" id="excel-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelSelect(event)">
+                        <i class="fas fa-file-excel text-5xl text-green-600 mb-3"></i>
+                        <p class="text-gray-600 mb-1">Click to upload Excel file</p>
+                        <p class="text-sm text-gray-400">Supports: .xlsx, .xls, .csv</p>
+                        <p id="selected-file-name" class="text-sm text-purple-600 font-medium mt-2 hidden"></p>
+                    </div>
+                </div>
+                
+                <div id="upload-preview" class="mb-6 hidden">
+                    <h4 class="font-medium text-gray-800 mb-2">Preview (First 5 rows):</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2 border text-left text-sm">Name</th>
+                                    <th class="px-4 py-2 border text-left text-sm">Price</th>
+                                    <th class="px-4 py-2 border text-left text-sm">Stock</th>
+                                    <th class="px-4 py-2 border text-left text-sm">Category</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-table-body"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <span id="total-rows-count">0</span> products ready to upload
+                    </p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="submit" id="upload-btn" class="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium" disabled>
+                        <i class="fas fa-upload mr-2"></i>Upload Products
+                    </button>
+                    <button type="button" onclick="closeModal('bulk-upload-modal')" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
                         Cancel
                     </button>
                 </div>
@@ -836,9 +920,31 @@
 
         // Update order status
         function updateOrderStatus(orderId, newStatus) {
-            if (!confirm(`Change order status to "${newStatus}"?`)) {
-                loadOrders(); // Reload to reset select
-                return;
+            let cancellationReason = null;
+            
+            // If cancelling, ask for reason
+            if (newStatus === 'Cancelled') {
+                cancellationReason = prompt('Please enter the reason for cancellation (this will be sent to the customer):');
+                
+                if (!cancellationReason || cancellationReason.trim() === '') {
+                    alert('Cancellation reason is required!');
+                    loadOrders(); // Reload to reset select
+                    return;
+                }
+            } else {
+                if (!confirm(`Change order status to "${newStatus}"?`)) {
+                    loadOrders(); // Reload to reset select
+                    return;
+                }
+            }
+
+            const requestBody = {
+                order_id: orderId,
+                status: newStatus
+            };
+            
+            if (cancellationReason) {
+                requestBody.cancellation_reason = cancellationReason.trim();
             }
 
             fetch(`${backendBaseUrl}/admin/orders/update-status`, {
@@ -847,7 +953,7 @@
                     'Content-Type': 'application/json',
                     'User-ID': currentUserId
                 },
-                body: JSON.stringify({ order_id: orderId, status: newStatus })
+                body: JSON.stringify(requestBody)
             })
             .then(response => response.json())
             .then(data => {

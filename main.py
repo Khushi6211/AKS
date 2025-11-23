@@ -359,7 +359,7 @@ def send_order_confirmation_email(order_data, customer_email):
     
     return send_email(customer_email, subject, html_content)
 
-def send_order_status_update_email(order_data, customer_email, new_status):
+def send_order_status_update_email(order_data, customer_email, new_status, cancellation_reason=None):
     """Send order status update email"""
     status_messages = {
         "Processing": "Your order is now being prepared! 📦",
@@ -400,6 +400,8 @@ def send_order_status_update_email(order_data, customer_email, new_status):
                 <p><strong>Total Amount:</strong> <span style="color: #9C6F44; font-weight: bold;">₹{order_data['total_amount']}</span></p>
                 <p><strong>Current Status:</strong> <span style="color: #9C6F44; font-weight: bold;">{new_status}</span></p>
             </div>
+            
+            {'<div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;"><h3 style="color: #856404; margin-top: 0; font-family: \'Playfair Display\', serif;"><i class="fas fa-info-circle"></i> Cancellation Reason</h3><p style="color: #856404; margin: 0;">' + str(cancellation_reason) + '</p></div>' if cancellation_reason else ''}
             
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
@@ -1107,14 +1109,23 @@ def get_dashboard_stats():
         today_start = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         today_end = today_start + datetime.timedelta(days=1)
         
-        # Count today's orders
+        # Count today's orders (all orders placed today)
         todays_orders = orders_collection.count_documents({
             "order_date": {"$gte": today_start, "$lt": today_end}
         })
         
-        # Calculate today's sales
+        # Count today's delivered orders
+        todays_delivered = orders_collection.count_documents({
+            "status": "Delivered",
+            "delivered_date": {"$gte": today_start, "$lt": today_end}
+        })
+        
+        # Calculate today's sales (only count DELIVERED orders from today)
         today_pipeline = [
-            {"$match": {"order_date": {"$gte": today_start, "$lt": today_end}}},
+            {"$match": {
+                "status": "Delivered",
+                "delivered_date": {"$gte": today_start, "$lt": today_end}
+            }},
             {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}}
         ]
         todays_sales_result = list(orders_collection.aggregate(today_pipeline))
@@ -1141,6 +1152,7 @@ def get_dashboard_stats():
         
         stats = {
             "todays_orders": todays_orders,
+            "todays_delivered": todays_delivered,
             "todays_sales": round(todays_sales, 2),
             "pending_orders": pending_orders,
             "total_products": total_products,
@@ -1742,11 +1754,16 @@ def update_order_status():
         
         order_id = data['order_id']
         new_status = data['status']
+        cancellation_reason = data.get('cancellation_reason', None)  # Optional cancellation reason
         
         # Validate status
         valid_statuses = ['Pending', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled']
         if new_status not in valid_statuses:
             return jsonify({"success": False, "message": "Invalid status."}), 400
+        
+        # Validate cancellation reason if status is Cancelled
+        if new_status == 'Cancelled' and not cancellation_reason:
+            return jsonify({"success": False, "message": "Cancellation reason is required when cancelling an order."}), 400
         
         # Get order
         order = orders_collection.find_one({"_id": ObjectId(order_id)})
@@ -1759,6 +1776,14 @@ def update_order_status():
             "status": new_status,
             "updated_at": datetime.datetime.utcnow()
         }
+        
+        # If status is Delivered, add delivered_date for sales tracking
+        if new_status == "Delivered":
+            update_data["delivered_date"] = datetime.datetime.utcnow()
+        
+        # If status is Cancelled, add cancellation reason
+        if new_status == "Cancelled" and cancellation_reason:
+            update_data["cancellation_reason"] = cancellation_reason
         
         # Add status history
         status_history_entry = {
@@ -1786,7 +1811,8 @@ def update_order_status():
                 send_order_status_update_email(
                     order_data,
                     order['customer_info']['email'],
-                    new_status
+                    new_status,
+                    cancellation_reason
                 )
             
             logger.info(f"✅ Order status updated: {order_id} -> {new_status}")

@@ -1894,18 +1894,12 @@
                     appliedDiscount = result.discount_amount;
                     automaticOffer = null; // Clear automatic offer if promo applied
                     
-                    // Update display
-                    updateCartDisplay();
-                    
-                    // Show success message
-                    showToast(result.message || 'Promo code applied successfully!');
-                    
-                    // Display applied promo
+                    // Display applied promo FIRST (before updateCartDisplay)
                     const appliedPromoDiv = document.getElementById('applied-promo');
-                    const appliedPromoCode = document.getElementById('applied-promo-code');
+                    const appliedPromoCodeEl = document.getElementById('applied-promo-code');
                     const appliedPromoDesc = document.getElementById('applied-promo-desc');
                     
-                    appliedPromoCode.textContent = `Promo Code: ${promoCode}`;
+                    appliedPromoCodeEl.textContent = `Promo Code: ${promoCode}`;
                     appliedPromoDesc.textContent = result.offer.title;
                     appliedPromoDiv.classList.remove('hidden');
                     
@@ -1915,6 +1909,12 @@
                     // Disable input and button
                     promoInput.disabled = true;
                     document.getElementById('apply-promo-btn').disabled = true;
+                    
+                    // Update display (this will show discount in cart)
+                    updateCartDisplay();
+                    
+                    // Show success message
+                    showToast(result.message || 'Promo code applied successfully!');
                     
                 } else {
                     // Promo code is invalid
