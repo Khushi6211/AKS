@@ -1571,6 +1571,75 @@ def add_product():
         logger.error(f"❌ Error adding product: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+# Admin: Bulk Upload Products
+@app.route('/admin/products/bulk-upload', methods=['POST'])
+@admin_required
+@limiter.limit("5 per minute")
+def bulk_upload_products():
+    """Bulk upload products from Excel/CSV (admin only)"""
+    try:
+        data = request.get_json()
+        
+        if 'products' not in data or not isinstance(data['products'], list):
+            return jsonify({"success": False, "message": "Invalid data format. Expected 'products' array."}), 400
+        
+        products_to_insert = data['products']
+        
+        if len(products_to_insert) == 0:
+            return jsonify({"success": False, "message": "No products to upload."}), 400
+        
+        if len(products_to_insert) > 500:
+            return jsonify({"success": False, "message": "Maximum 500 products can be uploaded at once."}), 400
+        
+        created_count = 0
+        failed_count = 0
+        failed_items = []
+        
+        for idx, product in enumerate(products_to_insert):
+            try:
+                # Validate required fields
+                if not product.get('name') or not product.get('price'):
+                    failed_count += 1
+                    failed_items.append(f"Row {idx+1}: Missing name or price")
+                    continue
+                
+                # Sanitize and prepare product
+                new_product = {
+                    "name": sanitize_string(product['name']),
+                    "price": float(product['price']),
+                    "category": sanitize_string(product.get('category', 'general')),
+                    "image": product.get('image_url', 'https://placehold.co/300x300/cccccc/666666?text=Product'),
+                    "description": sanitize_string(product.get('description', '')),
+                    "stock": int(product.get('stock', 0)),
+                    "cloudinary_public_id": None,
+                    "created_at": datetime.datetime.utcnow(),
+                    "updated_at": datetime.datetime.utcnow()
+                }
+                
+                # Insert product
+                products_collection.insert_one(new_product)
+                created_count += 1
+                logger.info(f"✅ Bulk upload - Product added: {new_product['name']}")
+                
+            except Exception as e:
+                failed_count += 1
+                failed_items.append(f"Row {idx+1}: {str(e)}")
+                logger.error(f"❌ Bulk upload - Failed to add product at row {idx+1}: {e}")
+        
+        logger.info(f"📦 Bulk upload completed: {created_count} created, {failed_count} failed")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Bulk upload completed: {created_count} products created, {failed_count} failed",
+            "created_count": created_count,
+            "failed_count": failed_count,
+            "failed_items": failed_items[:10]  # Return first 10 failed items
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error in bulk upload: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 # Admin: Update Product
 @app.route('/admin/products/update/<product_id>', methods=['PUT'])
 @admin_required

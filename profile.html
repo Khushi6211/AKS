@@ -231,6 +231,95 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
          }
 
+        /* Address Card Styling */
+        .address-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .address-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #9C6F44;
+        }
+
+        .address-card.default {
+            border-left: 4px solid #E8C07D;
+            background-color: #fffdf9;
+        }
+
+        .address-card .address-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2D2D2D;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .address-card .default-badge {
+            background-color: #E8C07D;
+            color: #2D2D2D;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        .address-card .address-text {
+            color: #4a4a4a;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .address-card .address-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .address-card .address-actions button {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .address-card .btn-edit {
+            background-color: #E8C07D;
+            color: #2D2D2D;
+        }
+
+        .address-card .btn-edit:hover {
+            background-color: #B88B4A;
+        }
+
+        .address-card .btn-delete {
+            background-color: #fee;
+            color: #c33;
+        }
+
+        .address-card .btn-delete:hover {
+            background-color: #fcc;
+        }
+
+        .address-card .btn-default {
+            background-color: #f0f0f0;
+            color: #555;
+        }
+
+        .address-card .btn-default:hover {
+            background-color: #e0e0e0;
+        }
+
     </style>
     <script src="config.js"></script>
 </head>
@@ -318,6 +407,20 @@
                      <button type="button" id="cancel-edit-btn" class="bg-gray-300 text-dark px-6 py-2 rounded-md font-medium hover:bg-gray-400 transition shadow-md">Cancel</button>
                  </form>
              </div>
+
+            <!-- My Addresses Section -->
+            <div id="addresses-container" class="profile-card hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-heading text-2xl font-bold">My Addresses</h3>
+                    <button id="add-address-btn" class="bg-primary text-white px-4 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md">
+                        <i class="fas fa-plus mr-2"></i>Add New Address
+                    </button>
+                </div>
+                <div id="addresses-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Address cards will be dynamically loaded here -->
+                    <p id="no-addresses-message" class="text-gray-500 col-span-full text-center py-8">No addresses saved yet. Add your first address!</p>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -443,6 +546,53 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
 
+    <!-- Add/Edit Address Modal -->
+    <div id="address-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="address-modal-heading">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="address-modal-heading" class="font-heading text-2xl font-bold">Add New Address</h3>
+                    <button id="close-address-modal" aria-label="Close Modal" class="text-gray-500 hover:text-primary">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="address-modal-message" class="profile-message hidden"></div>
+                <form id="address-form" class="profile-form">
+                    <input type="hidden" id="address-id" name="address_id">
+                    <div class="form-group">
+                        <label for="address-label">Label <span class="text-red-500">*</span></label>
+                        <input type="text" id="address-label" name="label" placeholder="e.g., Home, Office, Work" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-full">Full Address <span class="text-red-500">*</span></label>
+                        <textarea id="address-full" name="full_address" rows="3" placeholder="House/Flat No., Street Name, Landmark" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-city">City <span class="text-red-500">*</span></label>
+                        <input type="text" id="address-city" name="city" placeholder="e.g., Barara" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-state">State <span class="text-red-500">*</span></label>
+                        <input type="text" id="address-state" name="state" placeholder="e.g., Haryana" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-pincode">Pincode <span class="text-red-500">*</span></label>
+                        <input type="text" id="address-pincode" name="pincode" placeholder="e.g., 133201" required pattern="[0-9]{6}">
+                    </div>
+                    <div class="form-group">
+                        <label for="address-phone">Phone Number</label>
+                        <input type="tel" id="address-phone" name="phone" placeholder="Optional contact number">
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button type="submit" class="flex-1 bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition shadow-md">
+                            <span id="address-submit-text">Add Address</span>
+                        </button>
+                        <button type="button" id="cancel-address-btn" class="flex-1 bg-gray-300 text-dark px-6 py-2 rounded-md font-medium hover:bg-gray-400 transition shadow-md">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script>
          // Product Data (Needed for cart item details)
@@ -927,6 +1077,237 @@
         });
 
 
+        // --- Address Management Logic ---
+        let userAddresses = [];
+        let currentEditingAddressId = null;
+
+        // DOM Elements for Address Management
+        const addressesContainer = document.getElementById('addresses-container');
+        const addressesList = document.getElementById('addresses-list');
+        const noAddressesMessage = document.getElementById('no-addresses-message');
+        const addAddressBtn = document.getElementById('add-address-btn');
+        const addressModal = document.getElementById('address-modal');
+        const closeAddressModalBtn = document.getElementById('close-address-modal');
+        const cancelAddressBtn = document.getElementById('cancel-address-btn');
+        const addressForm = document.getElementById('address-form');
+        const addressModalHeading = document.getElementById('address-modal-heading');
+        const addressSubmitText = document.getElementById('address-submit-text');
+        const addressModalMessage = document.getElementById('address-modal-message');
+
+        // Function to fetch and display addresses
+        async function loadAddresses() {
+            if (!loggedInUserId) {
+                console.log("No user logged in. Cannot load addresses.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/profile/${loggedInUserId}`, {
+                    method: 'GET',
+                    headers: {'Accept': 'application/json'}
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success && result.user) {
+                    userAddresses = result.user.addresses || [];
+                    displayAddresses();
+                    addressesContainer.classList.remove('hidden');
+                } else {
+                    console.error("Failed to load addresses:", result.message || response.statusText);
+                }
+            } catch (error) {
+                console.error("Error loading addresses:", error);
+            }
+        }
+
+        // Function to display addresses
+        function displayAddresses() {
+            addressesList.innerHTML = '';
+
+            if (userAddresses.length === 0) {
+                noAddressesMessage.classList.remove('hidden');
+                return;
+            }
+
+            noAddressesMessage.classList.add('hidden');
+
+            userAddresses.forEach(address => {
+                const isDefault = address.is_default || false;
+                const addressCard = document.createElement('div');
+                addressCard.className = `address-card fade-in ${isDefault ? 'default' : ''}`;
+                
+                addressCard.innerHTML = `
+                    <div class="address-label">
+                        <i class="fas fa-map-marker-alt text-primary"></i>
+                        ${address.label}
+                        ${isDefault ? '<span class="default-badge">Default</span>' : ''}
+                    </div>
+                    <div class="address-text">
+                        ${address.full_address}<br>
+                        ${address.city}, ${address.state} - ${address.pincode}
+                        ${address.phone ? `<br><i class="fas fa-phone text-primary mr-1"></i>${address.phone}` : ''}
+                    </div>
+                    <div class="address-actions">
+                        <button class="btn-edit" onclick="editAddress('${address.address_id}')">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button class="btn-delete" onclick="deleteAddress('${address.address_id}')">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                        ${!isDefault ? `<button class="btn-default" onclick="setDefaultAddress('${address.address_id}')">
+                            <i class="fas fa-star mr-1"></i>Set as Default
+                        </button>` : ''}
+                    </div>
+                `;
+
+                addressesList.appendChild(addressCard);
+            });
+        }
+
+        // Function to open add address modal
+        function openAddAddressModal() {
+            currentEditingAddressId = null;
+            addressModalHeading.textContent = 'Add New Address';
+            addressSubmitText.textContent = 'Add Address';
+            addressForm.reset();
+            document.getElementById('address-id').value = '';
+            addressModalMessage.classList.add('hidden');
+            addressModal.classList.remove('hidden');
+        }
+
+        // Function to edit address
+        window.editAddress = function(addressId) {
+            const address = userAddresses.find(addr => addr.address_id === addressId);
+            if (!address) return;
+
+            currentEditingAddressId = addressId;
+            addressModalHeading.textContent = 'Edit Address';
+            addressSubmitText.textContent = 'Update Address';
+            
+            document.getElementById('address-id').value = address.address_id;
+            document.getElementById('address-label').value = address.label;
+            document.getElementById('address-full').value = address.full_address;
+            document.getElementById('address-city').value = address.city;
+            document.getElementById('address-state').value = address.state;
+            document.getElementById('address-pincode').value = address.pincode;
+            document.getElementById('address-phone').value = address.phone || '';
+            
+            addressModalMessage.classList.add('hidden');
+            addressModal.classList.remove('hidden');
+        };
+
+        // Function to delete address
+        window.deleteAddress = async function(addressId) {
+            if (!confirm('Are you sure you want to delete this address?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/profile/address/delete`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: loggedInUserId,
+                        address_id: addressId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast('Address deleted successfully');
+                    loadAddresses();
+                } else {
+                    alert(result.message || 'Failed to delete address');
+                }
+            } catch (error) {
+                console.error('Error deleting address:', error);
+                alert('An error occurred while deleting the address');
+            }
+        };
+
+        // Function to set default address
+        window.setDefaultAddress = async function(addressId) {
+            try {
+                const response = await fetch(`${backendBaseUrl}/profile/address/set-default`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: loggedInUserId,
+                        address_id: addressId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast('Default address updated');
+                    loadAddresses();
+                } else {
+                    alert(result.message || 'Failed to set default address');
+                }
+            } catch (error) {
+                console.error('Error setting default address:', error);
+                alert('An error occurred while updating default address');
+            }
+        };
+
+        // Event listener for address form submission
+        addressForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const addressData = {
+                user_id: loggedInUserId,
+                label: document.getElementById('address-label').value,
+                full_address: document.getElementById('address-full').value,
+                city: document.getElementById('address-city').value,
+                state: document.getElementById('address-state').value,
+                pincode: document.getElementById('address-pincode').value,
+                phone: document.getElementById('address-phone').value
+            };
+
+            const isEditing = currentEditingAddressId !== null;
+            const endpoint = isEditing ? '/profile/address/update' : '/profile/address/add';
+            
+            if (isEditing) {
+                addressData.address_id = currentEditingAddressId;
+            }
+
+            try {
+                const response = await fetch(`${backendBaseUrl}${endpoint}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(addressData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage(addressModalMessage, result.message || `Address ${isEditing ? 'updated' : 'added'} successfully!`, 'success');
+                    setTimeout(() => {
+                        addressModal.classList.add('hidden');
+                        loadAddresses();
+                    }, 1500);
+                } else {
+                    showMessage(addressModalMessage, result.message || `Failed to ${isEditing ? 'update' : 'add'} address`, 'error');
+                }
+            } catch (error) {
+                console.error(`Error ${isEditing ? 'updating' : 'adding'} address:`, error);
+                showMessage(addressModalMessage, 'An error occurred. Please try again.', 'error');
+            }
+        });
+
+        // Event listeners for modal controls
+        addAddressBtn.addEventListener('click', openAddAddressModal);
+        closeAddressModalBtn.addEventListener('click', () => addressModal.classList.add('hidden'));
+        cancelAddressBtn.addEventListener('click', () => addressModal.classList.add('hidden'));
+        addressModal.addEventListener('click', (e) => {
+            if (e.target === addressModal) {
+                addressModal.classList.add('hidden');
+            }
+        });
+
         // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
             updateAuthLink(); // Update the Login/Logout and other links on page load
@@ -934,6 +1315,7 @@
             // updateCartDisplay() is called by loadCartFromBackend
 
             fetchUserProfile(); // Fetch and display user profile when the page loads
+            loadAddresses(); // Load addresses when page loads
         });
 
         // Cart Modal Toggle Listeners

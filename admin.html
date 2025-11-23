@@ -6,6 +6,7 @@
     <title>Admin Dashboard - Arun Karyana Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -192,6 +193,10 @@
             <a href="#" data-section="customers" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
                 <i class="fas fa-users w-6"></i>
                 <span class="ml-3">Customers</span>
+            </a>
+            <a href="#" data-section="reviews" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
+                <i class="fas fa-star w-6"></i>
+                <span class="ml-3">Reviews</span>
             </a>
         </nav>
         
@@ -411,6 +416,32 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviews-section" class="content-section hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Customer Reviews</h3>
+                    <div class="flex gap-2">
+                        <button onclick="filterReviews('all')" class="review-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition active" data-filter="all">
+                            All Reviews
+                        </button>
+                        <button onclick="filterReviews('featured')" class="review-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="featured">
+                            <i class="fas fa-star text-yellow-500 mr-1"></i>Featured
+                        </button>
+                        <button onclick="filterReviews('5')" class="review-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="5">
+                            5★
+                        </button>
+                        <button onclick="filterReviews('4')" class="review-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="4">
+                            4★
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="reviews-grid">
+                    <div class="text-center py-8 text-gray-400 col-span-full">Loading...</div>
                 </div>
             </div>
         </div>
@@ -782,14 +813,16 @@
                     orders: 'Orders Management',
                     products: 'Products Management',
                     offers: 'Offers & Promotions',
-                    customers: 'Customer Management'
+                    customers: 'Customer Management',
+                    reviews: 'Customer Reviews'
                 };
                 const subtitles = {
                     dashboard: "Welcome back! Here's what's happening today.",
                     orders: 'Manage and track all customer orders',
                     products: 'Add, edit, and manage your product inventory',
                     offers: 'Create and manage promotional offers and discounts',
-                    customers: 'View customer information and statistics'
+                    customers: 'View customer information and statistics',
+                    reviews: 'Manage and feature customer reviews'
                 };
                 document.getElementById('section-title').textContent = titles[section];
                 document.getElementById('section-subtitle').textContent = subtitles[section];
@@ -799,6 +832,7 @@
                 if (section === 'products') loadProducts();
                 if (section === 'offers') loadOffers();
                 if (section === 'customers') loadCustomers();
+                if (section === 'reviews') loadReviews();
             });
         });
 
@@ -1621,6 +1655,279 @@
                 event.target.classList.remove('active');
             }
         };
+
+        // --- Bulk Upload Management ---
+        let parsedExcelData = [];
+
+        function showBulkUploadModal() {
+            document.getElementById('bulk-upload-modal').classList.add('active');
+            document.getElementById('bulk-upload-form').reset();
+            document.getElementById('upload-preview').classList.add('hidden');
+            document.getElementById('selected-file-name').classList.add('hidden');
+            document.getElementById('upload-btn').disabled = true;
+            parsedExcelData = [];
+        }
+
+        function downloadTemplate() {
+            // Create template data
+            const templateData = [
+                ['Name', 'Price', 'Stock', 'Category', 'Description'],
+                ['Lux Soap', '83', '100', 'soaps', 'Premium beauty soap'],
+                ['Tata Salt 1kg', '27', '200', 'food', 'Iodized table salt'],
+                ['Fortune Oil 1L', '157', '50', 'food', 'Refined sunflower oil']
+            ];
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(templateData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 30}, // Name
+                {wch: 10}, // Price
+                {wch: 10}, // Stock
+                {wch: 15}, // Category
+                {wch: 50}  // Description
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Products');
+            
+            // Download file
+            XLSX.writeFile(wb, 'product_template.xlsx');
+        }
+
+        function handleExcelSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('selected-file-name').textContent = file.name;
+            document.getElementById('selected-file-name').classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    // Get first sheet
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (jsonData.length === 0) {
+                        alert('The Excel file is empty!');
+                        return;
+                    }
+
+                    // Validate and parse data
+                    parsedExcelData = jsonData.map(row => ({
+                        name: row.Name || row.name || '',
+                        price: parseFloat(row.Price || row.price || 0),
+                        stock: parseInt(row.Stock || row.stock || 0),
+                        category: (row.Category || row.category || 'general').toLowerCase(),
+                        description: row.Description || row.description || '',
+                        image_url: row.Image || row.image_url || 'https://placehold.co/300x300/cccccc/666666?text=Product'
+                    })).filter(product => product.name && product.price > 0);
+
+                    if (parsedExcelData.length === 0) {
+                        alert('No valid products found in the file!');
+                        return;
+                    }
+
+                    // Show preview
+                    displayExcelPreview(parsedExcelData);
+                    document.getElementById('upload-btn').disabled = false;
+
+                } catch (error) {
+                    console.error('Error parsing Excel file:', error);
+                    alert('Failed to parse Excel file. Please check the format.');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayExcelPreview(data) {
+            const preview = document.getElementById('upload-preview');
+            const tbody = document.getElementById('preview-table-body');
+            const totalCount = document.getElementById('total-rows-count');
+
+            // Show first 5 rows
+            const previewData = data.slice(0, 5);
+            tbody.innerHTML = previewData.map(product => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 border text-sm">${product.name}</td>
+                    <td class="px-4 py-2 border text-sm">₹${product.price}</td>
+                    <td class="px-4 py-2 border text-sm">${product.stock}</td>
+                    <td class="px-4 py-2 border text-sm">${product.category}</td>
+                </tr>
+            `).join('');
+
+            totalCount.textContent = data.length;
+            preview.classList.remove('hidden');
+        }
+
+        async function handleBulkUpload(event) {
+            event.preventDefault();
+
+            if (parsedExcelData.length === 0) {
+                alert('Please select a valid Excel file first!');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('upload-btn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading...';
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/admin/products/bulk-upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-ID': currentUserId
+                    },
+                    body: JSON.stringify({ products: parsedExcelData })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(`Successfully uploaded ${result.created_count} products!\nFailed: ${result.failed_count}`);
+                    closeModal('bulk-upload-modal');
+                    loadProducts(); // Reload products list
+                } else {
+                    alert(result.message || 'Failed to upload products');
+                }
+            } catch (error) {
+                console.error('Error uploading products:', error);
+                alert('An error occurred while uploading products');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Products';
+            }
+        }
+
+        // --- Reviews Management ---
+        let allReviews = [];
+        let currentReviewFilter = 'all';
+
+        // Load Reviews
+        function loadReviews() {
+            fetch(`${backendBaseUrl}/admin/reviews`, {
+                headers: { 'User-ID': currentUserId }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    allReviews = data.reviews;
+                    filterReviews(currentReviewFilter);
+                }
+            })
+            .catch(error => console.error('Error loading reviews:', error));
+        }
+
+        // Filter Reviews
+        function filterReviews(filter) {
+            currentReviewFilter = filter;
+            
+            // Update filter button states
+            document.querySelectorAll('.review-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-purple-600', 'text-white', 'active');
+                btn.classList.add('bg-gray-200');
+            });
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('bg-purple-600', 'text-white', 'active');
+            document.querySelector(`[data-filter="${filter}"]`).classList.remove('bg-gray-200');
+
+            let filteredReviews = allReviews;
+            
+            if (filter === 'featured') {
+                filteredReviews = allReviews.filter(r => r.featured);
+            } else if (filter === '5' || filter === '4') {
+                filteredReviews = allReviews.filter(r => r.rating === parseInt(filter));
+            }
+
+            displayReviews(filteredReviews);
+        }
+
+        // Display Reviews
+        function displayReviews(reviews) {
+            const grid = document.getElementById('reviews-grid');
+            
+            if (reviews.length === 0) {
+                grid.innerHTML = '<div class="text-center py-8 text-gray-400 col-span-full">No reviews found</div>';
+                return;
+            }
+
+            grid.innerHTML = reviews.map(review => {
+                const stars = Array.from({length: 5}, (_, i) => {
+                    return i < review.rating 
+                        ? '<i class="fas fa-star text-yellow-500"></i>'
+                        : '<i class="far fa-star text-gray-300"></i>';
+                }).join('');
+
+                const date = new Date(review.created_at).toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="bg-gray-50 p-4 rounded-lg border ${review.featured ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}">
+                        ${review.featured ? '<div class="flex items-center gap-1 text-yellow-600 text-sm font-semibold mb-2"><i class="fas fa-star"></i> Featured</div>' : ''}
+                        <div class="flex items-center mb-3">
+                            <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
+                                ${review.user_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${review.user_name}</div>
+                                <div class="flex items-center gap-1">${stars}</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 mb-3 text-sm italic">"${review.review_text.length > 120 ? review.review_text.substring(0, 120) + '...' : review.review_text}"</p>
+                        <div class="flex justify-between items-center text-xs text-gray-500 mb-3">
+                            <span><i class="fas fa-calendar mr-1"></i>${date}</span>
+                            <span><i class="fas fa-shopping-bag mr-1"></i>Order #${review.order_id.substring(0, 6)}</span>
+                        </div>
+                        <button onclick="toggleFeatureReview('${review._id}', ${!review.featured})" 
+                                class="w-full py-2 rounded ${review.featured ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} transition font-medium text-sm">
+                            <i class="fas ${review.featured ? 'fa-times' : 'fa-check'} mr-1"></i>
+                            ${review.featured ? 'Unfeature' : 'Feature'} Review
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle Feature Status
+        function toggleFeatureReview(reviewId, featured) {
+            if (!confirm(`Are you sure you want to ${featured ? 'feature' : 'unfeature'} this review?`)) {
+                return;
+            }
+
+            fetch(`${backendBaseUrl}/admin/reviews/feature`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({
+                    review_id: reviewId,
+                    featured: featured
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || `Review ${featured ? 'featured' : 'unfeatured'} successfully!`);
+                    loadReviews(); // Reload reviews
+                } else {
+                    alert(data.message || 'Failed to update review');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating review:', error);
+                alert('An error occurred while updating the review');
+            });
+        }
     </script>
 </body>
 </html>
