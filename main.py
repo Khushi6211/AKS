@@ -113,10 +113,11 @@ products_collection = None
 orders_collection = None
 offers_collection = None
 carts_collection = None
+reviews_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection
     
     try:
         client = MongoClient(
@@ -131,6 +132,7 @@ def initialize_database():
         orders_collection = db.orders
         offers_collection = db.offers
         carts_collection = db.carts
+        reviews_collection = db.reviews
         
         # Test connection
         client.admin.command('ping')
@@ -948,7 +950,9 @@ def get_user_profile(user_id):
             "email": user_document.get('email'),
             "phone": user_document.get('phone'),
             "created_at": user_document.get('created_at').isoformat() if user_document.get('created_at') else None,
-            "role": user_document.get('role', 'customer')
+            "role": user_document.get('role', 'customer'),
+            "addresses": user_document.get('addresses', []),
+            "default_address_id": user_document.get('default_address_id', None)
         }
         
         return jsonify({"success": True, "user": user_data}), 200
@@ -1007,6 +1011,348 @@ def update_user_profile():
     except Exception as e:
         logger.error(f"❌ Error updating profile: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the profile."}), 500
+
+# Add Address to Profile
+@app.route('/profile/address/add', methods=['POST'])
+@limiter.limit("20 per minute")
+def add_address():
+    """Add a new address to user profile"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'user_id' not in data:
+            return jsonify({"success": False, "message": "Missing user ID."}), 400
+        
+        user_id = data['user_id']
+        
+        # Validate required address fields
+        required_fields = ['label', 'full_address', 'city', 'state', 'pincode']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
+        
+        # Create address object
+        address = {
+            "address_id": str(ObjectId()),  # Generate unique ID for address
+            "label": sanitize_string(data['label']),  # e.g., "Home", "Office", "Other"
+            "full_address": sanitize_string(data['full_address']),
+            "city": sanitize_string(data['city']),
+            "state": sanitize_string(data['state']),
+            "pincode": data['pincode'].strip(),
+            "phone": data.get('phone', '').strip(),
+            "created_at": datetime.datetime.utcnow()
+        }
+        
+        # Get user's current addresses
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"success": False, "message": "User not found."}), 404
+        
+        # Add address to user's addresses array
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$push": {"addresses": address}}
+        )
+        
+        # If this is the first address, set it as default
+        if not user.get('addresses'):
+            users_collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"default_address_id": address['address_id']}}
+            )
+        
+        logger.info(f"✅ Address added for user: {user_id}")
+        return jsonify({"success": True, "message": "Address added successfully!", "address_id": address['address_id']}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error adding address: {e}")
+        return jsonify({"success": False, "message": "An error occurred while adding the address."}), 500
+
+# Update Address
+@app.route('/profile/address/update', methods=['POST'])
+@limiter.limit("20 per minute")
+def update_address():
+    """Update an existing address"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'user_id' not in data or 'address_id' not in data:
+            return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
+        
+        user_id = data['user_id']
+        address_id = data['address_id']
+        
+        # Build update fields
+        update_fields = {}
+        if 'label' in data:
+            update_fields['addresses.$.label'] = sanitize_string(data['label'])
+        if 'full_address' in data:
+            update_fields['addresses.$.full_address'] = sanitize_string(data['full_address'])
+        if 'city' in data:
+            update_fields['addresses.$.city'] = sanitize_string(data['city'])
+        if 'state' in data:
+            update_fields['addresses.$.state'] = sanitize_string(data['state'])
+        if 'pincode' in data:
+            update_fields['addresses.$.pincode'] = data['pincode'].strip()
+        if 'phone' in data:
+            update_fields['addresses.$.phone'] = data['phone'].strip()
+        
+        if not update_fields:
+            return jsonify({"success": False, "message": "No fields to update."}), 400
+        
+        # Update the specific address in the array
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id), "addresses.address_id": address_id},
+            {"$set": update_fields}
+        )
+        
+        if result.matched_count > 0:
+            logger.info(f"✅ Address updated for user: {user_id}")
+            return jsonify({"success": True, "message": "Address updated successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Address not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error updating address: {e}")
+        return jsonify({"success": False, "message": "An error occurred while updating the address."}), 500
+
+# Delete Address
+@app.route('/profile/address/delete', methods=['POST'])
+@limiter.limit("20 per minute")
+def delete_address():
+    """Delete an address from user profile"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'user_id' not in data or 'address_id' not in data:
+            return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
+        
+        user_id = data['user_id']
+        address_id = data['address_id']
+        
+        # Remove the address from the array
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$pull": {"addresses": {"address_id": address_id}}}
+        )
+        
+        if result.modified_count > 0:
+            # If deleted address was default, set first remaining address as default
+            user = users_collection.find_one({"_id": ObjectId(user_id)})
+            if user.get('default_address_id') == address_id:
+                if user.get('addresses') and len(user['addresses']) > 0:
+                    users_collection.update_one(
+                        {"_id": ObjectId(user_id)},
+                        {"$set": {"default_address_id": user['addresses'][0]['address_id']}}
+                    )
+                else:
+                    users_collection.update_one(
+                        {"_id": ObjectId(user_id)},
+                        {"$unset": {"default_address_id": ""}}
+                    )
+            
+            logger.info(f"✅ Address deleted for user: {user_id}")
+            return jsonify({"success": True, "message": "Address deleted successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Address not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error deleting address: {e}")
+        return jsonify({"success": False, "message": "An error occurred while deleting the address."}), 500
+
+# Set Default Address
+@app.route('/profile/address/set-default', methods=['POST'])
+@limiter.limit("20 per minute")
+def set_default_address():
+    """Set an address as default"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'user_id' not in data or 'address_id' not in data:
+            return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
+        
+        user_id = data['user_id']
+        address_id = data['address_id']
+        
+        # Update default address
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id), "addresses.address_id": address_id},
+            {"$set": {"default_address_id": address_id}}
+        )
+        
+        if result.matched_count > 0:
+            logger.info(f"✅ Default address set for user: {user_id}")
+            return jsonify({"success": True, "message": "Default address updated!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Address not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error setting default address: {e}")
+        return jsonify({"success": False, "message": "An error occurred."}), 500
+
+# Submit Order Review
+@app.route('/order/review/submit', methods=['POST'])
+@limiter.limit("10 per minute")
+def submit_order_review():
+    """Submit a review for a delivered order"""
+    try:
+        if reviews_collection is None or orders_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
+        
+        # Validate required fields
+        required_fields = ['order_id', 'user_id', 'rating', 'review_text']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
+        
+        order_id = data['order_id']
+        user_id = data['user_id']
+        rating = int(data['rating'])
+        review_text = sanitize_string(data['review_text'])
+        
+        # Validate rating (1-5)
+        if rating < 1 or rating > 5:
+            return jsonify({"success": False, "message": "Rating must be between 1 and 5."}), 400
+        
+        # Check if order exists and belongs to user
+        order = orders_collection.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            return jsonify({"success": False, "message": "Order not found."}), 404
+        
+        # Check if order is delivered
+        if order.get('status') != 'Delivered':
+            return jsonify({"success": False, "message": "You can only review delivered orders."}), 400
+        
+        # Check if already reviewed
+        existing_review = reviews_collection.find_one({"order_id": order_id, "user_id": user_id})
+        if existing_review:
+            return jsonify({"success": False, "message": "You have already reviewed this order."}), 400
+        
+        # Get user info
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        
+        # Create review
+        review = {
+            "order_id": order_id,
+            "user_id": user_id,
+            "user_name": user.get('name', 'Anonymous') if user else 'Anonymous',
+            "rating": rating,
+            "review_text": review_text,
+            "featured": False,  # Admin can feature this later
+            "created_at": datetime.datetime.utcnow()
+        }
+        
+        # Insert review
+        result = reviews_collection.insert_one(review)
+        
+        # Update order with review info
+        orders_collection.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": {"reviewed": True, "review_id": str(result.inserted_id)}}
+        )
+        
+        logger.info(f"✅ Review submitted for order: {order_id}")
+        return jsonify({"success": True, "message": "Thank you for your review!"}), 201
+        
+    except Exception as e:
+        logger.error(f"❌ Error submitting review: {e}")
+        return jsonify({"success": False, "message": "An error occurred while submitting the review."}), 500
+
+# Get Reviews (Admin)
+@app.route('/admin/reviews', methods=['GET'])
+@admin_required
+def get_all_reviews():
+    """Get all reviews (admin only)"""
+    try:
+        if reviews_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        # Get all reviews sorted by date (newest first)
+        reviews = list(reviews_collection.find({}).sort("created_at", -1))
+        
+        # Convert ObjectId to string and format dates
+        for review in reviews:
+            review['_id'] = str(review['_id'])
+            if isinstance(review.get('created_at'), datetime.datetime):
+                review['created_at'] = review['created_at'].isoformat()
+        
+        return jsonify({"success": True, "reviews": reviews}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching reviews: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Feature/Unfeature Review (Admin)
+@app.route('/admin/reviews/feature', methods=['POST'])
+@admin_required
+@limiter.limit("30 per minute")
+def feature_review():
+    """Feature or unfeature a review (admin only)"""
+    try:
+        if reviews_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'review_id' not in data or 'featured' not in data:
+            return jsonify({"success": False, "message": "Missing review_id or featured status."}), 400
+        
+        review_id = data['review_id']
+        featured = bool(data['featured'])
+        
+        # Update review
+        result = reviews_collection.update_one(
+            {"_id": ObjectId(review_id)},
+            {"$set": {"featured": featured}}
+        )
+        
+        if result.matched_count > 0:
+            action = "featured" if featured else "unfeatured"
+            logger.info(f"✅ Review {action}: {review_id}")
+            return jsonify({"success": True, "message": f"Review {action} successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Review not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error featuring review: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Get Featured Reviews (Public)
+@app.route('/reviews/featured', methods=['GET'])
+def get_featured_reviews():
+    """Get featured reviews for homepage"""
+    try:
+        if reviews_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        # Get featured reviews with rating 4 or 5, limit to 10
+        reviews = list(reviews_collection.find({
+            "featured": True,
+            "rating": {"$gte": 4}
+        }).sort("created_at", -1).limit(10))
+        
+        # Convert ObjectId to string and format dates
+        for review in reviews:
+            review['_id'] = str(review['_id'])
+            if isinstance(review.get('created_at'), datetime.datetime):
+                review['created_at'] = review['created_at'].isoformat()
+        
+        return jsonify({"success": True, "reviews": reviews}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching featured reviews: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # Get Order Details
 @app.route('/order/<order_id>', methods=['GET'])
@@ -1777,13 +2123,54 @@ def update_order_status():
             "updated_at": datetime.datetime.utcnow()
         }
         
-        # If status is Delivered, add delivered_date for sales tracking
+        # If status is Delivered, add delivered_date for sales tracking AND deduct stock
         if new_status == "Delivered":
             update_data["delivered_date"] = datetime.datetime.utcnow()
+            
+            # Deduct stock for each item in the order
+            if 'items' in order:
+                for item in order['items']:
+                    product_id = item.get('id')
+                    quantity = item.get('quantity', 0)
+                    
+                    if product_id and quantity > 0:
+                        try:
+                            # Convert string ID to ObjectId
+                            prod_obj_id = ObjectId(product_id)
+                            
+                            # Deduct stock from product
+                            products_collection.update_one(
+                                {"_id": prod_obj_id},
+                                {"$inc": {"stock": -quantity}}  # Decrement stock
+                            )
+                            logger.info(f"📦 Deducted {quantity} units from product {product_id}")
+                        except Exception as e:
+                            logger.error(f"❌ Error deducting stock for product {product_id}: {e}")
         
-        # If status is Cancelled, add cancellation reason
-        if new_status == "Cancelled" and cancellation_reason:
-            update_data["cancellation_reason"] = cancellation_reason
+        # If status is Cancelled, add cancellation reason and restore stock
+        if new_status == "Cancelled":
+            if cancellation_reason:
+                update_data["cancellation_reason"] = cancellation_reason
+            
+            # Restore stock if order was already marked as delivered
+            if order.get('status') == 'Delivered' and 'items' in order:
+                for item in order['items']:
+                    product_id = item.get('id')
+                    quantity = item.get('quantity', 0)
+                    
+                    if product_id and quantity > 0:
+                        try:
+                            # Convert string ID to ObjectId
+                            prod_obj_id = ObjectId(product_id)
+                            
+                            # Restore stock to product
+                            products_collection.update_one(
+                                {"_id": prod_obj_id},
+                                {"$inc": {"stock": quantity}}  # Increment stock back
+                            )
+                            logger.info(f"♻️ Restored {quantity} units to product {product_id}")
+                        except Exception as e:
+                            logger.error(f"❌ Error restoring stock for product {product_id}: {e}")
         
         # Add status history
         status_history_entry = {
