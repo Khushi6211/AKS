@@ -1034,53 +1034,50 @@
                 // Show loading state
                 displayProfilePic.style.opacity = '0.5';
                 
-                // Convert image to base64
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    try {
-                        const imageData = e.target.result;
-                        
-                        // Upload to backend
-                        const uploadResponse = await fetch(`${backendBaseUrl}/profile/upload-picture`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'User-ID': loggedInUserId
-                            },
-                            body: JSON.stringify({
-                                image_data: imageData,
-                                user_id: loggedInUserId
-                            })
-                        });
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('folder', 'arun_karyana_profiles');
 
-                        const uploadResult = await uploadResponse.json();
+                // Upload to Cloudinary
+                const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
 
-                        if (uploadResponse.ok && uploadResult.success) {
-                            // Update display immediately
-                            displayProfilePic.src = uploadResult.url;
-                            showToast('Profile picture updated successfully!');
-                        } else {
-                            throw new Error(uploadResult.message || 'Upload failed');
-                        }
-                    } catch (error) {
-                        console.error('Error uploading profile picture:', error);
-                        alert('Failed to upload profile picture: ' + error.message);
-                        displayProfilePic.style.opacity = '1';
+                const cloudinaryData = await cloudinaryResponse.json();
+
+                if (cloudinaryData.secure_url) {
+                    // Update profile picture in backend
+                    const backendResponse = await fetch(`${backendBaseUrl}/profile/update-picture`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: loggedInUserId,
+                            profile_picture: cloudinaryData.secure_url,
+                            cloudinary_public_id: cloudinaryData.public_id
+                        })
+                    });
+
+                    const backendResult = await backendResponse.json();
+
+                    if (backendResponse.ok && backendResult.success) {
+                        // Update display immediately
+                        displayProfilePic.src = cloudinaryData.secure_url;
+                        showToast('Profile picture updated successfully!');
+                    } else {
+                        throw new Error(backendResult.message || 'Failed to update profile picture in database');
                     }
-                };
-                
-                reader.onerror = function() {
-                    alert('Failed to read image file');
-                    displayProfilePic.style.opacity = '1';
-                };
-                
-                reader.readAsDataURL(file);
-                
+                } else {
+                    throw new Error('Cloudinary upload failed');
+                }
             } catch (error) {
                 console.error('Error uploading profile picture:', error);
-                alert('Failed to upload profile picture. Please try again.');
-                displayProfilePic.style.opacity = '1';
+                alert('Failed to upload profile picture: ' + error.message);
             } finally {
+                displayProfilePic.style.opacity = '1';
                 profilePicInput.value = ''; // Reset input
             }
         }
