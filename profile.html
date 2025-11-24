@@ -1005,11 +1005,7 @@
         const editAltPhoneInput = document.getElementById('edit-alt-phone');
         const profilePicInput = document.getElementById('profile-pic-input');
 
-        // Cloudinary configuration
-        const CLOUDINARY_CLOUD_NAME = 'dtpljr4yd';
-        const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
-
-        // Profile Picture Upload Functions
+        // Profile Picture Upload Functions (via backend endpoint)
         function triggerProfilePicUpload() {
             profilePicInput.click();
         }
@@ -1034,49 +1030,46 @@
                 // Show loading state
                 displayProfilePic.style.opacity = '0.5';
                 
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                formData.append('folder', 'arun_karyana_profiles');
+                // Convert file to base64
+                const reader = new FileReader();
+                reader.onloadend = async function() {
+                    try {
+                        const base64Image = reader.result;
+                        
+                        // Upload through backend (which handles Cloudinary authentication)
+                        const backendResponse = await fetch(`${backendBaseUrl}/profile/upload-picture`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                user_id: loggedInUserId,
+                                image_data: base64Image
+                            })
+                        });
 
-                // Upload to Cloudinary
-                const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
+                        const backendResult = await backendResponse.json();
 
-                const cloudinaryData = await cloudinaryResponse.json();
-
-                if (cloudinaryData.secure_url) {
-                    // Update profile picture in backend
-                    const backendResponse = await fetch(`${backendBaseUrl}/profile/update-picture`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_id: loggedInUserId,
-                            profile_picture: cloudinaryData.secure_url,
-                            cloudinary_public_id: cloudinaryData.public_id
-                        })
-                    });
-
-                    const backendResult = await backendResponse.json();
-
-                    if (backendResponse.ok && backendResult.success) {
-                        // Update display immediately
-                        displayProfilePic.src = cloudinaryData.secure_url;
-                        showToast('Profile picture updated successfully!');
-                    } else {
-                        throw new Error(backendResult.message || 'Failed to update profile picture in database');
+                        if (backendResponse.ok && backendResult.success) {
+                            // Update display immediately
+                            displayProfilePic.src = backendResult.url;
+                            showToast('Profile picture updated successfully!');
+                        } else {
+                            throw new Error(backendResult.message || 'Failed to update profile picture');
+                        }
+                    } catch (error) {
+                        console.error('Error uploading profile picture:', error);
+                        alert('Failed to upload profile picture: ' + error.message);
+                    } finally {
+                        displayProfilePic.style.opacity = '1';
+                        profilePicInput.value = ''; // Reset input
                     }
-                } else {
-                    throw new Error('Cloudinary upload failed');
-                }
+                };
+                
+                reader.readAsDataURL(file);
             } catch (error) {
-                console.error('Error uploading profile picture:', error);
-                alert('Failed to upload profile picture: ' + error.message);
-            } finally {
+                console.error('Error reading file:', error);
+                alert('Failed to read file: ' + error.message);
                 displayProfilePic.style.opacity = '1';
                 profilePicInput.value = ''; // Reset input
             }
