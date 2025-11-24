@@ -1034,56 +1034,54 @@
                 // Show loading state
                 displayProfilePic.style.opacity = '0.5';
                 
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                formData.append('folder', 'arun_karyana_profiles');
+                // Convert image to base64
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const imageData = e.target.result;
+                        
+                        // Upload to backend
+                        const uploadResponse = await fetch(`${backendBaseUrl}/profile/upload-picture`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'User-ID': loggedInUserId
+                            },
+                            body: JSON.stringify({
+                                image_data: imageData,
+                                user_id: loggedInUserId
+                            })
+                        });
 
-                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
+                        const uploadResult = await uploadResponse.json();
 
-                const data = await response.json();
-
-                if (data.secure_url) {
-                    // Update profile picture in backend
-                    await updateProfilePicture(data.secure_url, data.public_id);
-                    
-                    // Update display immediately
-                    displayProfilePic.src = data.secure_url;
-                    showToast('Profile picture updated successfully!');
-                } else {
-                    throw new Error('Upload failed');
-                }
+                        if (uploadResponse.ok && uploadResult.success) {
+                            // Update display immediately
+                            displayProfilePic.src = uploadResult.url;
+                            showToast('Profile picture updated successfully!');
+                        } else {
+                            throw new Error(uploadResult.message || 'Upload failed');
+                        }
+                    } catch (error) {
+                        console.error('Error uploading profile picture:', error);
+                        alert('Failed to upload profile picture: ' + error.message);
+                        displayProfilePic.style.opacity = '1';
+                    }
+                };
+                
+                reader.onerror = function() {
+                    alert('Failed to read image file');
+                    displayProfilePic.style.opacity = '1';
+                };
+                
+                reader.readAsDataURL(file);
+                
             } catch (error) {
                 console.error('Error uploading profile picture:', error);
                 alert('Failed to upload profile picture. Please try again.');
-            } finally {
                 displayProfilePic.style.opacity = '1';
+            } finally {
                 profilePicInput.value = ''; // Reset input
-            }
-        }
-
-        async function updateProfilePicture(imageUrl, publicId) {
-            try {
-                const response = await fetch(`${backendBaseUrl}/profile/update-picture`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        user_id: loggedInUserId,
-                        profile_picture: imageUrl,
-                        cloudinary_public_id: publicId
-                    })
-                });
-
-                const result = await response.json();
-                if (!response.ok || !result.success) {
-                    throw new Error(result.message || 'Failed to update profile picture');
-                }
-            } catch (error) {
-                console.error('Error updating profile picture:', error);
-                throw error;
             }
         }
 

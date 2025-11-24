@@ -1123,26 +1123,32 @@ def update_user_profile():
         logger.error(f"❌ Error updating profile: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the profile."}), 500
 
-# Update Profile Picture
-@app.route('/profile/update-picture', methods=['POST'])
+# Upload and Update Profile Picture
+@app.route('/profile/upload-picture', methods=['POST'])
 @limiter.limit("10 per minute")
-def update_profile_picture():
-    """Update user profile picture"""
+def upload_profile_picture():
+    """Upload profile picture to Cloudinary and update user profile"""
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'profile_picture' not in data:
+        if not data or 'user_id' not in data or 'image_data' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
         
         user_id = data['user_id']
-        profile_picture = data['profile_picture']
-        cloudinary_public_id = data.get('cloudinary_public_id')
+        image_data = data['image_data']
         
+        # Upload to Cloudinary
+        upload_result = upload_image_to_cloudinary(image_data, folder="profiles")
+        
+        if not upload_result['success']:
+            return jsonify({"success": False, "message": upload_result.get('message', 'Failed to upload image')}), 500
+        
+        # Update user profile with new image URL
         update_fields = {
-            "profile_picture": profile_picture,
-            "cloudinary_profile_pic_id": cloudinary_public_id
+            "profile_picture": upload_result['url'],
+            "cloudinary_profile_pic_id": upload_result.get('public_id')
         }
         
         update_result = users_collection.update_one(
@@ -1152,13 +1158,18 @@ def update_profile_picture():
         
         if update_result.matched_count > 0:
             logger.info(f"✅ Profile picture updated for user: {user_id}")
-            return jsonify({"success": True, "message": "Profile picture updated successfully."}), 200
+            return jsonify({
+                "success": True,
+                "message": "Profile picture updated successfully.",
+                "url": upload_result['url'],
+                "public_id": upload_result.get('public_id')
+            }), 200
         else:
             return jsonify({"success": False, "message": "User not found."}), 404
             
     except Exception as e:
-        logger.error(f"❌ Error updating profile picture: {e}")
-        return jsonify({"success": False, "message": "An error occurred while updating the profile picture."}), 500
+        logger.error(f"❌ Error uploading profile picture: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # Add Address to Profile
 @app.route('/profile/address/add', methods=['POST'])
