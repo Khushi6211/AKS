@@ -758,11 +758,11 @@
                 <div>
                     <h3 class="font-heading text-xl font-semibold mb-4">Customer Service</h3>
                     <ul class="space-y-2">
-                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">FAQs</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Shipping Policy</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Return Policy</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Privacy Policy</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-secondary transition">Terms & Conditions</a></li>
+                        <li><a href="/faq.html" class="text-gray-300 hover:text-secondary transition">FAQs</a></li>
+                        <li><a href="/shipping-policy.html" class="text-gray-300 hover:text-secondary transition">Shipping Policy</a></li>
+                        <li><a href="/return-policy.html" class="text-gray-300 hover:text-secondary transition">Return Policy</a></li>
+                        <li><a href="/privacy-policy.html" class="text-gray-300 hover:text-secondary transition">Privacy Policy</a></li>
+                        <li><a href="/terms.html" class="text-gray-300 hover:text-secondary transition">Terms & Conditions</a></li>
                     </ul>
                 </div>
                 <div>
@@ -2505,6 +2505,84 @@
 
             // Scroll to the products section after filtering
             scrollToElement('products');
+        }
+
+        // Contact Form Submission
+        async function submitContactForm(event) {
+            event.preventDefault();
+            
+            const submitBtn = document.getElementById('contact-submit-btn');
+            const messageDiv = document.getElementById('contact-form-message');
+            
+            // Get form data
+            const formData = {
+                name: document.getElementById('contact-name').value.trim(),
+                email: document.getElementById('contact-email').value.trim(),
+                phone: document.getElementById('contact-phone').value.trim(),
+                message: document.getElementById('contact-message').value.trim()
+            };
+            
+            // Validate fields
+            if (!formData.name || !formData.email || !formData.phone || !formData.message) {
+                messageDiv.textContent = 'Please fill in all fields.';
+                messageDiv.className = 'mb-4 p-3 rounded bg-red-100 text-red-700';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                messageDiv.textContent = 'Please enter a valid email address.';
+                messageDiv.className = 'mb-4 p-3 rounded bg-red-100 text-red-700';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+            
+            try {
+                const response = await fetch(`${backendBaseUrl}/contact/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Success
+                    messageDiv.textContent = 'Thank you for contacting us! We\'ll get back to you soon.';
+                    messageDiv.className = 'mb-4 p-3 rounded bg-green-100 text-green-700';
+                    messageDiv.classList.remove('hidden');
+                    
+                    // Reset form
+                    document.getElementById('contact-form').reset();
+                    
+                    // Hide message after 5 seconds
+                    setTimeout(() => {
+                        messageDiv.classList.add('hidden');
+                    }, 5000);
+                } else {
+                    // Error from backend
+                    messageDiv.textContent = result.message || 'Failed to send message. Please try again.';
+                    messageDiv.className = 'mb-4 p-3 rounded bg-red-100 text-red-700';
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error submitting contact form:', error);
+                messageDiv.textContent = 'An error occurred. Please try again later.';
+                messageDiv.className = 'mb-4 p-3 rounded bg-red-100 text-red-700';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Message';
+            }
         }
 
 

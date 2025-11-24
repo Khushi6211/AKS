@@ -1053,7 +1053,11 @@ def get_user_profile(user_id):
             "created_at": user_document.get('created_at').isoformat() if user_document.get('created_at') else None,
             "role": user_document.get('role', 'customer'),
             "addresses": user_document.get('addresses', []),
-            "default_address_id": user_document.get('default_address_id', None)
+            "default_address_id": user_document.get('default_address_id', None),
+            "profile_picture": user_document.get('profile_picture'),
+            "dob": user_document.get('dob'),
+            "gender": user_document.get('gender'),
+            "alt_phone": user_document.get('alt_phone')
         }
         
         return jsonify({"success": True, "user": user_data}), 200
@@ -1123,7 +1127,7 @@ def update_user_profile():
         logger.error(f"❌ Error updating profile: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the profile."}), 500
 
-# Upload and Update Profile Picture
+# Upload and Update Profile Picture (Old endpoint - kept for compatibility)
 @app.route('/profile/upload-picture', methods=['POST'])
 @limiter.limit("10 per minute")
 def upload_profile_picture():
@@ -1170,6 +1174,44 @@ def upload_profile_picture():
     except Exception as e:
         logger.error(f"❌ Error uploading profile picture: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+# Update Profile Picture (New endpoint - used by frontend)
+@app.route('/profile/update-picture', methods=['POST'])
+@limiter.limit("10 per minute")
+def update_profile_picture():
+    """Update user profile picture with Cloudinary URL"""
+    try:
+        if users_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'user_id' not in data or 'profile_picture' not in data:
+            return jsonify({"success": False, "message": "Missing required fields."}), 400
+        
+        user_id = data['user_id']
+        profile_picture = data['profile_picture']
+        cloudinary_public_id = data.get('cloudinary_public_id')
+        
+        # Update fields
+        update_fields = {
+            "profile_picture": profile_picture,
+            "cloudinary_profile_pic_id": cloudinary_public_id
+        }
+        
+        update_result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_fields}
+        )
+        
+        if update_result.matched_count > 0:
+            logger.info(f"✅ Profile picture updated for user: {user_id}")
+            return jsonify({"success": True, "message": "Profile picture updated successfully."}), 200
+        else:
+            return jsonify({"success": False, "message": "User not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error updating profile picture: {e}")
+        return jsonify({"success": False, "message": "An error occurred while updating the profile picture."}), 500
 
 # Add Address to Profile
 @app.route('/profile/address/add', methods=['POST'])
@@ -2523,6 +2565,173 @@ def get_products():
         
     except Exception as e:
         logger.error(f"❌ Error fetching products: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== CONTACT FORM SUBMISSION ==========
+
+# Initialize messages collection
+messages_collection = None
+if db is not None:
+    messages_collection = db.messages
+
+# Submit Contact Form
+@app.route('/contact/submit', methods=['POST'])
+@limiter.limit("5 per hour")  # Strict limit for contact form
+def submit_contact_form():
+    """Submit contact form message"""
+    try:
+        if messages_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
+        
+        # Validate required fields
+        required_fields = ['name', 'email', 'phone', 'message']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
+        
+        # Sanitize inputs
+        name = sanitize_string(data['name'].strip())
+        email = data['email'].strip().lower()
+        phone = data['phone'].strip()
+        message = sanitize_string(data['message'].strip())
+        
+        # Validate email
+        if not validate_email(email):
+            return jsonify({"success": False, "message": "Invalid email format."}), 400
+        
+        # Validate phone
+        if not validate_phone(phone):
+            return jsonify({"success": False, "message": "Invalid phone number."}), 400
+        
+        # Create message document
+        new_message = {
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "message": message,
+            "created_at": datetime.datetime.utcnow(),
+            "read": False,  # Mark as unread by default
+            "ip_address": request.remote_addr
+        }
+        
+        result = messages_collection.insert_one(new_message)
+        
+        # Send email notification to admin (optional)
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@arunkaryana.com')
+        if SENDGRID_API_KEY:
+            try:
+                admin_notification_html = f"""
+                <h3>New Contact Form Message</h3>
+                <p><strong>Name:</strong> {name}</p>
+                <p><strong>Email:</strong> {email}</p>
+                <p><strong>Phone:</strong> {phone}</p>
+                <p><strong>Message:</strong></p>
+                <p>{message}</p>
+                <p><em>Received: {datetime.datetime.utcnow().strftime('%B %d, %Y at %I:%M %p')}</em></p>
+                """
+                send_email(admin_email, "New Contact Form Submission - Arun Karyana Store", admin_notification_html)
+            except Exception as e:
+                logger.error(f"Failed to send admin notification email: {e}")
+        
+        logger.info(f"✅ Contact form message received from: {email}")
+        return jsonify({
+            "success": True,
+            "message": "Thank you for contacting us! We'll get back to you soon.",
+            "message_id": str(result.inserted_id)
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"❌ Error submitting contact form: {e}")
+        return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
+
+# Admin: Get All Messages
+@app.route('/admin/messages', methods=['GET'])
+@admin_required
+def get_all_messages():
+    """Get all contact form messages (admin only)"""
+    try:
+        if messages_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        # Get all messages sorted by date (newest first)
+        messages = list(messages_collection.find({}).sort("created_at", -1))
+        
+        # Convert ObjectId to string and format dates
+        for message in messages:
+            message['_id'] = str(message['_id'])
+            if isinstance(message.get('created_at'), datetime.datetime):
+                message['created_at'] = message['created_at'].isoformat()
+        
+        return jsonify({"success": True, "messages": messages}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching messages: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Mark Message as Read/Unread
+@app.route('/admin/messages/mark-read', methods=['POST'])
+@admin_required
+@limiter.limit("30 per minute")
+def mark_message_read():
+    """Mark message as read/unread (admin only)"""
+    try:
+        if messages_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'message_id' not in data or 'read' not in data:
+            return jsonify({"success": False, "message": "Missing message_id or read status."}), 400
+        
+        message_id = data['message_id']
+        read_status = bool(data['read'])
+        
+        # Update message
+        result = messages_collection.update_one(
+            {"_id": ObjectId(message_id)},
+            {"$set": {"read": read_status}}
+        )
+        
+        if result.matched_count > 0:
+            logger.info(f"✅ Message marked as {'read' if read_status else 'unread'}: {message_id}")
+            return jsonify({"success": True, "message": f"Message marked as {'read' if read_status else 'unread'} successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Message not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error marking message: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: Delete Message
+@app.route('/admin/messages/delete', methods=['POST'])
+@admin_required
+@limiter.limit("30 per minute")
+def delete_message():
+    """Delete a contact form message (admin only)"""
+    try:
+        if messages_collection is None:
+            return jsonify({"success": False, "message": "Database connection not available."}), 500
+        
+        data = request.get_json()
+        if not data or 'message_id' not in data:
+            return jsonify({"success": False, "message": "Missing message_id."}), 400
+        
+        message_id = data['message_id']
+        
+        # Delete message
+        result = messages_collection.delete_one({"_id": ObjectId(message_id)})
+        
+        if result.deleted_count > 0:
+            logger.info(f"✅ Message deleted: {message_id}")
+            return jsonify({"success": True, "message": "Message deleted successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Message not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error deleting message: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Error handlers
