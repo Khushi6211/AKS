@@ -1345,11 +1345,17 @@
                     ? review.review_text.substring(0, 150) + '...'
                     : review.review_text;
                 
+                // Determine if we should show profile picture or initials
+                const userInitial = review.user_name.charAt(0).toUpperCase();
+                const profilePictureHtml = review.user_profile_picture 
+                    ? `<img src="${review.user_profile_picture}" alt="${review.user_name}" class="w-12 h-12 rounded-full object-cover" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl\\'>${userInitial}</div>';">`
+                    : `<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">${userInitial}</div>`;
+                
                 return `
                     <div class="bg-light p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
                         <div class="flex items-center mb-4">
-                            <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-3">
-                                ${review.user_name.charAt(0).toUpperCase()}
+                            <div class="mr-3">
+                                ${profilePictureHtml}
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-800">${review.user_name}</h4>

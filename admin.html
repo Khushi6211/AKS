@@ -1918,12 +1918,18 @@
                     day: 'numeric'
                 });
 
+                // Determine if we should show profile picture or initials
+                const userInitial = review.user_name.charAt(0).toUpperCase();
+                const profilePictureHtml = review.user_profile_picture 
+                    ? `<img src="${review.user_profile_picture}" alt="${review.user_name}" class="w-10 h-10 rounded-full object-cover" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg\\'>${userInitial}</div>';">`
+                    : `<div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">${userInitial}</div>`;
+                
                 return `
                     <div class="bg-gray-50 p-4 rounded-lg border ${review.featured ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}">
                         ${review.featured ? '<div class="flex items-center gap-1 text-yellow-600 text-sm font-semibold mb-2"><i class="fas fa-star"></i> Featured</div>' : ''}
                         <div class="flex items-center mb-3">
-                            <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
-                                ${review.user_name.charAt(0).toUpperCase()}
+                            <div class="mr-3">
+                                ${profilePictureHtml}
                             </div>
                             <div>
                                 <div class="font-semibold text-gray-800">${review.user_name}</div>

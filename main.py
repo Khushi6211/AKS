@@ -1475,19 +1475,34 @@ def submit_order_review():
 @app.route('/admin/reviews', methods=['GET'])
 @admin_required
 def get_all_reviews():
-    """Get all reviews (admin only)"""
+    """Get all reviews with user profile pictures (admin only)"""
     try:
-        if reviews_collection is None:
+        if reviews_collection is None or users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         # Get all reviews sorted by date (newest first)
         reviews = list(reviews_collection.find({}).sort("created_at", -1))
         
-        # Convert ObjectId to string and format dates
+        # Enrich reviews with user profile pictures
         for review in reviews:
             review['_id'] = str(review['_id'])
             if isinstance(review.get('created_at'), datetime.datetime):
                 review['created_at'] = review['created_at'].isoformat()
+            
+            # Fetch user profile picture if user_id exists
+            if review.get('user_id'):
+                try:
+                    user = users_collection.find_one(
+                        {"_id": ObjectId(review['user_id'])},
+                        {"profile_picture": 1}
+                    )
+                    if user:
+                        review['user_profile_picture'] = user.get('profile_picture', '')
+                except Exception as e:
+                    logger.warning(f"Could not fetch user data for review {review['_id']}: {e}")
+                    review['user_profile_picture'] = ''
+            else:
+                review['user_profile_picture'] = ''
         
         return jsonify({"success": True, "reviews": reviews}), 200
         
@@ -1532,9 +1547,9 @@ def feature_review():
 # Get Featured Reviews (Public)
 @app.route('/reviews/featured', methods=['GET'])
 def get_featured_reviews():
-    """Get featured reviews for homepage"""
+    """Get featured reviews for homepage with user profile pictures"""
     try:
-        if reviews_collection is None:
+        if reviews_collection is None or users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         # Get featured reviews with rating 4 or 5, limit to 10
@@ -1543,11 +1558,29 @@ def get_featured_reviews():
             "rating": {"$gte": 4}
         }).sort("created_at", -1).limit(10))
         
-        # Convert ObjectId to string and format dates
+        # Enrich reviews with user profile pictures
         for review in reviews:
             review['_id'] = str(review['_id'])
             if isinstance(review.get('created_at'), datetime.datetime):
                 review['created_at'] = review['created_at'].isoformat()
+            
+            # Fetch user profile picture if user_id exists
+            if review.get('user_id'):
+                try:
+                    user = users_collection.find_one(
+                        {"_id": ObjectId(review['user_id'])},
+                        {"profile_picture": 1, "name": 1}
+                    )
+                    if user:
+                        review['user_profile_picture'] = user.get('profile_picture', '')
+                        # Fallback to user name from users collection if not in review
+                        if not review.get('user_name') and user.get('name'):
+                            review['user_name'] = user.get('name')
+                except Exception as e:
+                    logger.warning(f"Could not fetch user data for review {review['_id']}: {e}")
+                    review['user_profile_picture'] = ''
+            else:
+                review['user_profile_picture'] = ''
         
         return jsonify({"success": True, "reviews": reviews}), 200
         
