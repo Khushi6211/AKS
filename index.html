@@ -441,6 +441,55 @@
             text-align: center;
             flex-grow: 1; /* Allow span to take available space */
         }
+
+        /* Running Banner Styles */
+        #offer-banner {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        #offer-banner:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            transform: scaleY(1.05);
+        }
+        
+        .banner-content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .banner-scroll {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 20s linear infinite;
+        }
+        
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+        
+        /* Pause animation on hover */
+        #offer-banner:hover .banner-scroll {
+            animation-play-state: paused;
+        }
+        
+        /* LED-style text effect */
+        .banner-scroll {
+            text-shadow: 
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 30px currentColor;
+            letter-spacing: 2px;
+        }
     </style>
     <script src="config.js"></script>
 </head>
@@ -540,6 +589,17 @@
             </div>
         </div>
     </section>
+
+    <!-- Running Banner Section -->
+    <div id="offer-banner-container" class="hidden">
+        <div id="offer-banner" class="overflow-hidden py-3 cursor-pointer" style="background-color: #FF6B6B;">
+            <div class="banner-content-wrapper">
+                <div id="banner-text" class="banner-scroll text-white font-bold text-lg whitespace-nowrap inline-block" style="color: #FFFFFF;">
+                    <!-- Banner text will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <section id="products" class="py-16">
         <div class="container mx-auto px-4">
@@ -2558,6 +2618,54 @@
 
 
         // --- Initial Setup ---
+        // Load Active Banner
+        async function loadActiveBanner() {
+            try {
+                const response = await fetch(`${backendBaseUrl}/banners/active`);
+                const data = await response.json();
+                
+                if (data.success && data.banner) {
+                    const banner = data.banner;
+                    const container = document.getElementById('offer-banner-container');
+                    const bannerElement = document.getElementById('offer-banner');
+                    const bannerText = document.getElementById('banner-text');
+                    
+                    // Set banner content
+                    bannerText.textContent = `🔥 ${banner.text} 🔥`;
+                    
+                    // Set colors
+                    bannerElement.style.backgroundColor = banner.background_color || '#FF6B6B';
+                    bannerText.style.color = banner.text_color || '#FFFFFF';
+                    
+                    // Set click handler based on link type
+                    if (banner.link_type === 'product' && banner.link_id) {
+                        bannerElement.style.cursor = 'pointer';
+                        bannerElement.onclick = () => {
+                            // Scroll to products and filter by this product
+                            scrollToElement('products');
+                        };
+                    } else if (banner.link_type === 'url' && banner.link_url) {
+                        bannerElement.style.cursor = 'pointer';
+                        bannerElement.onclick = () => {
+                            window.open(banner.link_url, '_blank');
+                        };
+                    } else {
+                        bannerElement.style.cursor = 'default';
+                        bannerElement.onclick = null;
+                    }
+                    
+                    // Show the banner
+                    container.classList.remove('hidden');
+                } else {
+                    // Hide banner if none is active
+                    document.getElementById('offer-banner-container').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading banner:', error);
+                document.getElementById('offer-banner-container').classList.add('hidden');
+            }
+        }
+
         // Load Categories Dynamically
         async function loadCategories() {
             try {
@@ -2603,6 +2711,9 @@
 
         document.addEventListener('DOMContentLoaded', async () => { // Added async here
             updateAuthLink(); // Update the Login/Logout link on page load
+
+            // Load active banner
+            await loadActiveBanner();
 
             // Load categories first
             await loadCategories();

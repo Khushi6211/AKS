@@ -131,10 +131,11 @@ carts_collection = None
 reviews_collection = None
 messages_collection = None
 categories_collection = None
+banners_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection
     
     try:
         client = MongoClient(
@@ -152,6 +153,7 @@ def initialize_database():
         reviews_collection = db.reviews
         messages_collection = db.messages
         categories_collection = db.categories
+        banners_collection = db.banners
         
         # Test connection
         client.admin.command('ping')
@@ -2754,6 +2756,201 @@ def delete_category():
         
     except Exception as e:
         logger.error(f"❌ Error deleting category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== BANNER MANAGEMENT ==========
+
+# Get Active Banner
+@app.route('/banners/active', methods=['GET'])
+def get_active_banner():
+    """Get currently active banner for display"""
+    try:
+        banner = banners_collection.find_one({'is_active': True})
+        
+        if not banner:
+            return jsonify({"success": True, "banner": None}), 200
+        
+        banner['_id'] = str(banner['_id'])
+        return jsonify({"success": True, "banner": banner}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching active banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Get All Banners (Admin)
+@app.route('/admin/banners', methods=['GET'])
+@jwt_required()
+def get_all_banners():
+    """Get all banners (admin only)"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        banners = list(banners_collection.find().sort('created_at', -1))
+        
+        for banner in banners:
+            banner['_id'] = str(banner['_id'])
+        
+        return jsonify({"success": True, "banners": banners}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching banners: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Add Banner (Admin)
+@app.route('/admin/banners/add', methods=['POST'])
+@jwt_required()
+def add_banner():
+    """Add a new banner"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        
+        if not data.get('text'):
+            return jsonify({"success": False, "message": "Banner text is required."}), 400
+        
+        new_banner = {
+            "text": sanitize_string(data['text']),
+            "link_type": data.get('link_type', 'none'),  # 'product', 'offer', 'url', 'none'
+            "link_id": data.get('link_id', ''),  # Product ID or Offer ID
+            "link_url": data.get('link_url', ''),  # External URL
+            "background_color": data.get('background_color', '#FF6B6B'),
+            "text_color": data.get('text_color', '#FFFFFF'),
+            "is_active": data.get('is_active', False),
+            "created_at": datetime.datetime.utcnow(),
+            "updated_at": datetime.datetime.utcnow()
+        }
+        
+        # If setting as active, deactivate all other banners
+        if new_banner['is_active']:
+            banners_collection.update_many({}, {'$set': {'is_active': False}})
+        
+        result = banners_collection.insert_one(new_banner)
+        
+        logger.info(f"✅ Banner added: {new_banner['text'][:50]}")
+        return jsonify({
+            "success": True,
+            "message": "Banner added successfully!",
+            "banner_id": str(result.inserted_id)
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"❌ Error adding banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Update Banner (Admin)
+@app.route('/admin/banners/update/<banner_id>', methods=['PUT'])
+@jwt_required()
+def update_banner(banner_id):
+    """Update banner"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        
+        update_fields = {"updated_at": datetime.datetime.utcnow()}
+        
+        if 'text' in data:
+            update_fields['text'] = sanitize_string(data['text'])
+        if 'link_type' in data:
+            update_fields['link_type'] = data['link_type']
+        if 'link_id' in data:
+            update_fields['link_id'] = data['link_id']
+        if 'link_url' in data:
+            update_fields['link_url'] = data['link_url']
+        if 'background_color' in data:
+            update_fields['background_color'] = data['background_color']
+        if 'text_color' in data:
+            update_fields['text_color'] = data['text_color']
+        if 'is_active' in data:
+            # If setting as active, deactivate all other banners first
+            if data['is_active']:
+                banners_collection.update_many({}, {'$set': {'is_active': False}})
+            update_fields['is_active'] = data['is_active']
+        
+        result = banners_collection.update_one(
+            {'_id': ObjectId(banner_id)},
+            {'$set': update_fields}
+        )
+        
+        if result.matched_count > 0:
+            logger.info(f"✅ Banner updated: {banner_id}")
+            return jsonify({"success": True, "message": "Banner updated successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Banner not found."}), 404
+        
+    except Exception as e:
+        logger.error(f"❌ Error updating banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Toggle Banner Active Status (Admin)
+@app.route('/admin/banners/toggle/<banner_id>', methods=['POST'])
+@jwt_required()
+def toggle_banner_status(banner_id):
+    """Toggle banner active status"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        banner = banners_collection.find_one({'_id': ObjectId(banner_id)})
+        if not banner:
+            return jsonify({"success": False, "message": "Banner not found."}), 404
+        
+        new_status = not banner.get('is_active', False)
+        
+        # If activating, deactivate all other banners
+        if new_status:
+            banners_collection.update_many({}, {'$set': {'is_active': False}})
+        
+        banners_collection.update_one(
+            {'_id': ObjectId(banner_id)},
+            {'$set': {'is_active': new_status, 'updated_at': datetime.datetime.utcnow()}}
+        )
+        
+        logger.info(f"✅ Banner status toggled: {banner_id} -> {new_status}")
+        return jsonify({"success": True, "message": "Banner status updated!", "is_active": new_status}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error toggling banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Delete Banner (Admin)
+@app.route('/admin/banners/delete/<banner_id>', methods=['DELETE'])
+@jwt_required()
+def delete_banner(banner_id):
+    """Delete a banner"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        result = banners_collection.delete_one({'_id': ObjectId(banner_id)})
+        
+        if result.deleted_count > 0:
+            logger.info(f"✅ Banner deleted: {banner_id}")
+            return jsonify({"success": True, "message": "Banner deleted successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Banner not found."}), 404
+        
+    except Exception as e:
+        logger.error(f"❌ Error deleting banner: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 # ========== CONTACT FORM SUBMISSION ==========
