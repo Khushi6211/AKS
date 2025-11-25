@@ -203,6 +203,10 @@
                 <i class="fas fa-box w-6"></i>
                 <span class="ml-3">Products</span>
             </a>
+            <a href="#" data-section="categories" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
+                <i class="fas fa-th-large w-6"></i>
+                <span class="ml-3">Categories</span>
+            </a>
             <a href="#" data-section="offers" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
                 <i class="fas fa-tag w-6"></i>
                 <span class="ml-3">Offers</span>
@@ -401,6 +405,21 @@
             </div>
         </div>
 
+        <!-- Categories Section -->
+        <div id="categories-section" class="content-section hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Category Management</h3>
+                    <button onclick="showAddCategoryModal()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap">
+                        <i class="fas fa-plus mr-2"></i>Add Category
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="categories-grid">
+                    <div class="text-center py-8 text-gray-400">Loading...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Offers Section -->
         <div id="offers-section" class="content-section hidden">
             <div class="bg-white rounded-xl shadow-lg p-6">
@@ -470,17 +489,17 @@
 
         <!-- Messages Section -->
         <div id="messages-section" class="content-section hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-800">Contact Form Messages</h3>
-                    <div class="flex gap-2">
-                        <button onclick="filterMessages('all')" class="message-filter-btn px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition active" data-filter="all">
+            <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800">Contact Form Messages</h3>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button onclick="filterMessages('all')" class="message-filter-btn px-3 md:px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition active text-sm md:text-base flex-1 sm:flex-none" data-filter="all">
                             All Messages
                         </button>
-                        <button onclick="filterMessages('unread')" class="message-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="unread">
+                        <button onclick="filterMessages('unread')" class="message-filter-btn px-3 md:px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition text-sm md:text-base flex-1 sm:flex-none" data-filter="unread">
                             <i class="fas fa-envelope text-red-500 mr-1"></i>Unread
                         </button>
-                        <button onclick="filterMessages('read')" class="message-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="read">
+                        <button onclick="filterMessages('read')" class="message-filter-btn px-3 md:px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition text-sm md:text-base flex-1 sm:flex-none" data-filter="read">
                             <i class="fas fa-envelope-open text-green-500 mr-1"></i>Read
                         </button>
                     </div>
@@ -857,6 +876,7 @@
                     dashboard: 'Dashboard',
                     orders: 'Orders Management',
                     products: 'Products Management',
+                    categories: 'Category Management',
                     offers: 'Offers & Promotions',
                     customers: 'Customer Management',
                     reviews: 'Customer Reviews',
@@ -866,6 +886,7 @@
                     dashboard: "Welcome back! Here's what's happening today.",
                     orders: 'Manage and track all customer orders',
                     products: 'Add, edit, and manage your product inventory',
+                    categories: 'Add, edit, and delete product categories',
                     offers: 'Create and manage promotional offers and discounts',
                     customers: 'View customer information and statistics',
                     reviews: 'Manage and feature customer reviews',
@@ -877,6 +898,7 @@
                 // Load section data
                 if (section === 'orders') loadOrders();
                 if (section === 'products') loadProducts();
+                if (section === 'categories') loadCategories();
                 if (section === 'offers') loadOffers();
                 if (section === 'customers') loadCustomers();
                 if (section === 'reviews') loadReviews();
@@ -2044,39 +2066,39 @@
                 });
 
                 return `
-                    <div class="bg-gray-50 p-5 rounded-lg border ${message.read ? 'border-gray-200' : 'border-blue-400 bg-blue-50'} hover:shadow-md transition">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    <div class="bg-gray-50 p-3 md:p-5 rounded-lg border ${message.read ? 'border-gray-200' : 'border-blue-400 bg-blue-50'} hover:shadow-md transition">
+                        <div class="flex flex-col sm:flex-row justify-between items-start mb-3 gap-3 sm:gap-0">
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                                     ${message.name.charAt(0).toUpperCase()}
                                 </div>
-                                <div>
-                                    <h4 class="font-semibold text-gray-800">${message.name}</h4>
-                                    <div class="flex items-center gap-3 text-sm text-gray-600">
-                                        <span><i class="fas fa-envelope mr-1"></i>${message.email}</span>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="font-semibold text-gray-800 text-sm md:text-base truncate">${message.name}</h4>
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs md:text-sm text-gray-600">
+                                        <span class="truncate"><i class="fas fa-envelope mr-1"></i>${message.email}</span>
                                         <span><i class="fas fa-phone mr-1"></i>${message.phone}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 self-end sm:self-auto">
                                 ${!message.read ? '<span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">NEW</span>' : ''}
-                                <span class="text-xs text-gray-500"><i class="far fa-clock mr-1"></i>${date}</span>
+                                <span class="text-xs text-gray-500 whitespace-nowrap"><i class="far fa-clock mr-1"></i>${date}</span>
                             </div>
                         </div>
                         <div class="bg-white p-3 rounded border border-gray-200 mb-3">
-                            <p class="text-gray-700 text-sm whitespace-pre-wrap">${message.message}</p>
+                            <p class="text-gray-700 text-xs md:text-sm whitespace-pre-wrap break-words">${message.message}</p>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-col sm:flex-row gap-2">
                             <button onclick="toggleReadStatus('${message._id}', ${!message.read})" 
-                                    class="px-4 py-2 rounded ${message.read ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} transition font-medium text-sm">
+                                    class="px-3 md:px-4 py-2 rounded ${message.read ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} transition font-medium text-xs md:text-sm w-full sm:w-auto">
                                 <i class="fas ${message.read ? 'fa-envelope' : 'fa-envelope-open'} mr-1"></i>
                                 Mark as ${message.read ? 'Unread' : 'Read'}
                             </button>
-                            <a href="mailto:${message.email}" class="px-4 py-2 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition font-medium text-sm">
+                            <a href="mailto:${message.email}" class="px-3 md:px-4 py-2 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition font-medium text-xs md:text-sm text-center w-full sm:w-auto">
                                 <i class="fas fa-reply mr-1"></i>Reply via Email
                             </a>
                             <button onclick="deleteContactMessage('${message._id}')" 
-                                    class="px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition font-medium text-sm ml-auto">
+                                    class="px-3 md:px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition font-medium text-xs md:text-sm w-full sm:w-auto sm:ml-auto">
                                 <i class="fas fa-trash mr-1"></i>Delete
                             </button>
                         </div>
@@ -2140,6 +2162,158 @@
             .catch(error => {
                 console.error('Error deleting message:', error);
                 alert('An error occurred while deleting the message');
+            });
+        }
+
+        // ========== CATEGORY MANAGEMENT ==========
+
+        // Load Categories
+        function loadCategories() {
+            fetch(`${backendBaseUrl}/categories`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayCategories(data.categories);
+                    } else {
+                        console.error('Failed to load categories');
+                        document.getElementById('categories-grid').innerHTML = '<div class="text-center py-8 text-red-500">Failed to load categories</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading categories:', error);
+                    document.getElementById('categories-grid').innerHTML = '<div class="text-center py-8 text-red-500">Error loading categories</div>';
+                });
+        }
+
+        // Display Categories
+        function displayCategories(categories) {
+            const grid = document.getElementById('categories-grid');
+            
+            if (categories.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-400">No categories found. Add your first category!</div>';
+                return;
+            }
+
+            grid.innerHTML = categories.map(cat => `
+                <div class="bg-white border-2 border-gray-200 rounded-lg p-4 hover:shadow-lg transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-th-large text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">${cat.name}</h4>
+                                <p class="text-sm text-gray-500">${cat.product_count} products</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editCategory('${cat.name}')" class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition text-sm">
+                            <i class="fas fa-edit mr-1"></i>Rename
+                        </button>
+                        <button onclick="deleteCategory('${cat.name}', ${cat.product_count})" class="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition text-sm">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show Add Category Modal
+        function showAddCategoryModal() {
+            const categoryName = prompt('Enter new category name:');
+            if (!categoryName || !categoryName.trim()) return;
+
+            fetch(`${backendBaseUrl}/admin/categories/add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({ category_name: categoryName.trim() })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadCategories();
+                } else {
+                    alert(data.message || 'Failed to add category');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding category:', error);
+                alert('An error occurred while adding the category');
+            });
+        }
+
+        // Edit Category
+        function editCategory(oldName) {
+            const newName = prompt(`Rename category "${oldName}" to:`, oldName);
+            if (!newName || !newName.trim() || newName.trim() === oldName) return;
+
+            fetch(`${backendBaseUrl}/admin/categories/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({ 
+                    old_category: oldName, 
+                    new_category: newName.trim() 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadCategories();
+                    // Refresh products if on products section
+                    if (!document.getElementById('products-section').classList.contains('hidden')) {
+                        loadProducts();
+                    }
+                } else {
+                    alert(data.message || 'Failed to rename category');
+                }
+            })
+            .catch(error => {
+                console.error('Error renaming category:', error);
+                alert('An error occurred while renaming the category');
+            });
+        }
+
+        // Delete Category
+        function deleteCategory(categoryName, productCount) {
+            const message = productCount > 0 
+                ? `Are you sure you want to delete "${categoryName}"?\n\n${productCount} products will be moved to "Uncategorized".`
+                : `Are you sure you want to delete "${categoryName}"?`;
+            
+            if (!confirm(message)) return;
+
+            fetch(`${backendBaseUrl}/admin/categories/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({ category_name: categoryName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadCategories();
+                    // Refresh products if on products section
+                    if (!document.getElementById('products-section').classList.contains('hidden')) {
+                        loadProducts();
+                    }
+                } else {
+                    alert(data.message || 'Failed to delete category');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting category:', error);
+                alert('An error occurred while deleting the category');
             });
         }
     </script>

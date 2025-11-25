@@ -548,12 +548,9 @@
                 <div class="w-20 h-1 bg-primary mx-auto"></div>
             </div>
 
-            <div class="flex overflow-x-auto pb-4 mb-8 space-x-2 category-scrollbar">
+            <div id="category-buttons-container" class="flex overflow-x-auto pb-4 mb-8 space-x-2 category-scrollbar">
+                <!-- Categories will be dynamically loaded -->
                 <button class="category-btn active px-4 py-2 rounded-full bg-primary text-white whitespace-nowrap fade-in" data-category="all">All Items</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="soaps">Soaps & Detergents</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="food">Food Items</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="beverages">Beverages</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="personal-care">Personal Care</button>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="product-grid">
@@ -1511,7 +1508,10 @@
              const currentSearchQuery = searchInput.value.toLowerCase();
 
              // Filter products based on selected category
-             const categoryFiltered = (category === 'all') ? products : products.filter(p => p.category === category);
+             // Convert data-category back to actual category name (e.g., "soaps-detergents" -> "Soaps & Detergents")
+             const categoryFiltered = (category === 'all') 
+                ? products 
+                : products.filter(p => p.category && p.category.toLowerCase().replace(/\s+/g, '-') === category);
 
              // Apply current search filter to category filtered results
              const searchAndCategoryFiltered = currentSearchQuery
@@ -2508,8 +2508,54 @@
 
 
         // --- Initial Setup ---
+        // Load Categories Dynamically
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${backendBaseUrl}/categories`);
+                const data = await response.json();
+                
+                if (data.success && data.categories.length > 0) {
+                    const container = document.getElementById('category-buttons-container');
+                    
+                    // Keep the "All Items" button and add dynamic categories after it
+                    const dynamicButtons = data.categories.map(cat => {
+                        return `<button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="${cat.name.toLowerCase().replace(/\s+/g, '-')}">${cat.name}</button>`;
+                    }).join('');
+                    
+                    // Append dynamic categories after "All Items"
+                    container.innerHTML += dynamicButtons;
+                    
+                    // Re-attach click listeners to new category buttons
+                    attachCategoryListeners();
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        // Attach click listeners to category buttons
+        function attachCategoryListeners() {
+            document.querySelectorAll('.category-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const category = button.dataset.category;
+                    filterProductsByCategory(category);
+                    
+                    // Update active button styling
+                    document.querySelectorAll('.category-btn').forEach(btn => {
+                        btn.classList.remove('active', 'bg-primary', 'text-white');
+                        btn.classList.add('bg-light', 'text-dark');
+                    });
+                    button.classList.add('active', 'bg-primary', 'text-white');
+                    button.classList.remove('bg-light', 'text-dark');
+                });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', async () => { // Added async here
             updateAuthLink(); // Update the Login/Logout link on page load
+
+            // Load categories first
+            await loadCategories();
 
             // Load products from backend API first
             await loadProducts();

@@ -129,10 +129,12 @@ orders_collection = None
 offers_collection = None
 carts_collection = None
 reviews_collection = None
+messages_collection = None
+categories_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection
     
     try:
         client = MongoClient(
@@ -148,6 +150,8 @@ def initialize_database():
         offers_collection = db.offers
         carts_collection = db.carts
         reviews_collection = db.reviews
+        messages_collection = db.messages
+        categories_collection = db.categories
         
         # Test connection
         client.admin.command('ping')
@@ -179,6 +183,19 @@ def initialize_database():
             ]
             products_collection.insert_many(products)
             logger.info("✅ Initial products added to database")
+        
+        # Initialize categories if empty
+        if categories_collection.count_documents({}) == 0:
+            default_categories = [
+                {"id": "all", "name": "All Items", "display_name": "All Items", "created_at": datetime.datetime.utcnow()},
+                {"id": "soaps", "name": "soaps", "display_name": "Soaps & Detergents", "created_at": datetime.datetime.utcnow()},
+                {"id": "food", "name": "food", "display_name": "Food Items", "created_at": datetime.datetime.utcnow()},
+                {"id": "beverages", "name": "beverages", "display_name": "Beverages", "created_at": datetime.datetime.utcnow()},
+                {"id": "personal-care", "name": "personal-care", "display_name": "Personal Care", "created_at": datetime.datetime.utcnow()}
+            ]
+            categories_collection.insert_many(default_categories)
+            categories_collection.create_index([("id", ASCENDING)], unique=True)
+            logger.info("✅ Initial categories added to database")
             
     except Exception as e:
         logger.error(f"❌ Error connecting to MongoDB: {e}")
@@ -2600,12 +2617,140 @@ def get_products():
         logger.error(f"❌ Error fetching products: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ========== CONTACT FORM SUBMISSION ==========
+# ========== CATEGORY MANAGEMENT ==========
 
-# Initialize messages collection
-messages_collection = None
-if db is not None:
-    messages_collection = db.messages
+# Get All Categories
+@app.route('/categories', methods=['GET'])
+def get_categories():
+    """Get all unique categories from products"""
+    try:
+        # Get distinct categories from products collection
+        categories = products_collection.distinct('category')
+        
+        # Get count for each category
+        category_list = []
+        for cat in categories:
+            count = products_collection.count_documents({'category': cat})
+            category_list.append({
+                'name': cat,
+                'product_count': count
+            })
+        
+        # Sort by name
+        category_list.sort(key=lambda x: x['name'])
+        
+        return jsonify({"success": True, "categories": category_list}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching categories: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Add New Category (Admin)
+@app.route('/admin/categories/add', methods=['POST'])
+@jwt_required()
+def add_category():
+    """Add a new category"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        category_name = data.get('category_name', '').strip()
+        
+        if not category_name:
+            return jsonify({"success": False, "message": "Category name is required."}), 400
+        
+        # Check if category already exists
+        existing = products_collection.find_one({'category': category_name})
+        if existing:
+            return jsonify({"success": False, "message": "Category already exists."}), 400
+        
+        logger.info(f"✅ Category '{category_name}' registered (will be active when products are added)")
+        return jsonify({
+            "success": True, 
+            "message": f"Category '{category_name}' registered. Add products to this category to make it visible.",
+            "category": category_name
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error adding category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Update Category Name (Admin)
+@app.route('/admin/categories/update', methods=['POST'])
+@jwt_required()
+def update_category():
+    """Update category name for all products with that category"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        old_category = data.get('old_category', '').strip()
+        new_category = data.get('new_category', '').strip()
+        
+        if not old_category or not new_category:
+            return jsonify({"success": False, "message": "Both old and new category names are required."}), 400
+        
+        # Update all products with this category
+        result = products_collection.update_many(
+            {'category': old_category},
+            {'$set': {'category': new_category}}
+        )
+        
+        logger.info(f"✅ Category renamed: '{old_category}' → '{new_category}' ({result.modified_count} products updated)")
+        return jsonify({
+            "success": True, 
+            "message": f"Category renamed successfully. {result.modified_count} products updated.",
+            "products_updated": result.modified_count
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error updating category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Delete Category (Admin)
+@app.route('/admin/categories/delete', methods=['POST'])
+@jwt_required()
+def delete_category():
+    """Delete a category (moves products to 'Uncategorized')"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        category_name = data.get('category_name', '').strip()
+        
+        if not category_name:
+            return jsonify({"success": False, "message": "Category name is required."}), 400
+        
+        # Move products to 'Uncategorized'
+        result = products_collection.update_many(
+            {'category': category_name},
+            {'$set': {'category': 'Uncategorized'}}
+        )
+        
+        logger.info(f"✅ Category '{category_name}' deleted. {result.modified_count} products moved to 'Uncategorized'")
+        return jsonify({
+            "success": True, 
+            "message": f"Category deleted. {result.modified_count} products moved to 'Uncategorized'.",
+            "products_updated": result.modified_count
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error deleting category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== CONTACT FORM SUBMISSION ==========
 
 # Submit Contact Form
 @app.route('/contact/submit', methods=['POST'])
