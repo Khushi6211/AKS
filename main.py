@@ -57,6 +57,13 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure=True
     )
 
+# Configure logging (MUST be before Twilio initialization)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Configure SendGrid (optional - only if API key is provided)
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
 SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@arunkaryana.com')
@@ -74,13 +81,6 @@ if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
         logger.info("✅ Twilio WhatsApp client initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize Twilio client: {e}")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # Create Flask application
 app = Flask(__name__)
