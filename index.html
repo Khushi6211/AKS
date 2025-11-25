@@ -131,6 +131,27 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        /* Custom scrollbar for category buttons */
+        .category-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .category-scrollbar::-webkit-scrollbar-track {
+            background: #F8F5F0;
+            border-radius: 10px;
+        }
+        .category-scrollbar::-webkit-scrollbar-thumb {
+            background: #9C6F44;
+            border-radius: 10px;
+        }
+        .category-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #7A5634;
+        }
+        .category-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #9C6F44 #F8F5F0;
+        }
+        
         /* Hero section background pattern - Original dotted */
         .hero-pattern {
             background-image: radial-gradient(#E8C07D 1px, transparent 1px); /* Original dotted pattern */
@@ -527,7 +548,7 @@
                 <div class="w-20 h-1 bg-primary mx-auto"></div>
             </div>
 
-            <div class="flex overflow-x-auto pb-4 mb-8 space-x-2 scrollbar-hide">
+            <div class="flex overflow-x-auto pb-4 mb-8 space-x-2 category-scrollbar">
                 <button class="category-btn active px-4 py-2 rounded-full bg-primary text-white whitespace-nowrap fade-in" data-category="all">All Items</button>
                 <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="soaps">Soaps & Detergents</button>
                 <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="food">Food Items</button>
@@ -536,7 +557,7 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="product-grid">
-                </div>
+            </div>
         </div>
     </section>
 
@@ -933,10 +954,24 @@
         </div>
     </div>
 
-    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Full Product Image">
-        <div class="modal-content">
-            <button id="close-image-modal" aria-label="Close image modal" class="close-btn">×</button>
-            <img id="full-image" src="" alt="Full size product image">
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Full Product Image" onclick="if(event.target === this) hideFullImageModal()">
+        <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl" onclick="event.stopPropagation()">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
+                <h2 id="modal-product-name" class="font-heading text-2xl font-bold text-gray-800"></h2>
+                <button id="close-image-modal" aria-label="Close image modal" class="text-gray-400 hover:text-gray-600 transition text-3xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <img id="full-image" src="" alt="Full size product image" class="w-full h-auto object-contain rounded-lg mb-4" style="max-height: 400px;">
+                <div id="modal-product-details">
+                    <div class="mb-4">
+                        <p id="modal-product-price" class="text-primary font-bold text-3xl mb-2"></p>
+                        <p id="modal-product-stock" class="text-sm text-gray-600"></p>
+                    </div>
+                    <div id="modal-product-description" class="text-gray-700 leading-relaxed">
+                        <!-- Description will be inserted here -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2016,8 +2051,10 @@
                  changeProductQuantity(productId, 1); // Add one to cart
             }
              else if (clickedImage) {
-                 // If an image is clicked, show the full image modal
-                 showFullImageModal(clickedImage.src, clickedImage.alt);
+                 // If an image is clicked, show the full image modal with product details
+                 const productId = clickedImage.getAttribute('data-product-id');
+                 const product = products.find(p => p.id === productId);
+                 showFullImageModal(clickedImage.src, clickedImage.alt, product);
             }
          }
 
@@ -2423,9 +2460,22 @@
         }
 
         // --- Full Image Modal Functions ---
-        function showFullImageModal(imageUrl, altText) {
+        function showFullImageModal(imageUrl, altText, product) {
             fullImage.src = imageUrl;
             fullImage.alt = altText;
+            
+            // If product data is provided, show product details
+            if (product) {
+                document.getElementById('modal-product-name').textContent = product.name;
+                document.getElementById('modal-product-price').textContent = `₹${product.price}`;
+                document.getElementById('modal-product-stock').textContent = product.stock > 0 
+                    ? `In Stock: ${product.stock} units available` 
+                    : 'Out of Stock';
+                document.getElementById('modal-product-description').innerHTML = product.description 
+                    ? `<h3 class="font-semibold text-lg mb-2">Description:</h3><p>${product.description}</p>` 
+                    : '<p class="text-gray-500 italic">No description available</p>';
+            }
+            
             imageModal.classList.remove('hidden');
             // Use a small timeout to allow the display change before adding visible class for transition
             setTimeout(() => {
@@ -2440,6 +2490,10 @@
                 imageModal.classList.add('hidden');
                 fullImage.src = ''; // Clear the image source
                 fullImage.alt = ''; // Clear the alt text
+                document.getElementById('modal-product-name').textContent = '';
+                document.getElementById('modal-product-price').textContent = '';
+                document.getElementById('modal-product-stock').textContent = '';
+                document.getElementById('modal-product-description').innerHTML = '';
              }, 300); // Match this duration to the CSS transition time
         }
 
