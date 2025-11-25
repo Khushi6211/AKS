@@ -57,6 +57,13 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure=True
     )
 
+# Configure logging (MUST be before Twilio initialization)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Configure SendGrid (optional - only if API key is provided)
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
 SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@arunkaryana.com')
@@ -74,13 +81,6 @@ if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
         logger.info("✅ Twilio WhatsApp client initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize Twilio client: {e}")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # Create Flask application
 app = Flask(__name__)
@@ -129,10 +129,13 @@ orders_collection = None
 offers_collection = None
 carts_collection = None
 reviews_collection = None
+messages_collection = None
+categories_collection = None
+banners_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection
     
     try:
         client = MongoClient(
@@ -148,6 +151,9 @@ def initialize_database():
         offers_collection = db.offers
         carts_collection = db.carts
         reviews_collection = db.reviews
+        messages_collection = db.messages
+        categories_collection = db.categories
+        banners_collection = db.banners
         
         # Test connection
         client.admin.command('ping')
@@ -179,6 +185,19 @@ def initialize_database():
             ]
             products_collection.insert_many(products)
             logger.info("✅ Initial products added to database")
+        
+        # Initialize categories if empty
+        if categories_collection.count_documents({}) == 0:
+            default_categories = [
+                {"id": "all", "name": "All Items", "display_name": "All Items", "created_at": datetime.datetime.utcnow()},
+                {"id": "soaps", "name": "soaps", "display_name": "Soaps & Detergents", "created_at": datetime.datetime.utcnow()},
+                {"id": "food", "name": "food", "display_name": "Food Items", "created_at": datetime.datetime.utcnow()},
+                {"id": "beverages", "name": "beverages", "display_name": "Beverages", "created_at": datetime.datetime.utcnow()},
+                {"id": "personal-care", "name": "personal-care", "display_name": "Personal Care", "created_at": datetime.datetime.utcnow()}
+            ]
+            categories_collection.insert_many(default_categories)
+            categories_collection.create_index([("id", ASCENDING)], unique=True)
+            logger.info("✅ Initial categories added to database")
             
     except Exception as e:
         logger.error(f"❌ Error connecting to MongoDB: {e}")
@@ -1475,19 +1494,34 @@ def submit_order_review():
 @app.route('/admin/reviews', methods=['GET'])
 @admin_required
 def get_all_reviews():
-    """Get all reviews (admin only)"""
+    """Get all reviews with user profile pictures (admin only)"""
     try:
-        if reviews_collection is None:
+        if reviews_collection is None or users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         # Get all reviews sorted by date (newest first)
         reviews = list(reviews_collection.find({}).sort("created_at", -1))
         
-        # Convert ObjectId to string and format dates
+        # Enrich reviews with user profile pictures
         for review in reviews:
             review['_id'] = str(review['_id'])
             if isinstance(review.get('created_at'), datetime.datetime):
                 review['created_at'] = review['created_at'].isoformat()
+            
+            # Fetch user profile picture if user_id exists
+            if review.get('user_id'):
+                try:
+                    user = users_collection.find_one(
+                        {"_id": ObjectId(review['user_id'])},
+                        {"profile_picture": 1}
+                    )
+                    if user:
+                        review['user_profile_picture'] = user.get('profile_picture', '')
+                except Exception as e:
+                    logger.warning(f"Could not fetch user data for review {review['_id']}: {e}")
+                    review['user_profile_picture'] = ''
+            else:
+                review['user_profile_picture'] = ''
         
         return jsonify({"success": True, "reviews": reviews}), 200
         
@@ -1532,9 +1566,9 @@ def feature_review():
 # Get Featured Reviews (Public)
 @app.route('/reviews/featured', methods=['GET'])
 def get_featured_reviews():
-    """Get featured reviews for homepage"""
+    """Get featured reviews for homepage with user profile pictures"""
     try:
-        if reviews_collection is None:
+        if reviews_collection is None or users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         # Get featured reviews with rating 4 or 5, limit to 10
@@ -1543,11 +1577,29 @@ def get_featured_reviews():
             "rating": {"$gte": 4}
         }).sort("created_at", -1).limit(10))
         
-        # Convert ObjectId to string and format dates
+        # Enrich reviews with user profile pictures
         for review in reviews:
             review['_id'] = str(review['_id'])
             if isinstance(review.get('created_at'), datetime.datetime):
                 review['created_at'] = review['created_at'].isoformat()
+            
+            # Fetch user profile picture if user_id exists
+            if review.get('user_id'):
+                try:
+                    user = users_collection.find_one(
+                        {"_id": ObjectId(review['user_id'])},
+                        {"profile_picture": 1, "name": 1}
+                    )
+                    if user:
+                        review['user_profile_picture'] = user.get('profile_picture', '')
+                        # Fallback to user name from users collection if not in review
+                        if not review.get('user_name') and user.get('name'):
+                            review['user_name'] = user.get('name')
+                except Exception as e:
+                    logger.warning(f"Could not fetch user data for review {review['_id']}: {e}")
+                    review['user_profile_picture'] = ''
+            else:
+                review['user_profile_picture'] = ''
         
         return jsonify({"success": True, "reviews": reviews}), 200
         
@@ -1751,10 +1803,12 @@ def add_product():
             "name": sanitize_string(data['name']),
             "price": float(data['price']),
             "category": sanitize_string(data['category']),
-            "image": data.get('image', ''),
+            "image": data.get('image', ''),  # Primary image (backward compatibility)
+            "images": data.get('images', [data.get('image', '')]) if data.get('images') else [data.get('image', '')],  # Multiple images
             "description": sanitize_string(data.get('description', '')),
             "stock": int(data.get('stock', 0)),
             "cloudinary_public_id": data.get('cloudinary_public_id'),
+            "cloudinary_public_ids": data.get('cloudinary_public_ids', [data.get('cloudinary_public_id')] if data.get('cloudinary_public_id') else []),  # Multiple Cloudinary IDs
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
         }
@@ -1861,12 +1915,16 @@ def update_product(product_id):
             update_fields['category'] = sanitize_string(data['category'])
         if 'image' in data:
             update_fields['image'] = data['image']
+        if 'images' in data:
+            update_fields['images'] = data['images']
         if 'description' in data:
             update_fields['description'] = sanitize_string(data['description'])
         if 'stock' in data:
             update_fields['stock'] = int(data['stock'])
         if 'cloudinary_public_id' in data:
             update_fields['cloudinary_public_id'] = data['cloudinary_public_id']
+        if 'cloudinary_public_ids' in data:
+            update_fields['cloudinary_public_ids'] = data['cloudinary_public_ids']
         
         # Check if product_id is numeric (old format) or ObjectId
         try:
@@ -2567,12 +2625,335 @@ def get_products():
         logger.error(f"❌ Error fetching products: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ========== CONTACT FORM SUBMISSION ==========
+# ========== CATEGORY MANAGEMENT ==========
 
-# Initialize messages collection
-messages_collection = None
-if db is not None:
-    messages_collection = db.messages
+# Get All Categories
+@app.route('/categories', methods=['GET'])
+def get_categories():
+    """Get all unique categories from products"""
+    try:
+        # Get distinct categories from products collection
+        categories = products_collection.distinct('category')
+        
+        # Get count for each category
+        category_list = []
+        for cat in categories:
+            count = products_collection.count_documents({'category': cat})
+            category_list.append({
+                'name': cat,
+                'product_count': count
+            })
+        
+        # Sort by name
+        category_list.sort(key=lambda x: x['name'])
+        
+        return jsonify({"success": True, "categories": category_list}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching categories: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Add New Category (Admin)
+@app.route('/admin/categories/add', methods=['POST'])
+@jwt_required()
+def add_category():
+    """Add a new category"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        category_name = data.get('category_name', '').strip()
+        
+        if not category_name:
+            return jsonify({"success": False, "message": "Category name is required."}), 400
+        
+        # Check if category already exists
+        existing = products_collection.find_one({'category': category_name})
+        if existing:
+            return jsonify({"success": False, "message": "Category already exists."}), 400
+        
+        logger.info(f"✅ Category '{category_name}' registered (will be active when products are added)")
+        return jsonify({
+            "success": True, 
+            "message": f"Category '{category_name}' registered. Add products to this category to make it visible.",
+            "category": category_name
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error adding category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Update Category Name (Admin)
+@app.route('/admin/categories/update', methods=['POST'])
+@jwt_required()
+def update_category():
+    """Update category name for all products with that category"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        old_category = data.get('old_category', '').strip()
+        new_category = data.get('new_category', '').strip()
+        
+        if not old_category or not new_category:
+            return jsonify({"success": False, "message": "Both old and new category names are required."}), 400
+        
+        # Update all products with this category
+        result = products_collection.update_many(
+            {'category': old_category},
+            {'$set': {'category': new_category}}
+        )
+        
+        logger.info(f"✅ Category renamed: '{old_category}' → '{new_category}' ({result.modified_count} products updated)")
+        return jsonify({
+            "success": True, 
+            "message": f"Category renamed successfully. {result.modified_count} products updated.",
+            "products_updated": result.modified_count
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error updating category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Delete Category (Admin)
+@app.route('/admin/categories/delete', methods=['POST'])
+@jwt_required()
+def delete_category():
+    """Delete a category (moves products to 'Uncategorized')"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        category_name = data.get('category_name', '').strip()
+        
+        if not category_name:
+            return jsonify({"success": False, "message": "Category name is required."}), 400
+        
+        # Move products to 'Uncategorized'
+        result = products_collection.update_many(
+            {'category': category_name},
+            {'$set': {'category': 'Uncategorized'}}
+        )
+        
+        logger.info(f"✅ Category '{category_name}' deleted. {result.modified_count} products moved to 'Uncategorized'")
+        return jsonify({
+            "success": True, 
+            "message": f"Category deleted. {result.modified_count} products moved to 'Uncategorized'.",
+            "products_updated": result.modified_count
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error deleting category: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== BANNER MANAGEMENT ==========
+
+# Get Active Banner
+@app.route('/banners/active', methods=['GET'])
+def get_active_banner():
+    """Get currently active banner for display"""
+    try:
+        banner = banners_collection.find_one({'is_active': True})
+        
+        if not banner:
+            return jsonify({"success": True, "banner": None}), 200
+        
+        banner['_id'] = str(banner['_id'])
+        return jsonify({"success": True, "banner": banner}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching active banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Get All Banners (Admin)
+@app.route('/admin/banners', methods=['GET'])
+@jwt_required()
+def get_all_banners():
+    """Get all banners (admin only)"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        banners = list(banners_collection.find().sort('created_at', -1))
+        
+        for banner in banners:
+            banner['_id'] = str(banner['_id'])
+        
+        return jsonify({"success": True, "banners": banners}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching banners: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Add Banner (Admin)
+@app.route('/admin/banners/add', methods=['POST'])
+@jwt_required()
+def add_banner():
+    """Add a new banner"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        
+        if not data.get('text'):
+            return jsonify({"success": False, "message": "Banner text is required."}), 400
+        
+        new_banner = {
+            "text": sanitize_string(data['text']),
+            "link_type": data.get('link_type', 'none'),  # 'product', 'offer', 'url', 'none'
+            "link_id": data.get('link_id', ''),  # Product ID or Offer ID
+            "link_url": data.get('link_url', ''),  # External URL
+            "background_color": data.get('background_color', '#FF6B6B'),
+            "text_color": data.get('text_color', '#FFFFFF'),
+            "is_active": data.get('is_active', False),
+            "created_at": datetime.datetime.utcnow(),
+            "updated_at": datetime.datetime.utcnow()
+        }
+        
+        # If setting as active, deactivate all other banners
+        if new_banner['is_active']:
+            banners_collection.update_many({}, {'$set': {'is_active': False}})
+        
+        result = banners_collection.insert_one(new_banner)
+        
+        logger.info(f"✅ Banner added: {new_banner['text'][:50]}")
+        return jsonify({
+            "success": True,
+            "message": "Banner added successfully!",
+            "banner_id": str(result.inserted_id)
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"❌ Error adding banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Update Banner (Admin)
+@app.route('/admin/banners/update/<banner_id>', methods=['PUT'])
+@jwt_required()
+def update_banner(banner_id):
+    """Update banner"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        data = request.get_json()
+        
+        update_fields = {"updated_at": datetime.datetime.utcnow()}
+        
+        if 'text' in data:
+            update_fields['text'] = sanitize_string(data['text'])
+        if 'link_type' in data:
+            update_fields['link_type'] = data['link_type']
+        if 'link_id' in data:
+            update_fields['link_id'] = data['link_id']
+        if 'link_url' in data:
+            update_fields['link_url'] = data['link_url']
+        if 'background_color' in data:
+            update_fields['background_color'] = data['background_color']
+        if 'text_color' in data:
+            update_fields['text_color'] = data['text_color']
+        if 'is_active' in data:
+            # If setting as active, deactivate all other banners first
+            if data['is_active']:
+                banners_collection.update_many({}, {'$set': {'is_active': False}})
+            update_fields['is_active'] = data['is_active']
+        
+        result = banners_collection.update_one(
+            {'_id': ObjectId(banner_id)},
+            {'$set': update_fields}
+        )
+        
+        if result.matched_count > 0:
+            logger.info(f"✅ Banner updated: {banner_id}")
+            return jsonify({"success": True, "message": "Banner updated successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Banner not found."}), 404
+        
+    except Exception as e:
+        logger.error(f"❌ Error updating banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Toggle Banner Active Status (Admin)
+@app.route('/admin/banners/toggle/<banner_id>', methods=['POST'])
+@jwt_required()
+def toggle_banner_status(banner_id):
+    """Toggle banner active status"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        banner = banners_collection.find_one({'_id': ObjectId(banner_id)})
+        if not banner:
+            return jsonify({"success": False, "message": "Banner not found."}), 404
+        
+        new_status = not banner.get('is_active', False)
+        
+        # If activating, deactivate all other banners
+        if new_status:
+            banners_collection.update_many({}, {'$set': {'is_active': False}})
+        
+        banners_collection.update_one(
+            {'_id': ObjectId(banner_id)},
+            {'$set': {'is_active': new_status, 'updated_at': datetime.datetime.utcnow()}}
+        )
+        
+        logger.info(f"✅ Banner status toggled: {banner_id} -> {new_status}")
+        return jsonify({"success": True, "message": "Banner status updated!", "is_active": new_status}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error toggling banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Delete Banner (Admin)
+@app.route('/admin/banners/delete/<banner_id>', methods=['DELETE'])
+@jwt_required()
+def delete_banner(banner_id):
+    """Delete a banner"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not user or user.get('role') != 'admin':
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        result = banners_collection.delete_one({'_id': ObjectId(banner_id)})
+        
+        if result.deleted_count > 0:
+            logger.info(f"✅ Banner deleted: {banner_id}")
+            return jsonify({"success": True, "message": "Banner deleted successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Banner not found."}), 404
+        
+    except Exception as e:
+        logger.error(f"❌ Error deleting banner: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== CONTACT FORM SUBMISSION ==========
 
 # Submit Contact Form
 @app.route('/contact/submit', methods=['POST'])

@@ -131,6 +131,27 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        /* Custom scrollbar for category buttons */
+        .category-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .category-scrollbar::-webkit-scrollbar-track {
+            background: #F8F5F0;
+            border-radius: 10px;
+        }
+        .category-scrollbar::-webkit-scrollbar-thumb {
+            background: #9C6F44;
+            border-radius: 10px;
+        }
+        .category-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #7A5634;
+        }
+        .category-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #9C6F44 #F8F5F0;
+        }
+        
         /* Hero section background pattern - Original dotted */
         .hero-pattern {
             background-image: radial-gradient(#E8C07D 1px, transparent 1px); /* Original dotted pattern */
@@ -420,6 +441,55 @@
             text-align: center;
             flex-grow: 1; /* Allow span to take available space */
         }
+
+        /* Running Banner Styles */
+        #offer-banner {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        #offer-banner:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            transform: scaleY(1.05);
+        }
+        
+        .banner-content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .banner-scroll {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 20s linear infinite;
+        }
+        
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+        
+        /* Pause animation on hover */
+        #offer-banner:hover .banner-scroll {
+            animation-play-state: paused;
+        }
+        
+        /* LED-style text effect */
+        .banner-scroll {
+            text-shadow: 
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 30px currentColor;
+            letter-spacing: 2px;
+        }
     </style>
     <script src="config.js"></script>
 </head>
@@ -520,6 +590,17 @@
         </div>
     </section>
 
+    <!-- Running Banner Section -->
+    <div id="offer-banner-container" class="hidden">
+        <div id="offer-banner" class="overflow-hidden py-3 cursor-pointer" style="background-color: #FF6B6B;">
+            <div class="banner-content-wrapper">
+                <div id="banner-text" class="banner-scroll text-white font-bold text-lg whitespace-nowrap inline-block" style="color: #FFFFFF;">
+                    <!-- Banner text will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <section id="products" class="py-16">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
@@ -527,16 +608,13 @@
                 <div class="w-20 h-1 bg-primary mx-auto"></div>
             </div>
 
-            <div class="flex overflow-x-auto pb-4 mb-8 space-x-2 scrollbar-hide">
+            <div id="category-buttons-container" class="flex overflow-x-auto pb-4 mb-8 space-x-2 category-scrollbar">
+                <!-- Categories will be dynamically loaded -->
                 <button class="category-btn active px-4 py-2 rounded-full bg-primary text-white whitespace-nowrap fade-in" data-category="all">All Items</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="soaps">Soaps & Detergents</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="food">Food Items</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="beverages">Beverages</button>
-                <button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="personal-care">Personal Care</button>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="product-grid">
-                </div>
+            </div>
         </div>
     </section>
 
@@ -933,10 +1011,24 @@
         </div>
     </div>
 
-    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Full Product Image">
-        <div class="modal-content">
-            <button id="close-image-modal" aria-label="Close image modal" class="close-btn">×</button>
-            <img id="full-image" src="" alt="Full size product image">
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Full Product Image" onclick="if(event.target === this) hideFullImageModal()">
+        <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl" onclick="event.stopPropagation()">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
+                <h2 id="modal-product-name" class="font-heading text-2xl font-bold text-gray-800"></h2>
+                <button id="close-image-modal" aria-label="Close image modal" class="text-gray-400 hover:text-gray-600 transition text-3xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <img id="full-image" src="" alt="Full size product image" class="w-full h-auto object-contain rounded-lg mb-4" style="max-height: 400px;">
+                <div id="modal-product-details">
+                    <div class="mb-4">
+                        <p id="modal-product-price" class="text-primary font-bold text-3xl mb-2"></p>
+                        <p id="modal-product-stock" class="text-sm text-gray-600"></p>
+                    </div>
+                    <div id="modal-product-description" class="text-gray-700 leading-relaxed">
+                        <!-- Description will be inserted here -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1345,11 +1437,17 @@
                     ? review.review_text.substring(0, 150) + '...'
                     : review.review_text;
                 
+                // Determine if we should show profile picture or initials
+                const userInitial = review.user_name.charAt(0).toUpperCase();
+                const profilePictureHtml = review.user_profile_picture 
+                    ? `<img src="${review.user_profile_picture}" alt="${review.user_name}" class="w-12 h-12 rounded-full object-cover" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl\\'>${userInitial}</div>';">`
+                    : `<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">${userInitial}</div>`;
+                
                 return `
                     <div class="bg-light p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
                         <div class="flex items-center mb-4">
-                            <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-3">
-                                ${review.user_name.charAt(0).toUpperCase()}
+                            <div class="mr-3">
+                                ${profilePictureHtml}
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-800">${review.user_name}</h4>
@@ -1393,10 +1491,21 @@
                 const cartItem = cart.find(item => item.id === product.id);
                 const currentQuantity = cartItem ? cartItem.quantity : 0;
 
+                // Prepare images array (use multiple images if available, fallback to single image)
+                const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+                const hasMultipleImages = productImages.length > 1;
+                
                 // Added slide-up animation class
                 const productCard = `
                     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300 slide-up flex flex-col" data-product-id="${product.id}">
-                        <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-contain cursor-pointer" onerror="${product.onerror}" data-product-id="${product.id}">
+                        <div class="relative product-image-container" data-images='${JSON.stringify(productImages)}'>
+                            <img src="${productImages[0]}" alt="${product.name}" class="w-full h-48 object-contain cursor-pointer product-main-image" onerror="${product.onerror}" data-product-id="${product.id}">
+                            ${hasMultipleImages ? `
+                                <div class="absolute bottom-2 right-2 bg-white bg-opacity-80 px-2 py-1 rounded-full text-xs font-semibold text-gray-700">
+                                    <i class="fas fa-images"></i> ${productImages.length}
+                                </div>
+                            ` : ''}
+                        </div>
                         <div class="p-4 flex flex-col flex-grow">
                             <h3 class="text-lg font-semibold mb-2 flex-grow">${product.name}</h3>
                             <p class="text-primary font-bold text-xl mb-3">₹${product.price}</p>
@@ -1419,6 +1528,45 @@
 
              // Re-attach event listeners after updating the grid content
             attachAddToCartListeners(); // This will now attach listeners to the new quantity buttons and image clicks
+            attachProductImageHoverListeners(); // Attach hover listeners for multiple images
+        }
+
+        // Attach hover listeners for product images (to cycle through multiple images)
+        function attachProductImageHoverListeners() {
+            document.querySelectorAll('.product-image-container').forEach(container => {
+                const imagesData = container.dataset.images;
+                if (!imagesData) return;
+                
+                try {
+                    const images = JSON.parse(imagesData);
+                    if (images.length <= 1) return; // Skip if only one image
+                    
+                    const imgElement = container.querySelector('.product-main-image');
+                    let currentImageIndex = 0;
+                    let hoverInterval = null;
+                    
+                    // On mouse enter, start cycling through images
+                    container.addEventListener('mouseenter', () => {
+                        currentImageIndex = 0;
+                        hoverInterval = setInterval(() => {
+                            currentImageIndex = (currentImageIndex + 1) % images.length;
+                            imgElement.src = images[currentImageIndex];
+                        }, 800); // Change image every 800ms
+                    });
+                    
+                    // On mouse leave, reset to first image and stop cycling
+                    container.addEventListener('mouseleave', () => {
+                        if (hoverInterval) {
+                            clearInterval(hoverInterval);
+                            hoverInterval = null;
+                        }
+                        currentImageIndex = 0;
+                        imgElement.src = images[0]; // Reset to first image
+                    });
+                } catch (e) {
+                    console.error('Error parsing product images:', e);
+                }
+            });
         }
 
         // Function to update quantity display on product cards
@@ -1470,7 +1618,10 @@
              const currentSearchQuery = searchInput.value.toLowerCase();
 
              // Filter products based on selected category
-             const categoryFiltered = (category === 'all') ? products : products.filter(p => p.category === category);
+             // Convert data-category back to actual category name (e.g., "soaps-detergents" -> "Soaps & Detergents")
+             const categoryFiltered = (category === 'all') 
+                ? products 
+                : products.filter(p => p.category && p.category.toLowerCase().replace(/\s+/g, '-') === category);
 
              // Apply current search filter to category filtered results
              const searchAndCategoryFiltered = currentSearchQuery
@@ -2010,8 +2161,10 @@
                  changeProductQuantity(productId, 1); // Add one to cart
             }
              else if (clickedImage) {
-                 // If an image is clicked, show the full image modal
-                 showFullImageModal(clickedImage.src, clickedImage.alt);
+                 // If an image is clicked, show the full image modal with product details
+                 const productId = clickedImage.getAttribute('data-product-id');
+                 const product = products.find(p => p.id === productId);
+                 showFullImageModal(clickedImage.src, clickedImage.alt, product);
             }
          }
 
@@ -2417,9 +2570,22 @@
         }
 
         // --- Full Image Modal Functions ---
-        function showFullImageModal(imageUrl, altText) {
+        function showFullImageModal(imageUrl, altText, product) {
             fullImage.src = imageUrl;
             fullImage.alt = altText;
+            
+            // If product data is provided, show product details
+            if (product) {
+                document.getElementById('modal-product-name').textContent = product.name;
+                document.getElementById('modal-product-price').textContent = `₹${product.price}`;
+                document.getElementById('modal-product-stock').textContent = product.stock > 0 
+                    ? `In Stock: ${product.stock} units available` 
+                    : 'Out of Stock';
+                document.getElementById('modal-product-description').innerHTML = product.description 
+                    ? `<h3 class="font-semibold text-lg mb-2">Description:</h3><p>${product.description}</p>` 
+                    : '<p class="text-gray-500 italic">No description available</p>';
+            }
+            
             imageModal.classList.remove('hidden');
             // Use a small timeout to allow the display change before adding visible class for transition
             setTimeout(() => {
@@ -2434,6 +2600,10 @@
                 imageModal.classList.add('hidden');
                 fullImage.src = ''; // Clear the image source
                 fullImage.alt = ''; // Clear the alt text
+                document.getElementById('modal-product-name').textContent = '';
+                document.getElementById('modal-product-price').textContent = '';
+                document.getElementById('modal-product-stock').textContent = '';
+                document.getElementById('modal-product-description').innerHTML = '';
              }, 300); // Match this duration to the CSS transition time
         }
 
@@ -2448,8 +2618,105 @@
 
 
         // --- Initial Setup ---
+        // Load Active Banner
+        async function loadActiveBanner() {
+            try {
+                const response = await fetch(`${backendBaseUrl}/banners/active`);
+                const data = await response.json();
+                
+                if (data.success && data.banner) {
+                    const banner = data.banner;
+                    const container = document.getElementById('offer-banner-container');
+                    const bannerElement = document.getElementById('offer-banner');
+                    const bannerText = document.getElementById('banner-text');
+                    
+                    // Set banner content
+                    bannerText.textContent = `🔥 ${banner.text} 🔥`;
+                    
+                    // Set colors
+                    bannerElement.style.backgroundColor = banner.background_color || '#FF6B6B';
+                    bannerText.style.color = banner.text_color || '#FFFFFF';
+                    
+                    // Set click handler based on link type
+                    if (banner.link_type === 'product' && banner.link_id) {
+                        bannerElement.style.cursor = 'pointer';
+                        bannerElement.onclick = () => {
+                            // Scroll to products and filter by this product
+                            scrollToElement('products');
+                        };
+                    } else if (banner.link_type === 'url' && banner.link_url) {
+                        bannerElement.style.cursor = 'pointer';
+                        bannerElement.onclick = () => {
+                            window.open(banner.link_url, '_blank');
+                        };
+                    } else {
+                        bannerElement.style.cursor = 'default';
+                        bannerElement.onclick = null;
+                    }
+                    
+                    // Show the banner
+                    container.classList.remove('hidden');
+                } else {
+                    // Hide banner if none is active
+                    document.getElementById('offer-banner-container').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading banner:', error);
+                document.getElementById('offer-banner-container').classList.add('hidden');
+            }
+        }
+
+        // Load Categories Dynamically
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${backendBaseUrl}/categories`);
+                const data = await response.json();
+                
+                if (data.success && data.categories.length > 0) {
+                    const container = document.getElementById('category-buttons-container');
+                    
+                    // Keep the "All Items" button and add dynamic categories after it
+                    const dynamicButtons = data.categories.map(cat => {
+                        return `<button class="category-btn px-4 py-2 rounded-full bg-light text-dark whitespace-nowrap fade-in" data-category="${cat.name.toLowerCase().replace(/\s+/g, '-')}">${cat.name}</button>`;
+                    }).join('');
+                    
+                    // Append dynamic categories after "All Items"
+                    container.innerHTML += dynamicButtons;
+                    
+                    // Re-attach click listeners to new category buttons
+                    attachCategoryListeners();
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        // Attach click listeners to category buttons
+        function attachCategoryListeners() {
+            document.querySelectorAll('.category-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const category = button.dataset.category;
+                    filterProductsByCategory(category);
+                    
+                    // Update active button styling
+                    document.querySelectorAll('.category-btn').forEach(btn => {
+                        btn.classList.remove('active', 'bg-primary', 'text-white');
+                        btn.classList.add('bg-light', 'text-dark');
+                    });
+                    button.classList.add('active', 'bg-primary', 'text-white');
+                    button.classList.remove('bg-light', 'text-dark');
+                });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', async () => { // Added async here
             updateAuthLink(); // Update the Login/Logout link on page load
+
+            // Load active banner
+            await loadActiveBanner();
+
+            // Load categories first
+            await loadCategories();
 
             // Load products from backend API first
             await loadProducts();

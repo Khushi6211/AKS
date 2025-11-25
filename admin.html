@@ -203,9 +203,17 @@
                 <i class="fas fa-box w-6"></i>
                 <span class="ml-3">Products</span>
             </a>
+            <a href="#" data-section="categories" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
+                <i class="fas fa-th-large w-6"></i>
+                <span class="ml-3">Categories</span>
+            </a>
             <a href="#" data-section="offers" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
                 <i class="fas fa-tag w-6"></i>
                 <span class="ml-3">Offers</span>
+            </a>
+            <a href="#" data-section="banners" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
+                <i class="fas fa-bullhorn w-6"></i>
+                <span class="ml-3">Offer Banners</span>
             </a>
             <a href="#" data-section="customers" class="nav-item flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
                 <i class="fas fa-users w-6"></i>
@@ -401,6 +409,21 @@
             </div>
         </div>
 
+        <!-- Categories Section -->
+        <div id="categories-section" class="content-section hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Category Management</h3>
+                    <button onclick="showAddCategoryModal()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap">
+                        <i class="fas fa-plus mr-2"></i>Add Category
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="categories-grid">
+                    <div class="text-center py-8 text-gray-400">Loading...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Offers Section -->
         <div id="offers-section" class="content-section hidden">
             <div class="bg-white rounded-xl shadow-lg p-6">
@@ -411,6 +434,25 @@
                     </button>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="offers-grid">
+                    <div class="text-center py-8 text-gray-400">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banners Section -->
+        <div id="banners-section" class="content-section hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Running Offer Banners</h3>
+                    <button onclick="showAddBannerModal()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap">
+                        <i class="fas fa-plus mr-2"></i>Add Banner
+                    </button>
+                </div>
+                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 text-sm rounded">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Note:</strong> Only one banner can be active at a time. The active banner will be displayed as a scrolling LED-style text on the homepage.
+                </div>
+                <div class="grid grid-cols-1 gap-4" id="banners-grid">
                     <div class="text-center py-8 text-gray-400">Loading...</div>
                 </div>
             </div>
@@ -470,17 +512,17 @@
 
         <!-- Messages Section -->
         <div id="messages-section" class="content-section hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-800">Contact Form Messages</h3>
-                    <div class="flex gap-2">
-                        <button onclick="filterMessages('all')" class="message-filter-btn px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition active" data-filter="all">
+            <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800">Contact Form Messages</h3>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button onclick="filterMessages('all')" class="message-filter-btn px-3 md:px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition active text-sm md:text-base flex-1 sm:flex-none" data-filter="all">
                             All Messages
                         </button>
-                        <button onclick="filterMessages('unread')" class="message-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="unread">
+                        <button onclick="filterMessages('unread')" class="message-filter-btn px-3 md:px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition text-sm md:text-base flex-1 sm:flex-none" data-filter="unread">
                             <i class="fas fa-envelope text-red-500 mr-1"></i>Unread
                         </button>
-                        <button onclick="filterMessages('read')" class="message-filter-btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" data-filter="read">
+                        <button onclick="filterMessages('read')" class="message-filter-btn px-3 md:px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition text-sm md:text-base flex-1 sm:flex-none" data-filter="read">
                             <i class="fas fa-envelope-open text-green-500 mr-1"></i>Read
                         </button>
                     </div>
@@ -521,7 +563,7 @@
                 <input type="hidden" id="cloudinary-public-id">
                 
                 <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Product Image</label>
+                    <label class="block text-gray-700 font-medium mb-2">Primary Product Image</label>
                     <div id="image-dropzone" class="dropzone" onclick="document.getElementById('image-input').click()">
                         <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
                         <div id="dropzone-content">
@@ -535,6 +577,20 @@
                                 <i class="fas fa-trash mr-1"></i>Remove
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">
+                        Additional Images (Optional)
+                        <span class="text-sm text-gray-500">- Images will cycle on hover</span>
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                        <input type="file" id="additional-images-input" accept="image/*" multiple class="hidden" onchange="handleAdditionalImagesSelect(event)">
+                        <button type="button" onclick="document.getElementById('additional-images-input').click()" class="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fas fa-plus-circle mr-2"></i>Add More Images (Max 5)
+                        </button>
+                        <div id="additional-images-preview" class="grid grid-cols-4 gap-2 mt-3"></div>
                     </div>
                 </div>
 
@@ -578,6 +634,74 @@
                         <i class="fas fa-save mr-2"></i>Save Product
                     </button>
                     <button type="button" onclick="closeModal('product-modal')" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Banner Modal -->
+    <div id="banner-modal" class="modal">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800" id="banner-modal-title">Add Banner</h3>
+                <button onclick="closeModal('banner-modal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form id="banner-form" onsubmit="saveBanner(event)">
+                <input type="hidden" id="banner-id">
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Banner Text *</label>
+                    <textarea id="banner-text" required rows="2" placeholder="e.g., Special 50% OFF on all grocery items! Shop now!" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"></textarea>
+                    <p class="text-sm text-gray-500 mt-1">This text will scroll across the banner on the homepage</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Background Color</label>
+                        <input type="color" id="banner-bg-color" value="#FF6B6B" class="w-full h-10 rounded border cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Text Color</label>
+                        <input type="color" id="banner-text-color" value="#FFFFFF" class="w-full h-10 rounded border cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Link Type</label>
+                    <select id="banner-link-type" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" onchange="updateBannerLinkFields()">
+                        <option value="none">No Link</option>
+                        <option value="url">External URL</option>
+                        <option value="product">Product Page</option>
+                    </select>
+                </div>
+
+                <div id="banner-link-url-field" class="mb-4 hidden">
+                    <label class="block text-gray-700 font-medium mb-2">Link URL</label>
+                    <input type="url" id="banner-link-url" placeholder="https://example.com" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                </div>
+
+                <div id="banner-link-product-field" class="mb-4 hidden">
+                    <label class="block text-gray-700 font-medium mb-2">Product ID</label>
+                    <input type="text" id="banner-link-product" placeholder="Enter product ID" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                </div>
+
+                <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="banner-is-active" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                        <span class="text-gray-700 font-medium">Set as Active Banner</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mt-2 ml-8">Only one banner can be active. Activating this will deactivate all others.</p>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
+                        <i class="fas fa-save mr-2"></i>Save Banner
+                    </button>
+                    <button type="button" onclick="closeModal('banner-modal')" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
                         Cancel
                     </button>
                 </div>
@@ -768,6 +892,7 @@
         let currentUserId = null;
         let allOrders = [];
         let currentImageData = null;
+        let additionalImagesData = []; // Array to store additional images
 
         // Mobile Menu Functionality
         const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -857,7 +982,9 @@
                     dashboard: 'Dashboard',
                     orders: 'Orders Management',
                     products: 'Products Management',
+                    categories: 'Category Management',
                     offers: 'Offers & Promotions',
+                    banners: 'Offer Banners',
                     customers: 'Customer Management',
                     reviews: 'Customer Reviews',
                     messages: 'Contact Messages'
@@ -866,7 +993,9 @@
                     dashboard: "Welcome back! Here's what's happening today.",
                     orders: 'Manage and track all customer orders',
                     products: 'Add, edit, and manage your product inventory',
+                    categories: 'Add, edit, and delete product categories',
                     offers: 'Create and manage promotional offers and discounts',
+                    banners: 'Create and manage running LED-style banners for homepage',
                     customers: 'View customer information and statistics',
                     reviews: 'Manage and feature customer reviews',
                     messages: 'View and respond to customer inquiries'
@@ -877,7 +1006,9 @@
                 // Load section data
                 if (section === 'orders') loadOrders();
                 if (section === 'products') loadProducts();
+                if (section === 'categories') loadCategories();
                 if (section === 'offers') loadOffers();
+                if (section === 'banners') loadBanners();
                 if (section === 'customers') loadCustomers();
                 if (section === 'reviews') loadReviews();
                 if (section === 'messages') loadMessages();
@@ -1224,8 +1355,10 @@
             document.getElementById('product-id').value = '';
             document.getElementById('cloudinary-public-id').value = '';
             currentImageData = null;
+            additionalImagesData = []; // Reset additional images
             document.getElementById('dropzone-content').classList.remove('hidden');
             document.getElementById('image-preview').classList.add('hidden');
+            displayAdditionalImages(); // Clear additional images preview
             document.getElementById('product-modal').classList.add('active');
         }
 
@@ -1254,6 +1387,14 @@
                             document.getElementById('preview-img').src = product.image;
                             currentImageData = product.image;
                         }
+                        
+                        // Load additional images if available
+                        if (product.images && product.images.length > 1) {
+                            additionalImagesData = product.images.slice(1); // Skip first image (it's the primary)
+                        } else {
+                            additionalImagesData = [];
+                        }
+                        displayAdditionalImages();
                         
                         document.getElementById('product-modal').classList.add('active');
                     }
@@ -1290,6 +1431,57 @@
             document.getElementById('dropzone-content').classList.remove('hidden');
             document.getElementById('image-preview').classList.add('hidden');
             document.getElementById('image-input').value = '';
+        }
+
+        // Handle additional images selection
+        function handleAdditionalImagesSelect(event) {
+            const files = Array.from(event.target.files);
+            
+            if (additionalImagesData.length + files.length > 5) {
+                alert('Maximum 5 additional images allowed');
+                return;
+            }
+            
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`${file.name} is too large. Max 5MB per image.`);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    additionalImagesData.push({
+                        data: e.target.result,
+                        name: file.name
+                    });
+                    displayAdditionalImages();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Display additional images preview
+        function displayAdditionalImages() {
+            const container = document.getElementById('additional-images-preview');
+            if (additionalImagesData.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = additionalImagesData.map((img, index) => `
+                <div class="relative border rounded overflow-hidden">
+                    <img src="${img.data || img}" class="w-full h-20 object-cover">
+                    <button type="button" onclick="removeAdditionalImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Remove additional image
+        function removeAdditionalImage(index) {
+            additionalImagesData.splice(index, 1);
+            displayAdditionalImages();
         }
 
         // Drag and drop handlers
@@ -1330,7 +1522,11 @@
                 cloudinary_public_id: document.getElementById('cloudinary-public-id').value
             };
             
-            // Upload new image to Cloudinary if image was changed
+            // Initialize images arrays
+            productData.images = [];
+            productData.cloudinary_public_ids = [];
+            
+            // Upload primary image to Cloudinary if image was changed
             if (currentImageData && currentImageData.startsWith('data:image')) {
                 try {
                     const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
@@ -1346,17 +1542,49 @@
                     if (uploadData.success) {
                         productData.image = uploadData.url;
                         productData.cloudinary_public_id = uploadData.public_id;
+                        productData.images.push(uploadData.url);
+                        productData.cloudinary_public_ids.push(uploadData.public_id);
                     } else {
-                        alert('Error uploading image: ' + uploadData.message);
+                        alert('Error uploading primary image: ' + uploadData.message);
                         return;
                     }
                 } catch (error) {
-                    console.error('Error uploading image:', error);
-                    alert('Failed to upload image');
+                    console.error('Error uploading primary image:', error);
+                    alert('Failed to upload primary image');
                     return;
                 }
             } else if (currentImageData) {
                 productData.image = currentImageData;
+                productData.images.push(currentImageData);
+            }
+            
+            // Upload additional images to Cloudinary
+            if (additionalImagesData.length > 0) {
+                for (const imgData of additionalImagesData) {
+                    if (imgData.data && imgData.data.startsWith('data:image')) {
+                        try {
+                            const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'User-ID': currentUserId
+                                },
+                                body: JSON.stringify({ image_data: imgData.data })
+                            });
+                            
+                            const uploadData = await uploadResponse.json();
+                            if (uploadData.success) {
+                                productData.images.push(uploadData.url);
+                                productData.cloudinary_public_ids.push(uploadData.public_id);
+                            }
+                        } catch (error) {
+                            console.error('Error uploading additional image:', error);
+                        }
+                    } else if (typeof imgData === 'string') {
+                        // Existing URL
+                        productData.images.push(imgData);
+                    }
+                }
             }
             
             // Save product
@@ -1918,12 +2146,18 @@
                     day: 'numeric'
                 });
 
+                // Determine if we should show profile picture or initials
+                const userInitial = review.user_name.charAt(0).toUpperCase();
+                const profilePictureHtml = review.user_profile_picture 
+                    ? `<img src="${review.user_profile_picture}" alt="${review.user_name}" class="w-10 h-10 rounded-full object-cover" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg\\'>${userInitial}</div>';">`
+                    : `<div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">${userInitial}</div>`;
+                
                 return `
                     <div class="bg-gray-50 p-4 rounded-lg border ${review.featured ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}">
                         ${review.featured ? '<div class="flex items-center gap-1 text-yellow-600 text-sm font-semibold mb-2"><i class="fas fa-star"></i> Featured</div>' : ''}
                         <div class="flex items-center mb-3">
-                            <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
-                                ${review.user_name.charAt(0).toUpperCase()}
+                            <div class="mr-3">
+                                ${profilePictureHtml}
                             </div>
                             <div>
                                 <div class="font-semibold text-gray-800">${review.user_name}</div>
@@ -2038,39 +2272,39 @@
                 });
 
                 return `
-                    <div class="bg-gray-50 p-5 rounded-lg border ${message.read ? 'border-gray-200' : 'border-blue-400 bg-blue-50'} hover:shadow-md transition">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    <div class="bg-gray-50 p-3 md:p-5 rounded-lg border ${message.read ? 'border-gray-200' : 'border-blue-400 bg-blue-50'} hover:shadow-md transition">
+                        <div class="flex flex-col sm:flex-row justify-between items-start mb-3 gap-3 sm:gap-0">
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                                     ${message.name.charAt(0).toUpperCase()}
                                 </div>
-                                <div>
-                                    <h4 class="font-semibold text-gray-800">${message.name}</h4>
-                                    <div class="flex items-center gap-3 text-sm text-gray-600">
-                                        <span><i class="fas fa-envelope mr-1"></i>${message.email}</span>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="font-semibold text-gray-800 text-sm md:text-base truncate">${message.name}</h4>
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs md:text-sm text-gray-600">
+                                        <span class="truncate"><i class="fas fa-envelope mr-1"></i>${message.email}</span>
                                         <span><i class="fas fa-phone mr-1"></i>${message.phone}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 self-end sm:self-auto">
                                 ${!message.read ? '<span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">NEW</span>' : ''}
-                                <span class="text-xs text-gray-500"><i class="far fa-clock mr-1"></i>${date}</span>
+                                <span class="text-xs text-gray-500 whitespace-nowrap"><i class="far fa-clock mr-1"></i>${date}</span>
                             </div>
                         </div>
                         <div class="bg-white p-3 rounded border border-gray-200 mb-3">
-                            <p class="text-gray-700 text-sm whitespace-pre-wrap">${message.message}</p>
+                            <p class="text-gray-700 text-xs md:text-sm whitespace-pre-wrap break-words">${message.message}</p>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-col sm:flex-row gap-2">
                             <button onclick="toggleReadStatus('${message._id}', ${!message.read})" 
-                                    class="px-4 py-2 rounded ${message.read ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} transition font-medium text-sm">
+                                    class="px-3 md:px-4 py-2 rounded ${message.read ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} transition font-medium text-xs md:text-sm w-full sm:w-auto">
                                 <i class="fas ${message.read ? 'fa-envelope' : 'fa-envelope-open'} mr-1"></i>
                                 Mark as ${message.read ? 'Unread' : 'Read'}
                             </button>
-                            <a href="mailto:${message.email}" class="px-4 py-2 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition font-medium text-sm">
+                            <a href="mailto:${message.email}" class="px-3 md:px-4 py-2 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition font-medium text-xs md:text-sm text-center w-full sm:w-auto">
                                 <i class="fas fa-reply mr-1"></i>Reply via Email
                             </a>
                             <button onclick="deleteContactMessage('${message._id}')" 
-                                    class="px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition font-medium text-sm ml-auto">
+                                    class="px-3 md:px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition font-medium text-xs md:text-sm w-full sm:w-auto sm:ml-auto">
                                 <i class="fas fa-trash mr-1"></i>Delete
                             </button>
                         </div>
@@ -2134,6 +2368,366 @@
             .catch(error => {
                 console.error('Error deleting message:', error);
                 alert('An error occurred while deleting the message');
+            });
+        }
+
+        // ========== CATEGORY MANAGEMENT ==========
+
+        // Load Categories
+        function loadCategories() {
+            fetch(`${backendBaseUrl}/categories`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayCategories(data.categories);
+                    } else {
+                        console.error('Failed to load categories');
+                        document.getElementById('categories-grid').innerHTML = '<div class="text-center py-8 text-red-500">Failed to load categories</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading categories:', error);
+                    document.getElementById('categories-grid').innerHTML = '<div class="text-center py-8 text-red-500">Error loading categories</div>';
+                });
+        }
+
+        // Display Categories
+        function displayCategories(categories) {
+            const grid = document.getElementById('categories-grid');
+            
+            if (categories.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-400">No categories found. Add your first category!</div>';
+                return;
+            }
+
+            grid.innerHTML = categories.map(cat => `
+                <div class="bg-white border-2 border-gray-200 rounded-lg p-4 hover:shadow-lg transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-th-large text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">${cat.name}</h4>
+                                <p class="text-sm text-gray-500">${cat.product_count} products</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editCategory('${cat.name}')" class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition text-sm">
+                            <i class="fas fa-edit mr-1"></i>Rename
+                        </button>
+                        <button onclick="deleteCategory('${cat.name}', ${cat.product_count})" class="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition text-sm">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show Add Category Modal
+        function showAddCategoryModal() {
+            const categoryName = prompt('Enter new category name:');
+            if (!categoryName || !categoryName.trim()) return;
+
+            fetch(`${backendBaseUrl}/admin/categories/add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({ category_name: categoryName.trim() })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadCategories();
+                } else {
+                    alert(data.message || 'Failed to add category');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding category:', error);
+                alert('An error occurred while adding the category');
+            });
+        }
+
+        // Edit Category
+        function editCategory(oldName) {
+            const newName = prompt(`Rename category "${oldName}" to:`, oldName);
+            if (!newName || !newName.trim() || newName.trim() === oldName) return;
+
+            fetch(`${backendBaseUrl}/admin/categories/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({ 
+                    old_category: oldName, 
+                    new_category: newName.trim() 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadCategories();
+                    // Refresh products if on products section
+                    if (!document.getElementById('products-section').classList.contains('hidden')) {
+                        loadProducts();
+                    }
+                } else {
+                    alert(data.message || 'Failed to rename category');
+                }
+            })
+            .catch(error => {
+                console.error('Error renaming category:', error);
+                alert('An error occurred while renaming the category');
+            });
+        }
+
+        // Delete Category
+        function deleteCategory(categoryName, productCount) {
+            const message = productCount > 0 
+                ? `Are you sure you want to delete "${categoryName}"?\n\n${productCount} products will be moved to "Uncategorized".`
+                : `Are you sure you want to delete "${categoryName}"?`;
+            
+            if (!confirm(message)) return;
+
+            fetch(`${backendBaseUrl}/admin/categories/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify({ category_name: categoryName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadCategories();
+                    // Refresh products if on products section
+                    if (!document.getElementById('products-section').classList.contains('hidden')) {
+                        loadProducts();
+                    }
+                } else {
+                    alert(data.message || 'Failed to delete category');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting category:', error);
+                alert('An error occurred while deleting the category');
+            });
+        }
+
+        // ========== BANNER MANAGEMENT ==========
+
+        // Load Banners
+        function loadBanners() {
+            fetch(`${backendBaseUrl}/admin/banners`, {
+                headers: { 'User-ID': currentUserId }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayBanners(data.banners);
+                    } else {
+                        console.error('Failed to load banners');
+                        document.getElementById('banners-grid').innerHTML = '<div class="text-center py-8 text-red-500">Failed to load banners</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading banners:', error);
+                    document.getElementById('banners-grid').innerHTML = '<div class="text-center py-8 text-red-500">Error loading banners</div>';
+                });
+        }
+
+        // Display Banners
+        function displayBanners(banners) {
+            const grid = document.getElementById('banners-grid');
+            
+            if (banners.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-400">No banners found. Create your first banner!</div>';
+                return;
+            }
+
+            grid.innerHTML = banners.map(banner => `
+                <div class="border-2 ${banner.is_active ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'} rounded-lg p-4 hover:shadow-lg transition">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                ${banner.is_active ? '<span class="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">ACTIVE</span>' : '<span class="px-2 py-1 bg-gray-300 text-gray-700 text-xs font-bold rounded">INACTIVE</span>'}
+                                ${banner.link_type !== 'none' ? `<span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded"><i class="fas fa-link mr-1"></i>${banner.link_type.toUpperCase()}</span>` : ''}
+                            </div>
+                            <p class="text-gray-800 font-medium mb-2">${banner.text}</p>
+                            <div class="flex items-center gap-2 text-sm text-gray-500">
+                                <span>Colors:</span>
+                                <span class="px-2 py-1 rounded" style="background-color: ${banner.background_color}; color: ${banner.text_color};">Sample</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="toggleBannerStatus('${banner._id}', ${banner.is_active})" class="flex-1 px-3 py-2 ${banner.is_active ? 'bg-orange-50 text-orange-600 hover:bg-orange-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} rounded transition text-sm font-medium">
+                            <i class="fas fa-${banner.is_active ? 'eye-slash' : 'eye'} mr-1"></i>${banner.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button onclick="editBanner('${banner._id}')" class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition text-sm font-medium">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="deleteBanner('${banner._id}')" class="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition text-sm font-medium">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show Add Banner Modal
+        function showAddBannerModal() {
+            document.getElementById('banner-modal-title').textContent = 'Add Banner';
+            document.getElementById('banner-form').reset();
+            document.getElementById('banner-id').value = '';
+            document.getElementById('banner-bg-color').value = '#FF6B6B';
+            document.getElementById('banner-text-color').value = '#FFFFFF';
+            updateBannerLinkFields();
+            document.getElementById('banner-modal').classList.add('active');
+        }
+
+        // Update Banner Link Fields
+        function updateBannerLinkFields() {
+            const linkType = document.getElementById('banner-link-type').value;
+            document.getElementById('banner-link-url-field').classList.toggle('hidden', linkType !== 'url');
+            document.getElementById('banner-link-product-field').classList.toggle('hidden', linkType !== 'product');
+        }
+
+        // Save Banner
+        function saveBanner(event) {
+            event.preventDefault();
+            
+            const bannerId = document.getElementById('banner-id').value;
+            const isEdit = !!bannerId;
+            
+            const bannerData = {
+                text: document.getElementById('banner-text').value,
+                background_color: document.getElementById('banner-bg-color').value,
+                text_color: document.getElementById('banner-text-color').value,
+                link_type: document.getElementById('banner-link-type').value,
+                link_url: document.getElementById('banner-link-url').value || '',
+                link_id: document.getElementById('banner-link-product').value || '',
+                is_active: document.getElementById('banner-is-active').checked
+            };
+            
+            const url = isEdit 
+                ? `${backendBaseUrl}/admin/banners/update/${bannerId}`
+                : `${backendBaseUrl}/admin/banners/add`;
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify(bannerData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    closeModal('banner-modal');
+                    loadBanners();
+                } else {
+                    alert(data.message || 'Failed to save banner');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving banner:', error);
+                alert('An error occurred while saving the banner');
+            });
+        }
+
+        // Edit Banner
+        function editBanner(bannerId) {
+            fetch(`${backendBaseUrl}/admin/banners`, {
+                headers: { 'User-ID': currentUserId }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const banner = data.banners.find(b => b._id === bannerId);
+                    if (banner) {
+                        document.getElementById('banner-modal-title').textContent = 'Edit Banner';
+                        document.getElementById('banner-id').value = banner._id;
+                        document.getElementById('banner-text').value = banner.text;
+                        document.getElementById('banner-bg-color').value = banner.background_color || '#FF6B6B';
+                        document.getElementById('banner-text-color').value = banner.text_color || '#FFFFFF';
+                        document.getElementById('banner-link-type').value = banner.link_type || 'none';
+                        document.getElementById('banner-link-url').value = banner.link_url || '';
+                        document.getElementById('banner-link-product').value = banner.link_id || '';
+                        document.getElementById('banner-is-active').checked = banner.is_active || false;
+                        updateBannerLinkFields();
+                        document.getElementById('banner-modal').classList.add('active');
+                    }
+                }
+            })
+            .catch(error => console.error('Error loading banner:', error));
+        }
+
+        // Toggle Banner Status
+        function toggleBannerStatus(bannerId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${action} this banner?${!currentStatus ? '\n\nThis will deactivate all other banners.' : ''}`)) {
+                return;
+            }
+
+            fetch(`${backendBaseUrl}/admin/banners/toggle/${bannerId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadBanners();
+                } else {
+                    alert(data.message || 'Failed to toggle banner status');
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling banner:', error);
+                alert('An error occurred while updating the banner');
+            });
+        }
+
+        // Delete Banner
+        function deleteBanner(bannerId) {
+            if (!confirm('Are you sure you want to delete this banner? This action cannot be undone.')) {
+                return;
+            }
+
+            fetch(`${backendBaseUrl}/admin/banners/delete/${bannerId}`, {
+                method: 'DELETE',
+                headers: {
+                    'User-ID': currentUserId
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadBanners();
+                } else {
+                    alert(data.message || 'Failed to delete banner');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting banner:', error);
+                alert('An error occurred while deleting the banner');
             });
         }
     </script>
