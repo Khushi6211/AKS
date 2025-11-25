@@ -540,7 +540,7 @@
                 <input type="hidden" id="cloudinary-public-id">
                 
                 <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Product Image</label>
+                    <label class="block text-gray-700 font-medium mb-2">Primary Product Image</label>
                     <div id="image-dropzone" class="dropzone" onclick="document.getElementById('image-input').click()">
                         <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
                         <div id="dropzone-content">
@@ -554,6 +554,20 @@
                                 <i class="fas fa-trash mr-1"></i>Remove
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">
+                        Additional Images (Optional)
+                        <span class="text-sm text-gray-500">- Images will cycle on hover</span>
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                        <input type="file" id="additional-images-input" accept="image/*" multiple class="hidden" onchange="handleAdditionalImagesSelect(event)">
+                        <button type="button" onclick="document.getElementById('additional-images-input').click()" class="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fas fa-plus-circle mr-2"></i>Add More Images (Max 5)
+                        </button>
+                        <div id="additional-images-preview" class="grid grid-cols-4 gap-2 mt-3"></div>
                     </div>
                 </div>
 
@@ -787,6 +801,7 @@
         let currentUserId = null;
         let allOrders = [];
         let currentImageData = null;
+        let additionalImagesData = []; // Array to store additional images
 
         // Mobile Menu Functionality
         const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -1246,8 +1261,10 @@
             document.getElementById('product-id').value = '';
             document.getElementById('cloudinary-public-id').value = '';
             currentImageData = null;
+            additionalImagesData = []; // Reset additional images
             document.getElementById('dropzone-content').classList.remove('hidden');
             document.getElementById('image-preview').classList.add('hidden');
+            displayAdditionalImages(); // Clear additional images preview
             document.getElementById('product-modal').classList.add('active');
         }
 
@@ -1276,6 +1293,14 @@
                             document.getElementById('preview-img').src = product.image;
                             currentImageData = product.image;
                         }
+                        
+                        // Load additional images if available
+                        if (product.images && product.images.length > 1) {
+                            additionalImagesData = product.images.slice(1); // Skip first image (it's the primary)
+                        } else {
+                            additionalImagesData = [];
+                        }
+                        displayAdditionalImages();
                         
                         document.getElementById('product-modal').classList.add('active');
                     }
@@ -1312,6 +1337,57 @@
             document.getElementById('dropzone-content').classList.remove('hidden');
             document.getElementById('image-preview').classList.add('hidden');
             document.getElementById('image-input').value = '';
+        }
+
+        // Handle additional images selection
+        function handleAdditionalImagesSelect(event) {
+            const files = Array.from(event.target.files);
+            
+            if (additionalImagesData.length + files.length > 5) {
+                alert('Maximum 5 additional images allowed');
+                return;
+            }
+            
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`${file.name} is too large. Max 5MB per image.`);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    additionalImagesData.push({
+                        data: e.target.result,
+                        name: file.name
+                    });
+                    displayAdditionalImages();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Display additional images preview
+        function displayAdditionalImages() {
+            const container = document.getElementById('additional-images-preview');
+            if (additionalImagesData.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = additionalImagesData.map((img, index) => `
+                <div class="relative border rounded overflow-hidden">
+                    <img src="${img.data || img}" class="w-full h-20 object-cover">
+                    <button type="button" onclick="removeAdditionalImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Remove additional image
+        function removeAdditionalImage(index) {
+            additionalImagesData.splice(index, 1);
+            displayAdditionalImages();
         }
 
         // Drag and drop handlers
@@ -1352,7 +1428,11 @@
                 cloudinary_public_id: document.getElementById('cloudinary-public-id').value
             };
             
-            // Upload new image to Cloudinary if image was changed
+            // Initialize images arrays
+            productData.images = [];
+            productData.cloudinary_public_ids = [];
+            
+            // Upload primary image to Cloudinary if image was changed
             if (currentImageData && currentImageData.startsWith('data:image')) {
                 try {
                     const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
@@ -1368,17 +1448,49 @@
                     if (uploadData.success) {
                         productData.image = uploadData.url;
                         productData.cloudinary_public_id = uploadData.public_id;
+                        productData.images.push(uploadData.url);
+                        productData.cloudinary_public_ids.push(uploadData.public_id);
                     } else {
-                        alert('Error uploading image: ' + uploadData.message);
+                        alert('Error uploading primary image: ' + uploadData.message);
                         return;
                     }
                 } catch (error) {
-                    console.error('Error uploading image:', error);
-                    alert('Failed to upload image');
+                    console.error('Error uploading primary image:', error);
+                    alert('Failed to upload primary image');
                     return;
                 }
             } else if (currentImageData) {
                 productData.image = currentImageData;
+                productData.images.push(currentImageData);
+            }
+            
+            // Upload additional images to Cloudinary
+            if (additionalImagesData.length > 0) {
+                for (const imgData of additionalImagesData) {
+                    if (imgData.data && imgData.data.startsWith('data:image')) {
+                        try {
+                            const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'User-ID': currentUserId
+                                },
+                                body: JSON.stringify({ image_data: imgData.data })
+                            });
+                            
+                            const uploadData = await uploadResponse.json();
+                            if (uploadData.success) {
+                                productData.images.push(uploadData.url);
+                                productData.cloudinary_public_ids.push(uploadData.public_id);
+                            }
+                        } catch (error) {
+                            console.error('Error uploading additional image:', error);
+                        }
+                    } else if (typeof imgData === 'string') {
+                        // Existing URL
+                        productData.images.push(imgData);
+                    }
+                }
             }
             
             // Save product

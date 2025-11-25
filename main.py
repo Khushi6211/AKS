@@ -1801,10 +1801,12 @@ def add_product():
             "name": sanitize_string(data['name']),
             "price": float(data['price']),
             "category": sanitize_string(data['category']),
-            "image": data.get('image', ''),
+            "image": data.get('image', ''),  # Primary image (backward compatibility)
+            "images": data.get('images', [data.get('image', '')]) if data.get('images') else [data.get('image', '')],  # Multiple images
             "description": sanitize_string(data.get('description', '')),
             "stock": int(data.get('stock', 0)),
             "cloudinary_public_id": data.get('cloudinary_public_id'),
+            "cloudinary_public_ids": data.get('cloudinary_public_ids', [data.get('cloudinary_public_id')] if data.get('cloudinary_public_id') else []),  # Multiple Cloudinary IDs
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
         }
@@ -1911,12 +1913,16 @@ def update_product(product_id):
             update_fields['category'] = sanitize_string(data['category'])
         if 'image' in data:
             update_fields['image'] = data['image']
+        if 'images' in data:
+            update_fields['images'] = data['images']
         if 'description' in data:
             update_fields['description'] = sanitize_string(data['description'])
         if 'stock' in data:
             update_fields['stock'] = int(data['stock'])
         if 'cloudinary_public_id' in data:
             update_fields['cloudinary_public_id'] = data['cloudinary_public_id']
+        if 'cloudinary_public_ids' in data:
+            update_fields['cloudinary_public_ids'] = data['cloudinary_public_ids']
         
         # Check if product_id is numeric (old format) or ObjectId
         try:
