@@ -2655,15 +2655,11 @@ def get_categories():
 
 # Add New Category (Admin)
 @app.route('/admin/categories/add', methods=['POST'])
-@jwt_required()
+@admin_required
 def add_category():
     """Add a new category"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         data = request.get_json()
         category_name = data.get('category_name', '').strip()
@@ -2689,15 +2685,11 @@ def add_category():
 
 # Update Category Name (Admin)
 @app.route('/admin/categories/update', methods=['POST'])
-@jwt_required()
+@admin_required
 def update_category():
     """Update category name for all products with that category"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         data = request.get_json()
         old_category = data.get('old_category', '').strip()
@@ -2725,15 +2717,11 @@ def update_category():
 
 # Delete Category (Admin)
 @app.route('/admin/categories/delete', methods=['POST'])
-@jwt_required()
+@admin_required
 def delete_category():
     """Delete a category (moves products to 'Uncategorized')"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         data = request.get_json()
         category_name = data.get('category_name', '').strip()
@@ -2779,15 +2767,11 @@ def get_active_banner():
 
 # Get All Banners (Admin)
 @app.route('/admin/banners', methods=['GET'])
-@jwt_required()
+@admin_required
 def get_all_banners():
     """Get all banners (admin only)"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         banners = list(banners_collection.find().sort('created_at', -1))
         
@@ -2802,15 +2786,11 @@ def get_all_banners():
 
 # Add Banner (Admin)
 @app.route('/admin/banners/add', methods=['POST'])
-@jwt_required()
+@admin_required
 def add_banner():
     """Add a new banner"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         data = request.get_json()
         
@@ -2848,15 +2828,11 @@ def add_banner():
 
 # Update Banner (Admin)
 @app.route('/admin/banners/update/<banner_id>', methods=['PUT'])
-@jwt_required()
+@admin_required
 def update_banner(banner_id):
     """Update banner"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         data = request.get_json()
         
@@ -2897,15 +2873,11 @@ def update_banner(banner_id):
 
 # Toggle Banner Active Status (Admin)
 @app.route('/admin/banners/toggle/<banner_id>', methods=['POST'])
-@jwt_required()
+@admin_required
 def toggle_banner_status(banner_id):
     """Toggle banner active status"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         banner = banners_collection.find_one({'_id': ObjectId(banner_id)})
         if not banner:
@@ -2931,15 +2903,11 @@ def toggle_banner_status(banner_id):
 
 # Delete Banner (Admin)
 @app.route('/admin/banners/delete/<banner_id>', methods=['DELETE'])
-@jwt_required()
+@admin_required
 def delete_banner(banner_id):
     """Delete a banner"""
     try:
-        current_user_id = get_jwt_identity()
-        user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-        
-        if not user or user.get('role') != 'admin':
-            return jsonify({"success": False, "message": "Admin access required."}), 403
+        # Admin access already verified by @admin_required decorator
         
         result = banners_collection.delete_one({'_id': ObjectId(banner_id)})
         
