@@ -614,13 +614,7 @@
                     <label class="block text-gray-700 font-medium mb-2">Category</label>
                     <select id="product-category" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
                         <option value="">Select Category</option>
-                        <option value="food">Food & Staples</option>
-                        <option value="beverages">Beverages</option>
-                        <option value="soaps">Soaps & Detergents</option>
-                        <option value="personal-care">Personal Care</option>
-                        <option value="snacks">Snacks</option>
-                        <option value="dairy">Dairy</option>
-                        <option value="other">Other</option>
+                        <!-- Categories will be dynamically loaded -->
                     </select>
                 </div>
 
@@ -1324,8 +1318,15 @@
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active-nav'));
             document.querySelector('.nav-item[data-section="products"]').classList.add('active-nav');
             
-            // Filter to show only low stock
-            filterProducts('low-stock');
+            // Load products first if not loaded, then filter
+            if (allProducts.length === 0) {
+                loadProducts().then(() => {
+                    filterProducts('low-stock');
+                });
+            } else {
+                // Filter to show only low stock
+                filterProducts('low-stock');
+            }
         }
 
         // Filter products by stock status
@@ -1349,6 +1350,28 @@
         }
 
         // Show add product modal
+        // Populate category dropdown
+        function populateCategoryDropdown() {
+            fetch(`${backendBaseUrl}/categories`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.categories) {
+                        const select = document.getElementById('product-category');
+                        // Keep the first "Select Category" option
+                        select.innerHTML = '<option value="">Select Category</option>';
+                        
+                        // Add all categories from database
+                        data.categories.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat.name;
+                            option.textContent = cat.name;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading categories:', error));
+        }
+
         function showAddProductModal() {
             document.getElementById('product-modal-title').textContent = 'Add Product';
             document.getElementById('product-form').reset();
@@ -1359,6 +1382,7 @@
             document.getElementById('dropzone-content').classList.remove('hidden');
             document.getElementById('image-preview').classList.add('hidden');
             displayAdditionalImages(); // Clear additional images preview
+            populateCategoryDropdown(); // Load categories from database
             document.getElementById('product-modal').classList.add('active');
         }
 
@@ -1377,9 +1401,15 @@
                         document.getElementById('product-name').value = product.name;
                         document.getElementById('product-price').value = product.price;
                         document.getElementById('product-stock').value = product.stock || 0;
-                        document.getElementById('product-category').value = product.category;
                         document.getElementById('product-description').value = product.description || '';
                         document.getElementById('cloudinary-public-id').value = product.cloudinary_public_id || '';
+                        
+                        // Populate category dropdown then set the product's category
+                        populateCategoryDropdown();
+                        // Use setTimeout to ensure dropdown is populated before setting value
+                        setTimeout(() => {
+                            document.getElementById('product-category').value = product.category;
+                        }, 100);
                         
                         if (product.image) {
                             document.getElementById('dropzone-content').classList.add('hidden');
