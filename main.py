@@ -2699,15 +2699,23 @@ def add_category():
         if not category_name:
             return jsonify({"success": False, "message": "Category name is required."}), 400
         
-        # Check if category already exists
-        existing = products_collection.find_one({'category': category_name})
+        # Check if category already exists in categories collection
+        existing = categories_collection.find_one({'name': category_name})
         if existing:
             return jsonify({"success": False, "message": "Category already exists."}), 400
         
-        logger.info(f"✅ Category '{category_name}' registered (will be active when products are added)")
+        # Add category to categories_collection
+        new_category = {
+            "name": category_name,
+            "display_name": category_name,
+            "created_at": datetime.datetime.utcnow()
+        }
+        categories_collection.insert_one(new_category)
+        
+        logger.info(f"✅ Category '{category_name}' added to categories collection")
         return jsonify({
             "success": True, 
-            "message": f"Category '{category_name}' registered. Add products to this category to make it visible.",
+            "message": f"Category '{category_name}' added successfully!",
             "category": category_name
         }), 200
         
@@ -2719,7 +2727,7 @@ def add_category():
 @app.route('/admin/categories/update', methods=['POST'])
 @admin_required
 def update_category():
-    """Update category name for all products with that category"""
+    """Update category name in categories collection and all products"""
     try:
         # Admin access already verified by @admin_required decorator
         
@@ -2729,6 +2737,17 @@ def update_category():
         
         if not old_category or not new_category:
             return jsonify({"success": False, "message": "Both old and new category names are required."}), 400
+        
+        # Check if new category name already exists
+        existing = categories_collection.find_one({'name': new_category})
+        if existing:
+            return jsonify({"success": False, "message": "A category with this name already exists."}), 400
+        
+        # Update category name in categories_collection
+        categories_collection.update_one(
+            {'name': old_category},
+            {'$set': {'name': new_category, 'display_name': new_category, 'updated_at': datetime.datetime.utcnow()}}
+        )
         
         # Update all products with this category
         result = products_collection.update_many(
@@ -2760,6 +2779,9 @@ def delete_category():
         
         if not category_name:
             return jsonify({"success": False, "message": "Category name is required."}), 400
+        
+        # Delete category from categories_collection
+        categories_collection.delete_one({'name': category_name})
         
         # Move products to 'Uncategorized'
         result = products_collection.update_many(
