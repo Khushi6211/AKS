@@ -2630,24 +2630,20 @@ def get_products():
 # Get All Categories
 @app.route('/categories', methods=['GET'])
 def get_categories():
-    """Get all unique categories from products"""
+    """Get all categories from categories collection"""
     try:
-        # Get distinct categories from products collection
-        categories = products_collection.distinct('category')
+        # Get all categories from categories_collection
+        categories = list(categories_collection.find({}, {'_id': 0}))
         
-        # Get count for each category
-        category_list = []
+        # Get product count for each category
         for cat in categories:
-            count = products_collection.count_documents({'category': cat})
-            category_list.append({
-                'name': cat,
-                'product_count': count
-            })
+            count = products_collection.count_documents({'category': cat['name']})
+            cat['product_count'] = count
         
         # Sort by name
-        category_list.sort(key=lambda x: x['name'])
+        categories.sort(key=lambda x: x['name'])
         
-        return jsonify({"success": True, "categories": category_list}), 200
+        return jsonify({"success": True, "categories": categories}), 200
         
     except Exception as e:
         logger.error(f"❌ Error fetching categories: {e}")

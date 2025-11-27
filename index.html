@@ -625,28 +625,12 @@
     </section>
 
     <!-- Running Banner Section -->
-    <!-- Promotional Banner -->
     <div id="offer-banner-container" class="hidden">
-        <div id="offer-banner" class="overflow-hidden py-4 cursor-pointer relative" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);">
-            <!-- Animated background pattern -->
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 left-0 w-full h-full" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.1) 10px, rgba(255,255,255,.1) 20px);"></div>
-            </div>
-            
-            <!-- Banner content -->
-            <div class="banner-content-wrapper relative z-10">
-                <div class="flex items-center justify-center">
-                    <i class="fas fa-bullhorn text-white text-2xl mr-3 animate-pulse"></i>
-                    <div id="banner-text" class="banner-scroll text-white font-bold text-xl whitespace-nowrap inline-block" style="color: #FFFFFF;">
-                        <!-- Banner text will be loaded here -->
-                    </div>
-                    <i class="fas fa-bullhorn text-white text-2xl ml-3 animate-pulse"></i>
+        <div id="offer-banner" class="overflow-hidden py-3 cursor-pointer" style="background-color: #FF6B6B;">
+            <div class="banner-content-wrapper">
+                <div id="banner-text" class="banner-scroll text-white font-bold text-lg whitespace-nowrap inline-block" style="color: #FFFFFF;">
+                    <!-- Banner text will be loaded here -->
                 </div>
-            </div>
-            
-            <!-- Click indicator -->
-            <div class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white opacity-75">
-                <i class="fas fa-hand-pointer text-sm animate-bounce"></i>
             </div>
         </div>
     </div>
@@ -664,16 +648,6 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="product-grid">
-            </div>
-            
-            <!-- Load More Button -->
-            <div id="load-more-container" class="text-center mt-8 hidden">
-                <button id="load-more-btn" onclick="loadMoreProducts()" class="px-8 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-medium shadow-lg">
-                    <i class="fas fa-plus-circle mr-2"></i>Load More Products
-                </button>
-                <p class="text-gray-500 text-sm mt-2">
-                    Showing <span id="products-shown">0</span> of <span id="products-total">0</span> products
-                </p>
             </div>
         </div>
     </section>
@@ -1124,11 +1098,6 @@
         // Product Data - Loaded dynamically from backend API
         let products = []; // Initialize as empty array, will be populated from API
         
-        // Pagination variables
-        let productsPerPage = 12; // Show 12 products at a time
-        let currentProductsShown = 0;
-        let currentDisplayedProducts = [];
-
         // DOM Elements
         const productGrid = document.getElementById('product-grid');
         const cartBtn = document.getElementById('cart-btn');
@@ -1540,29 +1509,19 @@
         }
 
         // --- Product Display ---
-        function displayProducts(filteredProducts, append = false) {
-            if (!append) {
-                productGrid.innerHTML = ''; // Clear existing products before adding new ones
-                currentProductsShown = 0;
-            }
+        function displayProducts(filteredProducts) {
+            productGrid.innerHTML = ''; // Clear existing products before adding new ones
             
             const productsToDisplay = filteredProducts || products; // Use filtered list or all products
-            currentDisplayedProducts = productsToDisplay; // Store for load more functionality
 
             if (productsToDisplay.length === 0) {
                 // Display message if no products match the filter
                 productGrid.innerHTML = `<p class="text-center text-gray-500 col-span-full">No products found.</p>`;
-                document.getElementById('load-more-container').classList.add('hidden');
                 return;
             }
-
-            // Calculate how many products to show
-            const startIndex = currentProductsShown;
-            const endIndex = Math.min(startIndex + productsPerPage, productsToDisplay.length);
-            const productsToShow = productsToDisplay.slice(startIndex, endIndex);
             
             // Loop through products and create HTML card for each
-            productsToShow.forEach(product => {
+            productsToDisplay.forEach(product => {
                 // Find the current quantity of this product in the cart
                 const cartItem = cart.find(item => item.id === product.id);
                 const currentQuantity = cartItem ? cartItem.quantity : 0;
@@ -1605,28 +1564,6 @@
              // Re-attach event listeners after updating the grid content
             attachAddToCartListeners(); // This will now attach listeners to the new quantity buttons and image clicks
             attachProductImageHoverListeners(); // Attach hover listeners for multiple images
-            
-            // Update pagination state
-            currentProductsShown = endIndex;
-            
-            // Update and show/hide load more button
-            const loadMoreContainer = document.getElementById('load-more-container');
-            const productsShownEl = document.getElementById('products-shown');
-            const productsTotalEl = document.getElementById('products-total');
-            
-            productsShownEl.textContent = currentProductsShown;
-            productsTotalEl.textContent = productsToDisplay.length;
-            
-            if (currentProductsShown < productsToDisplay.length) {
-                loadMoreContainer.classList.remove('hidden');
-            } else {
-                loadMoreContainer.classList.add('hidden');
-            }
-        }
-        
-        // Load More Products
-        function loadMoreProducts() {
-            displayProducts(currentDisplayedProducts, true);
         }
 
         // Attach hover listeners for product images (to cycle through multiple images)
