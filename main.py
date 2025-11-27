@@ -2793,8 +2793,16 @@ def add_banner():
         if not data.get('text'):
             return jsonify({"success": False, "message": "Banner text is required."}), 400
         
+        # Handle multiple announcement texts
+        texts = data.get('texts', [data.get('text')])
+        if isinstance(texts, list) and len(texts) > 0:
+            texts = [sanitize_string(t) for t in texts if t]
+        else:
+            texts = [sanitize_string(data['text'])]
+        
         new_banner = {
-            "text": sanitize_string(data['text']),
+            "text": texts[0],  # Main text (backward compatibility)
+            "texts": texts,  # Array of all announcement texts
             "link_type": data.get('link_type', 'none'),  # 'product', 'offer', 'url', 'none'
             "link_id": data.get('link_id', ''),  # Product ID or Offer ID
             "link_url": data.get('link_url', ''),  # External URL
@@ -2834,8 +2842,16 @@ def update_banner(banner_id):
         
         update_fields = {"updated_at": datetime.datetime.utcnow()}
         
-        if 'text' in data:
+        # Handle multiple texts update
+        if 'texts' in data:
+            texts = data.get('texts', [])
+            if isinstance(texts, list) and len(texts) > 0:
+                texts = [sanitize_string(t) for t in texts if t]
+                update_fields['texts'] = texts
+                update_fields['text'] = texts[0]  # Update main text too
+        elif 'text' in data:
             update_fields['text'] = sanitize_string(data['text'])
+            update_fields['texts'] = [sanitize_string(data['text'])]
         if 'link_type' in data:
             update_fields['link_type'] = data['link_type']
         if 'link_id' in data:

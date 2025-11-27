@@ -2665,12 +2665,31 @@
                     const bannerElement = document.getElementById('offer-banner');
                     const bannerText = document.getElementById('banner-text');
                     
-                    // Set banner content
-                    bannerText.textContent = `🔥 ${banner.text} 🔥`;
+                    // Get all announcement texts (support both single text and multiple texts)
+                    const texts = banner.texts && Array.isArray(banner.texts) && banner.texts.length > 0 
+                        ? banner.texts 
+                        : [banner.text];
                     
                     // Set colors
                     bannerElement.style.backgroundColor = banner.background_color || '#FF6B6B';
                     bannerText.style.color = banner.text_color || '#FFFFFF';
+                    
+                    // If multiple texts, rotate them
+                    if (texts.length > 1) {
+                        let currentIndex = 0;
+                        
+                        // Set initial text
+                        bannerText.textContent = `🔥 ${texts[currentIndex]} 🔥`;
+                        
+                        // Rotate texts every 5 seconds
+                        setInterval(() => {
+                            currentIndex = (currentIndex + 1) % texts.length;
+                            bannerText.textContent = `🔥 ${texts[currentIndex]} 🔥`;
+                        }, 5000);
+                    } else {
+                        // Single text
+                        bannerText.textContent = `🔥 ${texts[0]} 🔥`;
+                    }
                     
                     // Set click handler based on link type
                     if (banner.link_type === 'product' && banner.link_id) {
