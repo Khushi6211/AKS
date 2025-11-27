@@ -138,11 +138,19 @@ def initialize_database():
     global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection
     
     try:
+        # Optimized MongoDB connection for Render free tier
         client = MongoClient(
             mongo_uri,
-            serverSelectionTimeoutMS=5000,
-            connectTimeoutMS=5000,
-            maxPoolSize=50
+            serverSelectionTimeoutMS=10000,  # Increased for cold starts
+            connectTimeoutMS=10000,
+            socketTimeoutMS=45000,  # Socket timeout for long operations
+            maxPoolSize=10,  # Reduced pool size for free tier
+            minPoolSize=1,  # Keep at least 1 connection alive
+            maxIdleTimeMS=30000,  # Close idle connections after 30s
+            retryWrites=True,  # Retry failed writes
+            retryReads=True,  # Retry failed reads
+            w='majority',  # Write concern
+            journal=True  # Wait for journal sync
         )
         db = client.arun_karyana_store_db
         users_collection = db.users
@@ -632,28 +640,56 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Health check endpoint
+# Lightweight ping endpoint (no DB check - fast for keep-alive)
+@app.route('/ping')
+def ping():
+    """Ultra-fast ping endpoint for keep-alive monitoring"""
+    return jsonify({"status": "alive", "timestamp": datetime.datetime.utcnow().isoformat()}), 200
+
+# Health check endpoint (includes DB check)
 @app.route('/')
 @app.route('/health')
 def health_check():
-    """Health check endpoint for monitoring"""
+    """Comprehensive health check endpoint for monitoring"""
+    start_time = datetime.datetime.utcnow()
+    health_status = {
+        "status": "healthy",
+        "service": "Arun Karyana Store Backend",
+        "version": "2.1",
+        "timestamp": start_time.isoformat()
+    }
+    
     try:
-        # Test database connection
+        # Test database connection with timeout
+        db_start = datetime.datetime.utcnow()
         client.admin.command('ping')
-        return jsonify({
-            "status": "healthy",
-            "service": "Arun Karyana Store Backend",
-            "database": "connected",
-            "version": "2.0"
-        }), 200
+        db_latency = (datetime.datetime.utcnow() - db_start).total_seconds() * 1000
+        
+        health_status["database"] = {
+            "status": "connected",
+            "latency_ms": round(db_latency, 2)
+        }
+        
+        # Quick collection count check
+        health_status["collections"] = {
+            "users": users_collection.estimated_document_count(),
+            "products": products_collection.estimated_document_count(),
+            "orders": orders_collection.estimated_document_count()
+        }
+        
+        total_time = (datetime.datetime.utcnow() - start_time).total_seconds() * 1000
+        health_status["response_time_ms"] = round(total_time, 2)
+        
+        return jsonify(health_status), 200
+        
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return jsonify({
-            "status": "unhealthy",
-            "service": "Arun Karyana Store Backend",
-            "database": "disconnected",
+        logger.error(f"❌ Health check failed: {e}")
+        health_status["status"] = "unhealthy"
+        health_status["database"] = {
+            "status": "disconnected",
             "error": str(e)
-        }), 500
+        }
+        return jsonify(health_status), 500
 
 # User Registration
 @app.route('/register', methods=['POST'])
