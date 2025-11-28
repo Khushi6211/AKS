@@ -800,20 +800,32 @@
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Link Type</label>
                     <select id="banner-link-type" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" onchange="updateBannerLinkFields()">
-                        <option value="none">No Link</option>
+                        <option value="none">No Link (Just Display)</option>
                         <option value="url">External URL</option>
-                        <option value="product">Product Page</option>
+                        <option value="product">Link to Product</option>
+                        <option value="category">Link to Category</option>
                     </select>
                 </div>
 
                 <div id="banner-link-url-field" class="mb-4 hidden">
-                    <label class="block text-gray-700 font-medium mb-2">Link URL</label>
+                    <label class="block text-gray-700 font-medium mb-2">External URL</label>
                     <input type="url" id="banner-link-url" placeholder="https://example.com" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
                 </div>
 
                 <div id="banner-link-product-field" class="mb-4 hidden">
-                    <label class="block text-gray-700 font-medium mb-2">Product ID</label>
-                    <input type="text" id="banner-link-product" placeholder="Enter product ID" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                    <label class="block text-gray-700 font-medium mb-2">Select Product</label>
+                    <select id="banner-link-product" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                        <option value="">-- Select a Product --</option>
+                        <!-- Products will be loaded dynamically -->
+                    </select>
+                </div>
+
+                <div id="banner-link-category-field" class="mb-4 hidden">
+                    <label class="block text-gray-700 font-medium mb-2">Select Category</label>
+                    <select id="banner-link-category" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                        <option value="">-- Select a Category --</option>
+                        <!-- Categories will be loaded dynamically -->
+                    </select>
                 </div>
 
                 <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
@@ -2894,6 +2906,7 @@
             document.getElementById('banner-gradient-text-color').value = '#FFFFFF';
             toggleGradientOptions();
             updateBannerLinkFields();
+            populateBannerSelectors(); // Load products and categories
             // Clear additional announcements
             document.getElementById('additional-announcements').innerHTML = '';
             announcementCount = 0;
@@ -2905,6 +2918,38 @@
             const linkType = document.getElementById('banner-link-type').value;
             document.getElementById('banner-link-url-field').classList.toggle('hidden', linkType !== 'url');
             document.getElementById('banner-link-product-field').classList.toggle('hidden', linkType !== 'product');
+            document.getElementById('banner-link-category-field').classList.toggle('hidden', linkType !== 'category');
+        }
+
+        // Populate Banner Product and Category Selectors
+        async function populateBannerSelectors() {
+            // Populate products
+            try {
+                const productsResponse = await fetch(`${backendBaseUrl}/admin/products`, {
+                    headers: { 'User-ID': currentUserId }
+                });
+                const productsData = await productsResponse.json();
+                if (productsData.success) {
+                    const productSelect = document.getElementById('banner-link-product');
+                    productSelect.innerHTML = '<option value="">-- Select a Product --</option>' +
+                        productsData.products.map(p => `<option value="${p._id}">${p.name} (₹${p.price})</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading products for banner:', e);
+            }
+
+            // Populate categories
+            try {
+                const categoriesResponse = await fetch(`${backendBaseUrl}/categories`);
+                const categoriesData = await categoriesResponse.json();
+                if (categoriesData.success) {
+                    const categorySelect = document.getElementById('banner-link-category');
+                    categorySelect.innerHTML = '<option value="">-- Select a Category --</option>' +
+                        categoriesData.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading categories for banner:', e);
+            }
         }
 
         // Toggle Gradient Options
@@ -3010,6 +3055,17 @@
             // Check if gradient is enabled
             const isGradient = document.getElementById('banner-gradient-enabled').checked;
             
+            // Get link target based on type
+            const linkType = document.getElementById('banner-link-type').value;
+            let linkId = '';
+            let linkCategory = '';
+            
+            if (linkType === 'product') {
+                linkId = document.getElementById('banner-link-product').value || '';
+            } else if (linkType === 'category') {
+                linkCategory = document.getElementById('banner-link-category').value || '';
+            }
+            
             const bannerData = {
                 text: mainText, // Keep main text for backward compatibility
                 texts: allTexts, // Array of all announcement texts
@@ -3018,9 +3074,10 @@
                 gradient_enabled: isGradient,
                 gradient_start: isGradient ? document.getElementById('banner-gradient-start').value : '',
                 gradient_end: isGradient ? document.getElementById('banner-gradient-end').value : '',
-                link_type: document.getElementById('banner-link-type').value,
+                link_type: linkType,
                 link_url: document.getElementById('banner-link-url').value || '',
-                link_id: document.getElementById('banner-link-product').value || '',
+                link_id: linkId,
+                link_category: linkCategory,
                 is_active: document.getElementById('banner-is-active').checked
             };
             

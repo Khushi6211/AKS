@@ -2707,7 +2707,11 @@ def add_category():
             return jsonify({"success": False, "message": "Category already exists."}), 400
         
         # Add category to categories_collection
+        # Generate a unique id from the category name (lowercase, hyphenated)
+        category_id = category_name.lower().replace(' ', '-').replace('&', 'and')
+        
         new_category = {
+            "id": category_id,  # Required for unique index
             "name": category_name,
             "display_name": category_name,
             "created_at": datetime.datetime.utcnow()
@@ -2863,8 +2867,9 @@ def add_banner():
         new_banner = {
             "text": texts[0],  # Main text (backward compatibility)
             "texts": texts,  # Array of all announcement texts
-            "link_type": data.get('link_type', 'none'),  # 'product', 'offer', 'url', 'none'
-            "link_id": data.get('link_id', ''),  # Product ID or Offer ID
+            "link_type": data.get('link_type', 'none'),  # 'product', 'category', 'url', 'none'
+            "link_id": data.get('link_id', ''),  # Product ID
+            "link_category": data.get('link_category', ''),  # Category name
             "link_url": data.get('link_url', ''),  # External URL
             "background_color": data.get('background_color', '#FF6B6B'),
             "text_color": data.get('text_color', '#FFFFFF'),
@@ -2919,6 +2924,8 @@ def update_banner(banner_id):
             update_fields['link_type'] = data['link_type']
         if 'link_id' in data:
             update_fields['link_id'] = data['link_id']
+        if 'link_category' in data:
+            update_fields['link_category'] = data['link_category']
         if 'link_url' in data:
             update_fields['link_url'] = data['link_url']
         if 'background_color' in data:
@@ -3230,8 +3237,8 @@ def add_popup():
             'text_color': data.get('text_color', '#000000'),
             'display_frequency': data.get('display_frequency', 'always'),  # 'always', 'once_per_session', 'once_per_day'
             'is_active': data.get('is_active', False),
-            'created_at': datetime.now(timezone.utc),
-            'updated_at': datetime.now(timezone.utc)
+            'created_at': datetime.datetime.utcnow(),
+            'updated_at': datetime.datetime.utcnow()
         }
         
         result = popups_collection.insert_one(new_popup)
@@ -3274,7 +3281,7 @@ def update_popup(popup_id):
             'text_color': data.get('text_color', '#000000'),
             'display_frequency': data.get('display_frequency', 'always'),
             'is_active': data.get('is_active', False),
-            'updated_at': datetime.now(timezone.utc)
+            'updated_at': datetime.datetime.utcnow()
         }
         
         result = popups_collection.update_one(
