@@ -3233,6 +3233,8 @@ def add_popup():
             'link_type': data.get('link_type', 'none'),  # 'none', 'url', 'product', 'category'
             'link_target': data.get('link_target', ''),  # Product ID or category name
             'button_text': sanitize_string(data.get('button_text', 'View Now')),
+            'orientation': data.get('orientation', 'landscape'),  # 'landscape', 'portrait', 'square'
+            'effect_type': data.get('effect_type', 'confetti'),  # 'confetti', 'fireworks', 'sparkles', 'all', 'none'
             'background_color': data.get('background_color', '#ffffff'),
             'text_color': data.get('text_color', '#000000'),
             'display_frequency': data.get('display_frequency', 'always'),  # 'always', 'once_per_session', 'once_per_day'
@@ -3277,6 +3279,8 @@ def update_popup(popup_id):
             'link_type': data.get('link_type', 'none'),
             'link_target': data.get('link_target', ''),
             'button_text': sanitize_string(data.get('button_text', 'View Now')),
+            'orientation': data.get('orientation', 'landscape'),
+            'effect_type': data.get('effect_type', 'confetti'),
             'background_color': data.get('background_color', '#ffffff'),
             'text_color': data.get('text_color', '#000000'),
             'display_frequency': data.get('display_frequency', 'always'),

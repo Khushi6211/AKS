@@ -646,9 +646,11 @@
     </div>
     
     <style>
-        /* Continuous Ticker Animation */
+        /* Continuous Ticker Animation - Starts from right edge */
         .banner-ticker-wrapper {
             animation: ticker-scroll 30s linear infinite;
+            /* Start from right edge of screen */
+            transform: translateX(100vw);
         }
         
         .banner-ticker-wrapper:hover {
@@ -656,8 +658,9 @@
         }
         
         @keyframes ticker-scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+            /* Start from right edge, scroll all the way left and loop */
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
         }
         
         .banner-ticker-item {
@@ -2762,6 +2765,30 @@
             }
         });
 
+        // Show product details by product ID - used by popup and banner links
+        function showProductDetails(productId) {
+            // Find the product in our loaded products array
+            const product = products.find(p => p.id === productId);
+            
+            if (product) {
+                // Get the product images
+                const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+                const firstImage = productImages[0] || 'https://via.placeholder.com/300';
+                
+                // Show the full image modal with product details
+                showFullImageModal(firstImage, product.name, product);
+                
+                // Also scroll to the products section
+                scrollToElement('products');
+                
+                console.log('Showing product details:', product.name);
+            } else {
+                console.warn('Product not found with ID:', productId);
+                // Fallback: just scroll to products section
+                scrollToElement('products');
+                showToast('Product details loading...', 'info');
+            }
+        }
 
         // --- Initial Setup ---
         // Load Active Banner
@@ -3067,66 +3094,87 @@
             }
         }
 
-        // Display the welcome popup (center modal style)
+        // Display the welcome popup - GRAND FULL-SCREEN POSTER STYLE
+        // NO close button, NO ribbon - entire poster is clickable, tap outside to dismiss
         function showWelcomePopup(popup) {
             // Create popup overlay
             const overlay = document.createElement('div');
             overlay.id = 'welcome-popup-overlay';
-            overlay.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4';
-            overlay.style.animation = 'fadeIn 0.3s ease-out';
+            overlay.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+            overlay.style.cssText = 'background: rgba(0,0,0,0.92); animation: fadeIn 0.4s ease-out;';
             
-            // Determine link URL based on link type
-            let linkHref = '';
-            let linkOnClick = '';
+            // Determine click action based on link type
+            const hasLink = popup.link_type && popup.link_type !== 'none' && (popup.link_url || popup.link_target);
             
-            if (popup.link_type === 'url' && popup.link_url) {
-                linkHref = popup.link_url;
-                linkOnClick = '';
-            } else if (popup.link_type === 'product' && popup.link_target) {
-                linkHref = '#';
-                linkOnClick = `onclick="closeWelcomePopup(); showProductDetails('${popup.link_target}'); return false;"`;
-            } else if (popup.link_type === 'category' && popup.link_target) {
-                linkHref = '#';
-                linkOnClick = `onclick="closeWelcomePopup(); filterByCategory('${popup.link_target}'); return false;"`;
+            // Get effect type (default to confetti)
+            const effectType = popup.effect_type || 'confetti';
+            
+            // Determine poster size based on orientation - LARGE SIZES for grand feel
+            const orientation = popup.orientation || 'landscape';
+            let posterStyle = '';
+            let posterClass = '';
+            if (orientation === 'portrait') {
+                posterClass = 'max-w-lg w-[90vw] max-h-[95vh]';
+                posterStyle = 'min-height: 70vh;';
+            } else if (orientation === 'square') {
+                posterClass = 'max-w-3xl w-[90vw] max-h-[90vh]';
+                posterStyle = 'min-height: 60vh;';
+            } else {
+                // Landscape - default, VERY LARGE
+                posterClass = 'max-w-6xl w-[95vw] max-h-[90vh]';
+                posterStyle = 'min-height: 50vh;';
             }
             
-            const hasLink = popup.link_type !== 'none' && (popup.link_url || popup.link_target);
-            
             overlay.innerHTML = `
-                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all" style="animation: scaleIn 0.3s ease-out">
-                    <!-- Close Button -->
-                    <button onclick="closeWelcomePopup()" class="absolute top-4 right-4 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition z-10">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    
-                    <!-- Image -->
+                <!-- Celebration Effects Container -->
+                <div id="celebration-effects" class="fixed inset-0 pointer-events-none overflow-hidden z-40"></div>
+                
+                <!-- Tap outside hint at top -->
+                <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] text-white text-sm opacity-60 animate-pulse">
+                    <i class="fas fa-hand-pointer mr-2"></i>Tap outside to close
+                </div>
+                
+                <!-- GRAND POSTER - Entire image is clickable, NO close button, NO ribbon -->
+                <div id="popup-poster" class="${posterClass} relative z-50 cursor-pointer" 
+                     style="animation: grandEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); ${posterStyle}">
                     ${popup.image_url ? `
-                        <div class="relative">
-                            <img src="${popup.image_url}" alt="${popup.title}" class="w-full h-auto max-h-80 object-cover">
-                        </div>
-                    ` : ''}
-                    
-                    <!-- Content -->
-                    <div class="p-6 text-center">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">${popup.title}</h2>
-                        ${popup.description ? `<p class="text-gray-600 mb-4">${popup.description}</p>` : ''}
-                        
-                        <div class="flex gap-3 justify-center">
+                        <div class="relative w-full h-full group">
+                            <img src="${popup.image_url}" alt="${popup.title}" 
+                                 class="w-full h-full object-contain rounded-2xl"
+                                 style="filter: drop-shadow(0 35px 60px rgba(0,0,0,0.6)); max-height: 85vh;">
+                            
                             ${hasLink ? `
-                                <a href="${linkHref}" ${linkOnClick} ${popup.link_type === 'url' ? 'target="_blank"' : ''} 
-                                   class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-medium">
-                                    ${popup.button_text || 'View Now'}
-                                </a>
+                            <!-- Glow effect on hover to indicate clickability -->
+                            <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                 style="box-shadow: 0 0 60px rgba(255,215,0,0.4), inset 0 0 60px rgba(255,215,0,0.1);"></div>
                             ` : ''}
-                            <button onclick="closeWelcomePopup()" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
-                                ${hasLink ? 'Close' : 'Got it'}
-                            </button>
                         </div>
-                    </div>
+                    ` : `
+                        <!-- Fallback if no image - GRAND styled text poster -->
+                        <div class="w-full rounded-2xl flex flex-col items-center justify-center p-12 text-white text-center relative overflow-hidden"
+                             style="min-height: 60vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);">
+                            <!-- Animated background particles -->
+                            <div class="absolute inset-0 overflow-hidden">
+                                <div class="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
+                                <div class="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse" style="animation-delay: 1s;"></div>
+                            </div>
+                            
+                            <div class="relative z-10">
+                                <h1 class="text-5xl md:text-7xl font-bold mb-6"
+                                    style="text-shadow: 0 4px 30px rgba(0,0,0,0.3);">${popup.title}</h1>
+                                ${popup.description ? `<p class="text-2xl md:text-3xl opacity-90 max-w-2xl">${popup.description}</p>` : ''}
+                                ${hasLink ? `
+                                <div class="mt-10 text-xl opacity-80 animate-bounce">
+                                    <i class="fas fa-hand-pointer mr-3"></i>Tap anywhere to explore
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `}
                 </div>
             `;
             
-            // Add animation styles if not already present
+            // Add grand animation styles
             if (!document.getElementById('popup-animations')) {
                 const style = document.createElement('style');
                 style.id = 'popup-animations';
@@ -3135,42 +3183,218 @@
                         from { opacity: 0; }
                         to { opacity: 1; }
                     }
-                    @keyframes scaleIn {
-                        from { transform: scale(0.9); opacity: 0; }
-                        to { transform: scale(1); opacity: 1; }
+                    @keyframes grandEntrance {
+                        0% { transform: scale(0.2) rotate(-5deg); opacity: 0; }
+                        60% { transform: scale(1.02) rotate(1deg); }
+                        100% { transform: scale(1) rotate(0deg); opacity: 1; }
                     }
                     @keyframes fadeOut {
-                        from { opacity: 1; }
-                        to { opacity: 0; }
+                        from { opacity: 1; transform: scale(1); }
+                        to { opacity: 0; transform: scale(0.95); }
+                    }
+                    @keyframes confetti-fall {
+                        0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+                        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+                    }
+                    @keyframes firework {
+                        0% { transform: scale(0); opacity: 1; }
+                        50% { opacity: 1; }
+                        100% { transform: scale(1); opacity: 0; }
+                    }
+                    @keyframes sparkle {
+                        0%, 100% { opacity: 0; transform: scale(0); }
+                        50% { opacity: 1; transform: scale(1); }
+                    }
+                    @keyframes ribbon-wave {
+                        0%, 100% { transform: translateX(-100%) skewX(-15deg); }
+                        50% { transform: translateX(100vw) skewX(-15deg); }
+                    }
+                    @keyframes glow-pulse {
+                        0%, 100% { box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+                        50% { box-shadow: 0 0 60px rgba(255,215,0,0.6); }
+                    }
+                    .confetti-piece {
+                        position: absolute;
+                        width: 12px;
+                        height: 12px;
+                        animation: confetti-fall linear forwards;
+                    }
+                    .firework-particle {
+                        position: absolute;
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;
+                        animation: firework 1.2s ease-out forwards;
+                    }
+                    .sparkle {
+                        position: absolute;
+                        font-size: 28px;
+                        animation: sparkle 1.5s ease-in-out infinite;
                     }
                 `;
                 document.head.appendChild(style);
             }
             
             document.body.appendChild(overlay);
+            document.body.style.overflow = 'hidden';
             
-            // Close on overlay click (outside modal)
-            overlay.addEventListener('click', (e) => {
+            // Start celebration effects
+            startCelebrationEffects(effectType);
+            
+            // Handle poster click - navigate if has link
+            const poster = document.getElementById('popup-poster');
+            poster.onclick = (e) => {
+                e.stopPropagation();
+                if (hasLink) {
+                    if (popup.link_type === 'url' && popup.link_url) {
+                        window.open(popup.link_url, '_blank');
+                        closeWelcomePopup();
+                    } else if (popup.link_type === 'product' && popup.link_target) {
+                        closeWelcomePopup();
+                        setTimeout(() => {
+                            // Show product details modal directly
+                            showProductDetails(popup.link_target);
+                        }, 350);
+                    } else if (popup.link_type === 'category' && popup.link_target) {
+                        closeWelcomePopup();
+                        setTimeout(() => {
+                            filterByCategory(popup.link_target);
+                            scrollToElement('products');
+                        }, 350);
+                    }
+                } else {
+                    // No link - close popup when clicking poster
+                    closeWelcomePopup();
+                }
+            };
+            
+            // Click outside (on overlay) to close
+            overlay.onclick = (e) => {
                 if (e.target === overlay) {
                     closeWelcomePopup();
                 }
-            });
+            };
             
             // Close on Escape key
-            document.addEventListener('keydown', function escHandler(e) {
+            const escHandler = (e) => {
                 if (e.key === 'Escape') {
                     closeWelcomePopup();
                     document.removeEventListener('keydown', escHandler);
                 }
+            };
+            document.addEventListener('keydown', escHandler);
+        }
+        
+        // Celebration effects generator
+        function startCelebrationEffects(effectType) {
+            const container = document.getElementById('celebration-effects');
+            if (!container) return;
+            
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9', '#fd79a8', '#a29bfe'];
+            
+            if (effectType === 'confetti' || effectType === 'all') {
+                // Create confetti pieces
+                for (let i = 0; i < 100; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti-piece';
+                        confetti.style.cssText = `
+                            left: ${Math.random() * 100}%;
+                            background: ${colors[Math.floor(Math.random() * colors.length)]};
+                            animation-duration: ${2 + Math.random() * 3}s;
+                            animation-delay: ${Math.random() * 0.5}s;
+                            transform: rotate(${Math.random() * 360}deg);
+                            ${Math.random() > 0.5 ? 'border-radius: 50%;' : ''}
+                        `;
+                        container.appendChild(confetti);
+                        setTimeout(() => confetti.remove(), 5000);
+                    }, i * 30);
+                }
+            }
+            
+            if (effectType === 'fireworks' || effectType === 'all') {
+                // Create firework bursts
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        createFirework(container, colors, Math.random() * 80 + 10, Math.random() * 60 + 20);
+                    }, i * 400);
+                }
+            }
+            
+            if (effectType === 'sparkles' || effectType === 'all') {
+                // Create sparkles
+                for (let i = 0; i < 30; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.innerHTML = '✨';
+                    sparkle.style.cssText = `
+                        left: ${Math.random() * 100}%;
+                        top: ${Math.random() * 100}%;
+                        animation-delay: ${Math.random() * 2}s;
+                    `;
+                    container.appendChild(sparkle);
+                }
+            }
+        }
+        
+        // Create a firework burst
+        function createFirework(container, colors, x, y) {
+            const particles = 20;
+            for (let i = 0; i < particles; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'firework-particle';
+                const angle = (i / particles) * 360;
+                const distance = 50 + Math.random() * 50;
+                particle.style.cssText = `
+                    left: ${x}%;
+                    top: ${y}%;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    transform: translate(${Math.cos(angle * Math.PI / 180) * distance}px, ${Math.sin(angle * Math.PI / 180) * distance}px);
+                `;
+                container.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+        
+        // Filter products by category name
+        function filterByCategory(categoryName) {
+            // Find and click the matching category button
+            const categoryButtons = document.querySelectorAll('.category-btn');
+            categoryButtons.forEach(btn => {
+                btn.classList.remove('active', 'bg-primary', 'text-white');
+                btn.classList.add('bg-light', 'text-dark');
             });
+            
+            // Find matching button by data-category or text
+            const matchingBtn = Array.from(categoryButtons).find(btn => {
+                const dataCat = btn.getAttribute('data-category');
+                const btnText = btn.textContent.trim().toLowerCase();
+                const searchName = categoryName.toLowerCase().replace(/\s+/g, '-');
+                return dataCat === searchName || btnText === categoryName.toLowerCase();
+            });
+            
+            if (matchingBtn) {
+                matchingBtn.classList.add('active', 'bg-primary', 'text-white');
+                matchingBtn.classList.remove('bg-light', 'text-dark');
+                matchingBtn.click();
+            } else {
+                // If no exact match, filter products directly
+                const filtered = products.filter(p => 
+                    p.category && p.category.toLowerCase() === categoryName.toLowerCase()
+                );
+                if (filtered.length > 0) {
+                    displayProducts(filtered);
+                }
+            }
         }
 
         // Close welcome popup
         function closeWelcomePopup() {
             const overlay = document.getElementById('welcome-popup-overlay');
             if (overlay) {
-                overlay.style.animation = 'fadeOut 0.2s ease-out';
-                setTimeout(() => overlay.remove(), 200);
+                overlay.style.animation = 'fadeOut 0.3s ease-out';
+                document.body.style.overflow = '';
+                setTimeout(() => overlay.remove(), 300);
             }
         }
 
