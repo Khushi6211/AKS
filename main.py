@@ -2701,14 +2701,22 @@ def add_category():
         if not category_name:
             return jsonify({"success": False, "message": "Category name is required."}), 400
         
-        # Check if category already exists in categories collection
+        # Check if category already exists in categories collection (by name)
         existing = categories_collection.find_one({'name': category_name})
         if existing:
             return jsonify({"success": False, "message": "Category already exists."}), 400
         
         # Add category to categories_collection
         # Generate a unique id from the category name (lowercase, hyphenated)
-        category_id = category_name.lower().replace(' ', '-').replace('&', 'and')
+        import re as re_module
+        # Clean the ID - remove special characters, keep only alphanumeric and hyphens
+        category_id = re_module.sub(r'[^a-z0-9-]', '', category_name.lower().replace(' ', '-').replace('&', 'and'))
+        
+        # Check if a category with this ID already exists
+        existing_id = categories_collection.find_one({'id': category_id})
+        if existing_id:
+            # Append a timestamp to make it unique
+            category_id = f"{category_id}-{int(datetime.datetime.utcnow().timestamp())}"
         
         new_category = {
             "id": category_id,  # Required for unique index
@@ -2890,6 +2898,19 @@ def add_banner():
             "gradient_enabled": data.get('gradient_enabled', False),
             "gradient_start": data.get('gradient_start', ''),
             "gradient_end": data.get('gradient_end', ''),
+            # Advanced options
+            "display_mode": data.get('display_mode', 'scroll'),  # 'scroll' or 'static'
+            "is_fixed": data.get('is_fixed', True),  # Fixed at top or scrolls with page
+            "font_family": data.get('font_family', 'inherit'),
+            "font_size": data.get('font_size', '16px'),
+            "font_weight": data.get('font_weight', 'bold'),
+            "font_style": data.get('font_style', 'normal'),
+            "text_decoration": data.get('text_decoration', 'none'),
+            "banner_height": data.get('banner_height', 'medium'),
+            "banner_width": data.get('banner_width', '100%'),
+            "banner_image": data.get('banner_image', ''),
+            "image_position": data.get('image_position', 'left'),
+            "image_size": data.get('image_size', '40px'),
             "is_active": data.get('is_active', False),
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
@@ -2967,6 +2988,31 @@ def update_banner(banner_id):
             update_fields['gradient_start'] = data['gradient_start']
         if 'gradient_end' in data:
             update_fields['gradient_end'] = data['gradient_end']
+        # Advanced options
+        if 'display_mode' in data:
+            update_fields['display_mode'] = data['display_mode']
+        if 'is_fixed' in data:
+            update_fields['is_fixed'] = data['is_fixed']
+        if 'font_family' in data:
+            update_fields['font_family'] = data['font_family']
+        if 'font_size' in data:
+            update_fields['font_size'] = data['font_size']
+        if 'font_weight' in data:
+            update_fields['font_weight'] = data['font_weight']
+        if 'font_style' in data:
+            update_fields['font_style'] = data['font_style']
+        if 'text_decoration' in data:
+            update_fields['text_decoration'] = data['text_decoration']
+        if 'banner_height' in data:
+            update_fields['banner_height'] = data['banner_height']
+        if 'banner_width' in data:
+            update_fields['banner_width'] = data['banner_width']
+        if 'banner_image' in data:
+            update_fields['banner_image'] = data['banner_image']
+        if 'image_position' in data:
+            update_fields['image_position'] = data['image_position']
+        if 'image_size' in data:
+            update_fields['image_size'] = data['image_size']
         if 'is_active' in data:
             # If setting as active, deactivate all other banners first
             if data['is_active']:

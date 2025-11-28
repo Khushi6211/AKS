@@ -850,6 +850,121 @@
                     </select>
                 </div>
 
+                <!-- ADVANCED BANNER OPTIONS -->
+                <div class="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <h4 class="font-bold text-purple-800 mb-3"><i class="fas fa-cog mr-2"></i>Advanced Options</h4>
+                    
+                    <!-- Display Mode -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Display Mode</label>
+                            <select id="banner-display-mode" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="scroll">Scrolling Ticker</option>
+                                <option value="static">Static (Fixed)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Position</label>
+                            <select id="banner-is-fixed" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="true">Fixed (Stays at top)</option>
+                                <option value="false">Normal (Scrolls with page)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Font Styling (Word-like options) -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2"><i class="fas fa-font mr-1"></i>Font Styling</label>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <select id="banner-font-family" class="px-2 py-2 border rounded-lg text-sm">
+                                <option value="inherit">Default</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="Verdana, sans-serif">Verdana</option>
+                                <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                                <option value="Impact, sans-serif">Impact</option>
+                                <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                            </select>
+                            <select id="banner-font-size" class="px-2 py-2 border rounded-lg text-sm">
+                                <option value="12px">12px (Small)</option>
+                                <option value="14px">14px</option>
+                                <option value="16px" selected>16px (Normal)</option>
+                                <option value="18px">18px</option>
+                                <option value="20px">20px (Large)</option>
+                                <option value="24px">24px</option>
+                                <option value="28px">28px (X-Large)</option>
+                                <option value="32px">32px</option>
+                            </select>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="toggleFontStyle('bold')" id="btn-bold" class="flex-1 px-2 py-2 border rounded-lg text-sm font-bold hover:bg-gray-100">B</button>
+                                <button type="button" onclick="toggleFontStyle('italic')" id="btn-italic" class="flex-1 px-2 py-2 border rounded-lg text-sm italic hover:bg-gray-100">I</button>
+                                <button type="button" onclick="toggleFontStyle('underline')" id="btn-underline" class="flex-1 px-2 py-2 border rounded-lg text-sm underline hover:bg-gray-100">U</button>
+                            </div>
+                            <input type="hidden" id="banner-font-weight" value="bold">
+                            <input type="hidden" id="banner-font-style" value="normal">
+                            <input type="hidden" id="banner-text-decoration" value="none">
+                        </div>
+                    </div>
+                    
+                    <!-- Banner Size -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Banner Height</label>
+                            <select id="banner-height" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="small">Small (32px)</option>
+                                <option value="medium" selected>Medium (44px)</option>
+                                <option value="large">Large (56px)</option>
+                                <option value="auto">Auto (Fit content)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Banner Width</label>
+                            <select id="banner-width" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="100%" selected>Full Width (100%)</option>
+                                <option value="90%">90%</option>
+                                <option value="80%">80%</option>
+                                <option value="70%">70%</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Banner Image -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2"><i class="fas fa-image mr-1"></i>Banner Image (Optional)</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="col-span-2">
+                                <div id="banner-image-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-purple-500 transition" onclick="document.getElementById('banner-image-input').click()">
+                                    <div id="banner-image-dropzone-content">
+                                        <i class="fas fa-cloud-upload-alt text-2xl text-gray-400"></i>
+                                        <p class="text-xs text-gray-500 mt-1">Click to upload image</p>
+                                    </div>
+                                    <div id="banner-image-preview" class="hidden">
+                                        <img id="banner-preview-img" class="max-h-16 mx-auto">
+                                        <button type="button" onclick="removeBannerImage(event)" class="mt-1 px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">Remove</button>
+                                    </div>
+                                </div>
+                                <input type="file" id="banner-image-input" accept="image/*" class="hidden" onchange="handleBannerImageSelect(event)">
+                                <input type="hidden" id="banner-image-url">
+                            </div>
+                            <div>
+                                <select id="banner-image-position" class="w-full px-2 py-2 border rounded-lg text-sm mb-2">
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                    <option value="background">Background</option>
+                                </select>
+                                <select id="banner-image-size" class="w-full px-2 py-2 border rounded-lg text-sm">
+                                    <option value="24px">Small (24px)</option>
+                                    <option value="32px">Medium (32px)</option>
+                                    <option value="40px" selected>Large (40px)</option>
+                                    <option value="50px">X-Large (50px)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
                     <label class="flex items-center cursor-pointer">
                         <input type="checkbox" id="banner-is-active" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
@@ -2961,6 +3076,22 @@
             document.getElementById('main-link-type').value = 'none';
             updateMainLinkFields();
             
+            // Reset advanced options
+            document.getElementById('banner-display-mode').value = 'scroll';
+            document.getElementById('banner-is-fixed').value = 'true';
+            document.getElementById('banner-font-family').value = 'inherit';
+            document.getElementById('banner-font-size').value = '16px';
+            document.getElementById('banner-font-weight').value = 'bold';
+            document.getElementById('banner-font-style').value = 'normal';
+            document.getElementById('banner-text-decoration').value = 'none';
+            document.getElementById('banner-height').value = 'medium';
+            document.getElementById('banner-width').value = '100%';
+            document.getElementById('banner-image-position').value = 'left';
+            document.getElementById('banner-image-size').value = '40px';
+            document.getElementById('banner-image-url').value = '';
+            resetFontStyleButtons();
+            resetBannerImagePreview();
+            
             await populateBannerSelectors(); // Load products and categories
             
             // Populate main link selectors from banner selectors
@@ -2971,6 +3102,68 @@
             document.getElementById('additional-announcements').innerHTML = '';
             announcementCount = 0;
             document.getElementById('banner-modal').classList.add('active');
+        }
+        
+        // Font style toggle buttons
+        function toggleFontStyle(style) {
+            if (style === 'bold') {
+                const current = document.getElementById('banner-font-weight').value;
+                const newVal = current === 'bold' ? 'normal' : 'bold';
+                document.getElementById('banner-font-weight').value = newVal;
+                document.getElementById('btn-bold').classList.toggle('bg-purple-200', newVal === 'bold');
+            } else if (style === 'italic') {
+                const current = document.getElementById('banner-font-style').value;
+                const newVal = current === 'italic' ? 'normal' : 'italic';
+                document.getElementById('banner-font-style').value = newVal;
+                document.getElementById('btn-italic').classList.toggle('bg-purple-200', newVal === 'italic');
+            } else if (style === 'underline') {
+                const current = document.getElementById('banner-text-decoration').value;
+                const newVal = current === 'underline' ? 'none' : 'underline';
+                document.getElementById('banner-text-decoration').value = newVal;
+                document.getElementById('btn-underline').classList.toggle('bg-purple-200', newVal === 'underline');
+            }
+        }
+        
+        function resetFontStyleButtons() {
+            document.getElementById('btn-bold').classList.add('bg-purple-200');
+            document.getElementById('btn-italic').classList.remove('bg-purple-200');
+            document.getElementById('btn-underline').classList.remove('bg-purple-200');
+        }
+        
+        // Banner image handling
+        let currentBannerImageData = null;
+        
+        function handleBannerImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Image size must be less than 2MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentBannerImageData = e.target.result;
+                document.getElementById('banner-image-dropzone-content').classList.add('hidden');
+                document.getElementById('banner-image-preview').classList.remove('hidden');
+                document.getElementById('banner-preview-img').src = currentBannerImageData;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function removeBannerImage(event) {
+            event.stopPropagation();
+            currentBannerImageData = null;
+            document.getElementById('banner-image-url').value = '';
+            resetBannerImagePreview();
+        }
+        
+        function resetBannerImagePreview() {
+            document.getElementById('banner-image-dropzone-content').classList.remove('hidden');
+            document.getElementById('banner-image-preview').classList.add('hidden');
+            document.getElementById('banner-image-input').value = '';
+            currentBannerImageData = null;
         }
 
         // Update Banner Link Fields
@@ -3198,36 +3391,78 @@
                 link_url: document.getElementById('banner-link-url').value || '',
                 link_id: linkId,
                 link_category: linkCategory,
+                // Advanced options
+                display_mode: document.getElementById('banner-display-mode').value,
+                is_fixed: document.getElementById('banner-is-fixed').value === 'true',
+                font_family: document.getElementById('banner-font-family').value,
+                font_size: document.getElementById('banner-font-size').value,
+                font_weight: document.getElementById('banner-font-weight').value,
+                font_style: document.getElementById('banner-font-style').value,
+                text_decoration: document.getElementById('banner-text-decoration').value,
+                banner_height: document.getElementById('banner-height').value,
+                banner_width: document.getElementById('banner-width').value,
+                banner_image: document.getElementById('banner-image-url').value || '',
+                image_position: document.getElementById('banner-image-position').value,
+                image_size: document.getElementById('banner-image-size').value,
                 is_active: document.getElementById('banner-is-active').checked
             };
             
-            const url = isEdit 
-                ? `${backendBaseUrl}/admin/banners/update/${bannerId}`
-                : `${backendBaseUrl}/admin/banners/add`;
-            const method = isEdit ? 'PUT' : 'POST';
-            
-            fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'User-ID': currentUserId
-                },
-                body: JSON.stringify(bannerData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    closeModal('banner-modal');
-                    loadBanners();
-                } else {
-                    alert(data.message || 'Failed to save banner');
+            // Handle image upload if new image selected
+            const saveBannerWithImage = async () => {
+                if (currentBannerImageData && currentBannerImageData.startsWith('data:image')) {
+                    try {
+                        const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'User-ID': currentUserId
+                            },
+                            body: JSON.stringify({ image_data: currentBannerImageData })
+                        });
+                        const uploadData = await uploadResponse.json();
+                        if (uploadData.success) {
+                            bannerData.banner_image = uploadData.url;
+                        } else {
+                            alert('Error uploading image: ' + uploadData.message);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error uploading banner image:', error);
+                        alert('Failed to upload image');
+                        return;
+                    }
                 }
-            })
-            .catch(error => {
-                console.error('Error saving banner:', error);
-                alert('An error occurred while saving the banner');
-            });
+                
+                const url = isEdit 
+                    ? `${backendBaseUrl}/admin/banners/update/${bannerId}`
+                    : `${backendBaseUrl}/admin/banners/add`;
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-ID': currentUserId
+                    },
+                    body: JSON.stringify(bannerData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        closeModal('banner-modal');
+                        loadBanners();
+                    } else {
+                        alert(data.message || 'Failed to save banner');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving banner:', error);
+                    alert('An error occurred while saving the banner');
+                });
+            };
+            
+            saveBannerWithImage();
         }
 
         // Edit Banner
@@ -3258,6 +3493,41 @@
                             document.getElementById('banner-gradient-text-color').value = banner.text_color || '#FFFFFF';
                             toggleGradientOptions();
                             updateGradientPreview();
+                        } else {
+                            document.getElementById('banner-gradient-enabled').checked = false;
+                            toggleGradientOptions();
+                        }
+                        
+                        // Load Advanced Options
+                        document.getElementById('banner-display-mode').value = banner.display_mode || 'scroll';
+                        document.getElementById('banner-is-fixed').value = banner.is_fixed !== false ? 'true' : 'false';
+                        document.getElementById('banner-font-family').value = banner.font_family || 'inherit';
+                        document.getElementById('banner-font-size').value = banner.font_size || '16px';
+                        document.getElementById('banner-font-weight').value = banner.font_weight || 'bold';
+                        document.getElementById('banner-font-style').value = banner.font_style || 'normal';
+                        document.getElementById('banner-text-decoration').value = banner.text_decoration || 'none';
+                        document.getElementById('banner-height').value = banner.banner_height || 'medium';
+                        document.getElementById('banner-width').value = banner.banner_width || '100%';
+                        document.getElementById('banner-image-position').value = banner.image_position || 'left';
+                        document.getElementById('banner-image-size').value = banner.image_size || '40px';
+                        
+                        // Update font style buttons
+                        document.getElementById('btn-bold').classList.toggle('bg-gray-300', banner.font_weight === 'bold');
+                        document.getElementById('btn-italic').classList.toggle('bg-gray-300', banner.font_style === 'italic');
+                        document.getElementById('btn-underline').classList.toggle('bg-gray-300', banner.text_decoration === 'underline');
+                        
+                        // Load banner image if exists
+                        if (banner.banner_image) {
+                            document.getElementById('banner-image-url').value = banner.banner_image;
+                            document.getElementById('banner-image-dropzone-content').classList.add('hidden');
+                            document.getElementById('banner-image-preview').classList.remove('hidden');
+                            document.getElementById('banner-preview-img').src = banner.banner_image;
+                            currentBannerImageData = banner.banner_image;
+                        } else {
+                            document.getElementById('banner-image-url').value = '';
+                            document.getElementById('banner-image-dropzone-content').classList.remove('hidden');
+                            document.getElementById('banner-image-preview').classList.add('hidden');
+                            currentBannerImageData = null;
                         }
                         
                         updateBannerLinkFields();
@@ -3667,12 +3937,12 @@
                 link_type: linkType,
                 link_url: linkUrl,
                 link_target: linkTarget,
-                button_text: document.getElementById('popup-button-text').value || 'View Now',
+                button_text: 'View Now', // No longer used - entire poster is clickable
                 orientation: document.getElementById('popup-orientation').value || 'landscape',
                 effect_type: document.getElementById('popup-effect-type').value || 'confetti',
                 display_frequency: document.getElementById('popup-frequency').value,
                 is_active: document.getElementById('popup-active').checked,
-                cloudinary_public_id: document.getElementById('popup-cloudinary-public-id').value
+                cloudinary_public_id: document.getElementById('popup-cloudinary-public-id').value || ''
             };
 
             // Upload image if new
@@ -3754,7 +4024,7 @@
                         document.getElementById('popup-description').value = popup.description || '';
                         document.getElementById('popup-link-type').value = popup.link_type || 'none';
                         document.getElementById('popup-link-url').value = popup.link_url || '';
-                        document.getElementById('popup-button-text').value = popup.button_text || 'View Now';
+                        // popup-button-text removed - entire poster is clickable now
                         document.getElementById('popup-orientation').value = popup.orientation || 'landscape';
                         document.getElementById('popup-effect-type').value = popup.effect_type || 'confetti';
                         document.getElementById('popup-frequency').value = popup.display_frequency || 'always';

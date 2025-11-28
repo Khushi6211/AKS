@@ -528,7 +528,14 @@
     <script src="config.js"></script>
 </head>
 <body>
-    <header class="bg-white shadow-sm sticky top-0 z-40">
+    <!-- ADVANCED BANNER - Fixed at very top -->
+    <div id="advanced-banner-container" class="hidden fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <div id="advanced-banner" class="w-full overflow-hidden relative">
+            <!-- Banner content will be dynamically loaded -->
+        </div>
+    </div>
+    
+    <header id="main-header" class="bg-white shadow-sm sticky top-0 z-40 transition-all duration-300">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <a href="/" class="flex items-center mb-4 md:mb-0 text-dark hover:text-dark transition cursor-pointer">
@@ -630,7 +637,7 @@
         </div>
     </section>
 
-    <!-- Running Banner Section -->
+    <!-- OLD Running Banner Section - Kept for backward compatibility -->
     <div id="offer-banner-container" class="hidden">
         <div id="offer-banner" class="overflow-hidden py-3 cursor-pointer relative" style="background-color: #FF6B6B;">
             <!-- Continuous Ticker - All announcements visible and scrolling -->
@@ -2815,84 +2822,184 @@
             }
         }
         
-        // Load Active Banner
+        // Load Active Banner - ADVANCED VERSION with full customization
         async function loadActiveBanner() {
             try {
                 const response = await fetch(`${backendBaseUrl}/banners/active`);
                 const data = await response.json();
                 
+                const advancedContainer = document.getElementById('advanced-banner-container');
+                const advancedBanner = document.getElementById('advanced-banner');
+                const mainHeader = document.getElementById('main-header');
+                const oldContainer = document.getElementById('offer-banner-container');
+                
                 if (data.success && data.banner) {
                     const banner = data.banner;
-                    const container = document.getElementById('offer-banner-container');
-                    const bannerElement = document.getElementById('offer-banner');
-                    const bannerTicker = document.getElementById('banner-ticker');
-                    const bannerTickerClone = document.getElementById('banner-ticker-clone');
                     
-                    // Get all announcement texts (support both single text and multiple texts)
+                    // Get all announcement texts
                     const texts = banner.texts && Array.isArray(banner.texts) && banner.texts.length > 0 
                         ? banner.texts.filter(t => t && t.trim()) 
                         : [banner.text].filter(t => t && t.trim());
                     
                     if (texts.length === 0) {
-                        container.classList.add('hidden');
+                        advancedContainer.classList.add('hidden');
+                        oldContainer.classList.add('hidden');
+                        mainHeader.style.top = '0';
                         return;
                     }
                     
-                    // Set background color (support gradient)
+                    // Get advanced settings with defaults
+                    const displayMode = banner.display_mode || 'scroll'; // 'scroll' or 'static'
+                    const bannerHeight = banner.banner_height || 'auto'; // 'small', 'medium', 'large', 'auto', or px value
+                    const bannerWidth = banner.banner_width || '100%';
+                    const fontSize = banner.font_size || '16px';
+                    const fontFamily = banner.font_family || 'inherit';
+                    const fontWeight = banner.font_weight || 'bold';
+                    const fontStyle = banner.font_style || 'normal';
+                    const textDecoration = banner.text_decoration || 'none';
+                    const bannerImage = banner.banner_image || '';
+                    const imagePosition = banner.image_position || 'left'; // 'left', 'right', 'center', 'background'
+                    const imageSize = banner.image_size || '40px';
+                    const isFixed = banner.is_fixed !== false; // Default true
+                    
+                    // Calculate height
+                    let heightValue = '40px';
+                    if (bannerHeight === 'small') heightValue = '32px';
+                    else if (bannerHeight === 'medium') heightValue = '44px';
+                    else if (bannerHeight === 'large') heightValue = '56px';
+                    else if (bannerHeight === 'auto') heightValue = 'auto';
+                    else heightValue = bannerHeight;
+                    
+                    // Build background style
+                    let bgStyle = '';
                     if (banner.gradient_enabled && banner.gradient_start && banner.gradient_end) {
-                        bannerElement.style.background = `linear-gradient(90deg, ${banner.gradient_start}, ${banner.gradient_end})`;
+                        bgStyle = `background: linear-gradient(90deg, ${banner.gradient_start}, ${banner.gradient_end});`;
                     } else {
-                        bannerElement.style.backgroundColor = banner.background_color || '#FF6B6B';
+                        bgStyle = `background-color: ${banner.background_color || '#FF6B6B'};`;
+                    }
+                    
+                    // Add background image if set to background position
+                    if (bannerImage && imagePosition === 'background') {
+                        bgStyle += ` background-image: url('${bannerImage}'); background-size: cover; background-position: center;`;
                     }
                     
                     const textColor = banner.text_color || '#FFFFFF';
                     
-                    // Check if we have the new announcements array with individual links
+                    // Get announcements with individual links
                     const announcements = banner.announcements && banner.announcements.length > 0 
                         ? banner.announcements 
                         : texts.map(t => ({ text: t, link_type: 'none' }));
                     
-                    // Create ticker content - EACH announcement is individually clickable
-                    const tickerContent = announcements.map((ann, index) => {
+                    // Build announcement HTML with font styling
+                    const buildAnnouncementHtml = (ann) => {
                         const hasLink = ann.link_type && ann.link_type !== 'none' && 
                             (ann.link_url || ann.link_product || ann.link_category);
-                        const cursorClass = hasLink ? 'cursor-pointer hover:underline' : '';
+                        const cursorClass = hasLink ? 'cursor-pointer hover:opacity-80' : '';
                         const dataAttrs = `data-link-type="${ann.link_type || 'none'}" 
                             data-link-url="${ann.link_url || ''}" 
                             data-link-product="${ann.link_product || ''}" 
                             data-link-category="${ann.link_category || ''}"`;
                         
-                        return `
-                            <span class="banner-ticker-item text-lg font-bold ${cursorClass}" 
-                                  style="color: ${textColor}" ${dataAttrs}
-                                  onclick="handleAnnouncementClick(event)">
-                                🔥 ${ann.text}
-                            </span>
+                        const textStyle = `color: ${textColor}; font-size: ${fontSize}; font-family: ${fontFamily}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};`;
+                        
+                        return `<span class="banner-announcement-item inline-flex items-center px-4 ${cursorClass}" 
+                                      style="${textStyle}" ${dataAttrs}
+                                      onclick="handleAnnouncementClick(event)">
+                                    ${ann.text}
+                                </span>`;
+                    };
+                    
+                    // Build image HTML if provided
+                    let imageHtml = '';
+                    if (bannerImage && imagePosition !== 'background') {
+                        imageHtml = `<img src="${bannerImage}" alt="" class="banner-image object-contain" style="height: ${imageSize}; max-height: 100%;">`;
+                    }
+                    
+                    // Build banner content based on display mode
+                    let bannerContent = '';
+                    
+                    if (displayMode === 'static') {
+                        // STATIC MODE - Fixed text, no scrolling
+                        const announcementsHtml = announcements.map(buildAnnouncementHtml).join('<span class="mx-2 opacity-50">|</span>');
+                        
+                        bannerContent = `
+                            <div class="banner-static-content flex items-center justify-center py-2" style="min-height: ${heightValue}; ${bgStyle}">
+                                ${imagePosition === 'left' ? imageHtml : ''}
+                                <div class="flex items-center flex-wrap justify-center">
+                                    ${announcementsHtml}
+                                </div>
+                                ${imagePosition === 'right' ? imageHtml : ''}
+                            </div>
                         `;
-                    }).join('');
+                    } else {
+                        // SCROLL MODE - Continuous ticker
+                        const tickerHtml = announcements.map(ann => {
+                            const html = buildAnnouncementHtml(ann);
+                            return `<span class="banner-ticker-item whitespace-nowrap">${html}</span>`;
+                        }).join('<span class="mx-4 opacity-50">•</span>');
+                        
+                        const totalLength = announcements.map(a => a.text).join('').length;
+                        const animDuration = Math.max(15, totalLength * 0.25);
+                        
+                        bannerContent = `
+                            <div class="banner-scroll-content flex items-center py-2 overflow-hidden" style="min-height: ${heightValue}; ${bgStyle}">
+                                ${imagePosition === 'left' ? `<div class="flex-shrink-0 px-3">${imageHtml}</div>` : ''}
+                                <div class="banner-ticker-wrapper flex animate-ticker" style="animation-duration: ${animDuration}s;">
+                                    <div class="banner-ticker flex items-center whitespace-nowrap">
+                                        ${tickerHtml}
+                                    </div>
+                                    <div class="banner-ticker flex items-center whitespace-nowrap ml-8">
+                                        ${tickerHtml}
+                                    </div>
+                                </div>
+                                ${imagePosition === 'right' ? `<div class="flex-shrink-0 px-3">${imageHtml}</div>` : ''}
+                            </div>
+                            <style>
+                                @keyframes ticker-scroll-advanced {
+                                    0% { transform: translateX(0); }
+                                    100% { transform: translateX(-50%); }
+                                }
+                                .animate-ticker {
+                                    animation: ticker-scroll-advanced linear infinite;
+                                }
+                                .animate-ticker:hover {
+                                    animation-play-state: paused;
+                                }
+                            </style>
+                        `;
+                    }
                     
-                    // Set content to both original and clone (for seamless loop)
-                    bannerTicker.innerHTML = tickerContent;
-                    bannerTickerClone.innerHTML = tickerContent;
+                    // Set banner content
+                    advancedBanner.innerHTML = bannerContent;
+                    advancedBanner.style.width = bannerWidth;
+                    advancedBanner.style.margin = bannerWidth !== '100%' ? '0 auto' : '0';
                     
-                    // Adjust animation speed based on content length
-                    const totalLength = announcements.map(a => a.text).join('').length;
-                    const animationDuration = Math.max(15, totalLength * 0.3); // Min 15s, scale with content
-                    document.querySelector('.banner-ticker-wrapper').style.animationDuration = `${animationDuration}s`;
+                    // Show advanced banner
+                    advancedContainer.classList.remove('hidden');
+                    oldContainer.classList.add('hidden'); // Hide old banner
                     
-                    // Remove old click handler from banner element (individual items handle their own clicks now)
-                    bannerElement.style.cursor = 'default';
-                    bannerElement.onclick = null;
+                    // Adjust header position if banner is fixed
+                    if (isFixed) {
+                        advancedContainer.classList.add('fixed');
+                        const bannerActualHeight = advancedBanner.offsetHeight || 40;
+                        mainHeader.style.top = bannerActualHeight + 'px';
+                    } else {
+                        advancedContainer.classList.remove('fixed');
+                        advancedContainer.style.position = 'relative';
+                        mainHeader.style.top = '0';
+                    }
                     
-                    // Show the banner
-                    container.classList.remove('hidden');
                 } else {
-                    // Hide banner if none is active
-                    document.getElementById('offer-banner-container').classList.add('hidden');
+                    // Hide banners if none is active
+                    advancedContainer.classList.add('hidden');
+                    oldContainer.classList.add('hidden');
+                    mainHeader.style.top = '0';
                 }
             } catch (error) {
                 console.error('Error loading banner:', error);
+                document.getElementById('advanced-banner-container').classList.add('hidden');
                 document.getElementById('offer-banner-container').classList.add('hidden');
+                document.getElementById('main-header').style.top = '0';
             }
         }
 
