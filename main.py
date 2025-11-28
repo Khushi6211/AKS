@@ -132,10 +132,11 @@ reviews_collection = None
 messages_collection = None
 categories_collection = None
 banners_collection = None
+popups_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection, popups_collection
     
     try:
         # Optimized MongoDB connection for Render free tier
@@ -162,6 +163,7 @@ def initialize_database():
         messages_collection = db.messages
         categories_collection = db.categories
         banners_collection = db.banners
+        popups_collection = db.popups
         
         # Test connection
         client.admin.command('ping')
@@ -3151,6 +3153,153 @@ def delete_message():
             
     except Exception as e:
         logger.error(f"❌ Error deleting message: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ========== WELCOME POPUP/POSTER MANAGEMENT ==========
+
+# Get Active Popup
+@app.route('/popups/active', methods=['GET'])
+def get_active_popup():
+    """Get currently active welcome popup/poster for display"""
+    try:
+        popup = popups_collection.find_one({'is_active': True})
+        
+        if not popup:
+            return jsonify({"success": True, "popup": None}), 200
+        
+        popup['_id'] = str(popup['_id'])
+        return jsonify({"success": True, "popup": popup}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching active popup: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Get All Popups (Admin)
+@app.route('/admin/popups', methods=['GET'])
+@admin_required
+def get_all_popups():
+    """Get all welcome popups (admin only)"""
+    try:
+        popups = list(popups_collection.find({}).sort('created_at', -1))
+        
+        for popup in popups:
+            popup['_id'] = str(popup['_id'])
+        
+        return jsonify({"success": True, "popups": popups}), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching popups: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Add Popup (Admin)
+@app.route('/admin/popups/add', methods=['POST'])
+@admin_required
+@limiter.limit("10 per minute")
+def add_popup():
+    """Add new welcome popup/poster (admin only)"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'title' not in data or not data['title']:
+            return jsonify({"success": False, "message": "Title is required"}), 400
+        
+        # If setting as active, deactivate all others
+        if data.get('is_active', False):
+            popups_collection.update_many({}, {'$set': {'is_active': False}})
+        
+        new_popup = {
+            'title': sanitize_string(data['title']),
+            'description': sanitize_string(data.get('description', '')),
+            'image_url': data.get('image_url', ''),
+            'cloudinary_public_id': data.get('cloudinary_public_id', ''),
+            'link_url': data.get('link_url', ''),  # URL to redirect when clicked
+            'link_type': data.get('link_type', 'none'),  # 'none', 'url', 'product', 'category'
+            'link_target': data.get('link_target', ''),  # Product ID or category name
+            'button_text': sanitize_string(data.get('button_text', 'View Now')),
+            'background_color': data.get('background_color', '#ffffff'),
+            'text_color': data.get('text_color', '#000000'),
+            'display_frequency': data.get('display_frequency', 'always'),  # 'always', 'once_per_session', 'once_per_day'
+            'is_active': data.get('is_active', False),
+            'created_at': datetime.now(timezone.utc),
+            'updated_at': datetime.now(timezone.utc)
+        }
+        
+        result = popups_collection.insert_one(new_popup)
+        
+        logger.info(f"✅ Popup created: {new_popup['title']}")
+        return jsonify({
+            "success": True, 
+            "message": "Popup created successfully!",
+            "popup_id": str(result.inserted_id)
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"❌ Error creating popup: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Update Popup (Admin)
+@app.route('/admin/popups/update/<popup_id>', methods=['PUT'])
+@admin_required
+@limiter.limit("10 per minute")
+def update_popup(popup_id):
+    """Update welcome popup (admin only)"""
+    try:
+        from bson import ObjectId
+        data = request.get_json()
+        
+        # If setting as active, deactivate all others
+        if data.get('is_active', False):
+            popups_collection.update_many({}, {'$set': {'is_active': False}})
+        
+        update_data = {
+            'title': sanitize_string(data['title']),
+            'description': sanitize_string(data.get('description', '')),
+            'image_url': data.get('image_url', ''),
+            'cloudinary_public_id': data.get('cloudinary_public_id', ''),
+            'link_url': data.get('link_url', ''),
+            'link_type': data.get('link_type', 'none'),
+            'link_target': data.get('link_target', ''),
+            'button_text': sanitize_string(data.get('button_text', 'View Now')),
+            'background_color': data.get('background_color', '#ffffff'),
+            'text_color': data.get('text_color', '#000000'),
+            'display_frequency': data.get('display_frequency', 'always'),
+            'is_active': data.get('is_active', False),
+            'updated_at': datetime.now(timezone.utc)
+        }
+        
+        result = popups_collection.update_one(
+            {'_id': ObjectId(popup_id)},
+            {'$set': update_data}
+        )
+        
+        if result.modified_count > 0:
+            logger.info(f"✅ Popup updated: {popup_id}")
+            return jsonify({"success": True, "message": "Popup updated successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Popup not found or no changes made."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error updating popup: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Delete Popup (Admin)
+@app.route('/admin/popups/delete/<popup_id>', methods=['DELETE'])
+@admin_required
+def delete_popup(popup_id):
+    """Delete welcome popup (admin only)"""
+    try:
+        from bson import ObjectId
+        result = popups_collection.delete_one({'_id': ObjectId(popup_id)})
+        
+        if result.deleted_count > 0:
+            logger.info(f"✅ Popup deleted: {popup_id}")
+            return jsonify({"success": True, "message": "Popup deleted successfully!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Popup not found."}), 404
+            
+    except Exception as e:
+        logger.error(f"❌ Error deleting popup: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Error handlers
