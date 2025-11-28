@@ -1245,6 +1245,7 @@
                         price: product.price,
                         category: product.category,
                         image: product.image,
+                        images: product.images || [product.image], // CRITICAL: Include images array for multi-image display
                         stock: product.stock || 0,
                         description: product.description || '',
                         onerror: "this.onerror=null; this.src='https://placehold.co/300x300/cccccc/666666?text=Product+Image';"
