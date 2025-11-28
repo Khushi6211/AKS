@@ -2868,6 +2868,9 @@ def add_banner():
             "link_url": data.get('link_url', ''),  # External URL
             "background_color": data.get('background_color', '#FF6B6B'),
             "text_color": data.get('text_color', '#FFFFFF'),
+            "gradient_enabled": data.get('gradient_enabled', False),
+            "gradient_start": data.get('gradient_start', ''),
+            "gradient_end": data.get('gradient_end', ''),
             "is_active": data.get('is_active', False),
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
@@ -2922,6 +2925,12 @@ def update_banner(banner_id):
             update_fields['background_color'] = data['background_color']
         if 'text_color' in data:
             update_fields['text_color'] = data['text_color']
+        if 'gradient_enabled' in data:
+            update_fields['gradient_enabled'] = data['gradient_enabled']
+        if 'gradient_start' in data:
+            update_fields['gradient_start'] = data['gradient_start']
+        if 'gradient_end' in data:
+            update_fields['gradient_end'] = data['gradient_end']
         if 'is_active' in data:
             # If setting as active, deactivate all other banners first
             if data['is_active']:

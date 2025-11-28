@@ -471,6 +471,34 @@
             </div>
         </div>
 
+        <!-- Welcome Popups Section -->
+        <div id="popups-section" class="content-section hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Welcome Popups / Announcements</h3>
+                    <button onclick="showAddPopupModal()" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition whitespace-nowrap">
+                        <i class="fas fa-plus mr-2"></i>Create Popup
+                    </button>
+                </div>
+                <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded space-y-2">
+                    <div>
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Welcome Popup System:</strong>
+                    </div>
+                    <ul class="ml-6 list-disc space-y-1">
+                        <li><strong>Purpose:</strong> Show important announcements, new arrivals, discounts, or promotions when users first visit your website.</li>
+                        <li><strong>Poster Image:</strong> Upload an eye-catching image/poster to grab attention.</li>
+                        <li><strong>Link Options:</strong> Link to a specific product, category, external URL, or no link at all.</li>
+                        <li><strong>Display Frequency:</strong> Control how often the popup shows - always, once per session, or once per day.</li>
+                        <li><strong>Active Status:</strong> Only ONE popup can be active at a time. Activate to show it on the homepage.</li>
+                    </ul>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="popups-grid">
+                    <div class="text-center py-8 text-gray-400 col-span-full">Loading...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Customers Section -->
         <div id="customers-section" class="content-section hidden">
             <div class="bg-white rounded-xl shadow-lg p-6">
@@ -715,7 +743,16 @@
                     <p class="text-sm text-gray-500 mt-1">Add multiple messages that will rotate in the same banner (5 seconds each)</p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <!-- Gradient Toggle -->
+                <div class="mb-4">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="banner-gradient-enabled" class="mr-2 w-4 h-4" onchange="toggleGradientOptions()">
+                        <span class="text-gray-700 font-medium">Use Gradient Background</span>
+                    </label>
+                </div>
+                
+                <!-- Solid Color (shown when gradient is off) -->
+                <div id="solid-color-options" class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Background Color</label>
                         <input type="color" id="banner-bg-color" value="#FF6B6B" class="w-full h-10 rounded border cursor-pointer">
@@ -724,6 +761,40 @@
                         <label class="block text-gray-700 font-medium mb-2">Text Color</label>
                         <input type="color" id="banner-text-color" value="#FFFFFF" class="w-full h-10 rounded border cursor-pointer">
                     </div>
+                </div>
+                
+                <!-- Gradient Options (shown when gradient is on) -->
+                <div id="gradient-options" class="hidden mb-4">
+                    <div class="grid grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Gradient Start</label>
+                            <input type="color" id="banner-gradient-start" value="#667eea" class="w-full h-10 rounded border cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Gradient End</label>
+                            <input type="color" id="banner-gradient-end" value="#764ba2" class="w-full h-10 rounded border cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Text Color</label>
+                            <input type="color" id="banner-gradient-text-color" value="#FFFFFF" class="w-full h-10 rounded border cursor-pointer">
+                        </div>
+                    </div>
+                    <!-- Preset Gradients -->
+                    <div class="mb-2">
+                        <label class="block text-gray-700 font-medium mb-2">Preset Gradients</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="applyGradientPreset('#667eea', '#764ba2')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #667eea, #764ba2)"></button>
+                            <button type="button" onclick="applyGradientPreset('#f093fb', '#f5576c')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #f093fb, #f5576c)"></button>
+                            <button type="button" onclick="applyGradientPreset('#4facfe', '#00f2fe')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #4facfe, #00f2fe)"></button>
+                            <button type="button" onclick="applyGradientPreset('#43e97b', '#38f9d7')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #43e97b, #38f9d7)"></button>
+                            <button type="button" onclick="applyGradientPreset('#fa709a', '#fee140')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #fa709a, #fee140)"></button>
+                            <button type="button" onclick="applyGradientPreset('#a18cd1', '#fbc2eb')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #a18cd1, #fbc2eb)"></button>
+                            <button type="button" onclick="applyGradientPreset('#ff0844', '#ffb199')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #ff0844, #ffb199)"></button>
+                            <button type="button" onclick="applyGradientPreset('#0250c5', '#d43f8d')" class="w-12 h-8 rounded" style="background: linear-gradient(90deg, #0250c5, #d43f8d)"></button>
+                        </div>
+                    </div>
+                    <!-- Preview -->
+                    <div id="gradient-preview" class="h-10 rounded mt-2" style="background: linear-gradient(90deg, #667eea, #764ba2)"></div>
                 </div>
 
                 <div class="mb-4">
@@ -943,6 +1014,121 @@
         </div>
     </div>
 
+    <!-- Welcome Popup Modal -->
+    <div id="popup-modal" class="modal">
+        <div class="modal-content max-w-2xl">
+            <form id="popup-form" onsubmit="savePopup(event)">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800" id="popup-modal-title">Create Welcome Popup</h3>
+                    <button type="button" onclick="closeModal('popup-modal')" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <input type="hidden" id="popup-id">
+
+                <!-- Popup Image Upload -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Popup Image/Poster <span class="text-red-500">*</span></label>
+                    <div id="popup-image-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-purple-500 transition" onclick="document.getElementById('popup-image-input').click()">
+                        <div id="popup-dropzone-content">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-500">Click to upload poster image</p>
+                            <p class="text-xs text-gray-400 mt-1">Recommended: 800x600px or larger</p>
+                        </div>
+                        <div id="popup-image-preview" class="hidden">
+                            <img id="popup-preview-img" class="max-h-48 mx-auto rounded">
+                            <button type="button" onclick="removePopupImage(event)" class="mt-2 px-4 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600">
+                                <i class="fas fa-trash mr-1"></i>Remove
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="popup-image-input" accept="image/*" class="hidden" onchange="handlePopupImageSelect(event)">
+                    <input type="hidden" id="popup-cloudinary-public-id">
+                </div>
+
+                <!-- Title -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                    <input type="text" id="popup-title" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="e.g., New Arrivals!">
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Description (Optional)</label>
+                    <textarea id="popup-description" rows="2" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="Short description for the popup..."></textarea>
+                </div>
+
+                <!-- Link Type -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Link Type</label>
+                    <select id="popup-link-type" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" onchange="updatePopupLinkFields()">
+                        <option value="none">No Link (Just Display)</option>
+                        <option value="url">External URL</option>
+                        <option value="product">Link to Product</option>
+                        <option value="category">Link to Category</option>
+                    </select>
+                </div>
+
+                <!-- Link Target (URL input, shown when link type is 'url') -->
+                <div id="popup-url-field" class="mb-4 hidden">
+                    <label class="block text-gray-700 font-medium mb-2">External URL</label>
+                    <input type="url" id="popup-link-url" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="https://example.com">
+                </div>
+
+                <!-- Product Selector (shown when link type is 'product') -->
+                <div id="popup-product-field" class="mb-4 hidden">
+                    <label class="block text-gray-700 font-medium mb-2">Select Product</label>
+                    <select id="popup-link-product" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                        <option value="">-- Select a Product --</option>
+                    </select>
+                </div>
+
+                <!-- Category Selector (shown when link type is 'category') -->
+                <div id="popup-category-field" class="mb-4 hidden">
+                    <label class="block text-gray-700 font-medium mb-2">Select Category</label>
+                    <select id="popup-link-category" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                        <option value="">-- Select a Category --</option>
+                    </select>
+                </div>
+
+                <!-- Button Text -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Button Text</label>
+                    <input type="text" id="popup-button-text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" placeholder="View Now" value="View Now">
+                </div>
+
+                <!-- Display Frequency -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Display Frequency</label>
+                    <select id="popup-frequency" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
+                        <option value="always">Always (Every Page Load)</option>
+                        <option value="once_per_session">Once Per Session</option>
+                        <option value="once_per_day">Once Per Day</option>
+                    </select>
+                </div>
+
+                <!-- Active Status -->
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="popup-active" class="mr-2 w-4 h-4">
+                        <span class="text-gray-700 font-medium">Set as Active Popup</span>
+                    </label>
+                    <p class="text-sm text-gray-500 mt-1">Only one popup can be active. Activating this will deactivate all others.</p>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
+                        <i class="fas fa-save mr-2"></i>Save Popup
+                    </button>
+                    <button type="button" onclick="closeModal('popup-modal')" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const backendBaseUrl = window.APP_CONFIG?.BACKEND_URL || 'https://arun-karyana-backend.onrender.com';
         let currentUserId = null;
@@ -1065,6 +1251,7 @@
                 if (section === 'categories') loadCategories();
                 if (section === 'offers') loadOffers();
                 if (section === 'banners') loadBanners();
+                if (section === 'popups') loadPopups();
                 if (section === 'customers') loadCustomers();
                 if (section === 'reviews') loadReviews();
                 if (section === 'messages') loadMessages();
@@ -2701,7 +2888,15 @@
             document.getElementById('banner-id').value = '';
             document.getElementById('banner-bg-color').value = '#FF6B6B';
             document.getElementById('banner-text-color').value = '#FFFFFF';
+            document.getElementById('banner-gradient-enabled').checked = false;
+            document.getElementById('banner-gradient-start').value = '#667eea';
+            document.getElementById('banner-gradient-end').value = '#764ba2';
+            document.getElementById('banner-gradient-text-color').value = '#FFFFFF';
+            toggleGradientOptions();
             updateBannerLinkFields();
+            // Clear additional announcements
+            document.getElementById('additional-announcements').innerHTML = '';
+            announcementCount = 0;
             document.getElementById('banner-modal').classList.add('active');
         }
 
@@ -2711,6 +2906,38 @@
             document.getElementById('banner-link-url-field').classList.toggle('hidden', linkType !== 'url');
             document.getElementById('banner-link-product-field').classList.toggle('hidden', linkType !== 'product');
         }
+
+        // Toggle Gradient Options
+        function toggleGradientOptions() {
+            const isGradient = document.getElementById('banner-gradient-enabled').checked;
+            document.getElementById('solid-color-options').classList.toggle('hidden', isGradient);
+            document.getElementById('gradient-options').classList.toggle('hidden', !isGradient);
+            if (isGradient) {
+                updateGradientPreview();
+            }
+        }
+
+        // Apply Gradient Preset
+        function applyGradientPreset(start, end) {
+            document.getElementById('banner-gradient-start').value = start;
+            document.getElementById('banner-gradient-end').value = end;
+            updateGradientPreview();
+        }
+
+        // Update Gradient Preview
+        function updateGradientPreview() {
+            const start = document.getElementById('banner-gradient-start').value;
+            const end = document.getElementById('banner-gradient-end').value;
+            document.getElementById('gradient-preview').style.background = `linear-gradient(90deg, ${start}, ${end})`;
+        }
+
+        // Add event listeners for gradient color changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const gradientStart = document.getElementById('banner-gradient-start');
+            const gradientEnd = document.getElementById('banner-gradient-end');
+            if (gradientStart) gradientStart.addEventListener('input', updateGradientPreview);
+            if (gradientEnd) gradientEnd.addEventListener('input', updateGradientPreview);
+        });
         
         // Toggle Emoji Picker
         function toggleEmojiPicker() {
@@ -2780,11 +3007,17 @@
             // Combine all texts (main + additional)
             const allTexts = [mainText, ...additionalTexts];
             
+            // Check if gradient is enabled
+            const isGradient = document.getElementById('banner-gradient-enabled').checked;
+            
             const bannerData = {
                 text: mainText, // Keep main text for backward compatibility
                 texts: allTexts, // Array of all announcement texts
-                background_color: document.getElementById('banner-bg-color').value,
-                text_color: document.getElementById('banner-text-color').value,
+                background_color: isGradient ? '' : document.getElementById('banner-bg-color').value,
+                text_color: isGradient ? document.getElementById('banner-gradient-text-color').value : document.getElementById('banner-text-color').value,
+                gradient_enabled: isGradient,
+                gradient_start: isGradient ? document.getElementById('banner-gradient-start').value : '',
+                gradient_end: isGradient ? document.getElementById('banner-gradient-end').value : '',
                 link_type: document.getElementById('banner-link-type').value,
                 link_url: document.getElementById('banner-link-url').value || '',
                 link_id: document.getElementById('banner-link-product').value || '',
@@ -2900,6 +3133,366 @@
             .catch(error => {
                 console.error('Error deleting banner:', error);
                 alert('An error occurred while deleting the banner');
+            });
+        }
+
+        // ========== WELCOME POPUP MANAGEMENT ==========
+        
+        let currentPopupImageData = null;
+
+        // Load Popups
+        function loadPopups() {
+            fetch(`${backendBaseUrl}/admin/popups`, {
+                headers: { 'User-ID': currentUserId }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayPopups(data.popups);
+                } else {
+                    document.getElementById('popups-grid').innerHTML = '<p class="text-center text-gray-500 col-span-full">Failed to load popups</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading popups:', error);
+                document.getElementById('popups-grid').innerHTML = '<p class="text-center text-red-500 col-span-full">Error loading popups</p>';
+            });
+        }
+
+        // Display Popups
+        function displayPopups(popups) {
+            const grid = document.getElementById('popups-grid');
+            
+            if (!popups || popups.length === 0) {
+                grid.innerHTML = '<p class="text-center text-gray-500 col-span-full py-8">No popups created yet. Click "Create Popup" to get started.</p>';
+                return;
+            }
+
+            grid.innerHTML = popups.map(popup => `
+                <div class="border rounded-lg overflow-hidden ${popup.is_active ? 'ring-2 ring-green-500' : ''}">
+                    <div class="relative">
+                        ${popup.image_url ? 
+                            `<img src="${popup.image_url}" class="w-full h-40 object-cover" alt="${popup.title}">` :
+                            `<div class="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-400">
+                                <i class="fas fa-image text-4xl"></i>
+                            </div>`
+                        }
+                        ${popup.is_active ? 
+                            `<span class="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+                                <i class="fas fa-check mr-1"></i>ACTIVE
+                            </span>` : ''
+                        }
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-bold text-gray-800 mb-1">${popup.title}</h4>
+                        <p class="text-sm text-gray-500 mb-2 truncate">${popup.description || 'No description'}</p>
+                        <div class="text-xs text-gray-400 mb-3">
+                            <span class="mr-2"><i class="fas fa-clock mr-1"></i>${popup.display_frequency?.replace('_', ' ') || 'always'}</span>
+                            <span><i class="fas fa-link mr-1"></i>${popup.link_type || 'none'}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editPopup('${popup._id}')" class="flex-1 px-3 py-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 text-sm">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="togglePopup('${popup._id}', ${popup.is_active})" class="flex-1 px-3 py-2 ${popup.is_active ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'} rounded text-sm">
+                                <i class="fas fa-${popup.is_active ? 'pause' : 'play'} mr-1"></i>${popup.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button onclick="deletePopup('${popup._id}')" class="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show Add Popup Modal
+        function showAddPopupModal() {
+            document.getElementById('popup-modal-title').textContent = 'Create Welcome Popup';
+            document.getElementById('popup-form').reset();
+            document.getElementById('popup-id').value = '';
+            currentPopupImageData = null;
+            document.getElementById('popup-dropzone-content').classList.remove('hidden');
+            document.getElementById('popup-image-preview').classList.add('hidden');
+            document.getElementById('popup-cloudinary-public-id').value = '';
+            updatePopupLinkFields();
+            populatePopupSelectors();
+            document.getElementById('popup-modal').classList.add('active');
+        }
+
+        // Populate Product and Category Selectors for Popup
+        async function populatePopupSelectors() {
+            // Populate products
+            try {
+                const productsResponse = await fetch(`${backendBaseUrl}/admin/products`, {
+                    headers: { 'User-ID': currentUserId }
+                });
+                const productsData = await productsResponse.json();
+                if (productsData.success) {
+                    const productSelect = document.getElementById('popup-link-product');
+                    productSelect.innerHTML = '<option value="">-- Select a Product --</option>' +
+                        productsData.products.map(p => `<option value="${p._id}">${p.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading products for popup:', e);
+            }
+
+            // Populate categories
+            try {
+                const categoriesResponse = await fetch(`${backendBaseUrl}/categories`);
+                const categoriesData = await categoriesResponse.json();
+                if (categoriesData.success) {
+                    const categorySelect = document.getElementById('popup-link-category');
+                    categorySelect.innerHTML = '<option value="">-- Select a Category --</option>' +
+                        categoriesData.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading categories for popup:', e);
+            }
+        }
+
+        // Update Link Fields Based on Link Type
+        function updatePopupLinkFields() {
+            const linkType = document.getElementById('popup-link-type').value;
+            document.getElementById('popup-url-field').classList.toggle('hidden', linkType !== 'url');
+            document.getElementById('popup-product-field').classList.toggle('hidden', linkType !== 'product');
+            document.getElementById('popup-category-field').classList.toggle('hidden', linkType !== 'category');
+        }
+
+        // Handle Popup Image Selection
+        function handlePopupImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentPopupImageData = e.target.result;
+                document.getElementById('popup-dropzone-content').classList.add('hidden');
+                document.getElementById('popup-image-preview').classList.remove('hidden');
+                document.getElementById('popup-preview-img').src = currentPopupImageData;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Remove Popup Image
+        function removePopupImage(event) {
+            event.stopPropagation();
+            currentPopupImageData = null;
+            document.getElementById('popup-cloudinary-public-id').value = '';
+            document.getElementById('popup-dropzone-content').classList.remove('hidden');
+            document.getElementById('popup-image-preview').classList.add('hidden');
+            document.getElementById('popup-image-input').value = '';
+        }
+
+        // Save Popup
+        async function savePopup(event) {
+            event.preventDefault();
+
+            const popupId = document.getElementById('popup-id').value;
+            const isEdit = !!popupId;
+
+            // Get link target based on type
+            const linkType = document.getElementById('popup-link-type').value;
+            let linkUrl = '';
+            let linkTarget = '';
+
+            if (linkType === 'url') {
+                linkUrl = document.getElementById('popup-link-url').value;
+            } else if (linkType === 'product') {
+                linkTarget = document.getElementById('popup-link-product').value;
+            } else if (linkType === 'category') {
+                linkTarget = document.getElementById('popup-link-category').value;
+            }
+
+            const popupData = {
+                title: document.getElementById('popup-title').value,
+                description: document.getElementById('popup-description').value,
+                link_type: linkType,
+                link_url: linkUrl,
+                link_target: linkTarget,
+                button_text: document.getElementById('popup-button-text').value || 'View Now',
+                display_frequency: document.getElementById('popup-frequency').value,
+                is_active: document.getElementById('popup-active').checked,
+                cloudinary_public_id: document.getElementById('popup-cloudinary-public-id').value
+            };
+
+            // Upload image if new
+            if (currentPopupImageData && currentPopupImageData.startsWith('data:image')) {
+                try {
+                    const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'User-ID': currentUserId
+                        },
+                        body: JSON.stringify({ image_data: currentPopupImageData })
+                    });
+                    const uploadData = await uploadResponse.json();
+                    if (uploadData.success) {
+                        popupData.image_url = uploadData.url;
+                        popupData.cloudinary_public_id = uploadData.public_id;
+                    } else {
+                        alert('Error uploading image: ' + uploadData.message);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error uploading popup image:', error);
+                    alert('Failed to upload image');
+                    return;
+                }
+            } else if (currentPopupImageData) {
+                popupData.image_url = currentPopupImageData;
+            }
+
+            // Save popup
+            const url = isEdit 
+                ? `${backendBaseUrl}/admin/popups/update/${popupId}`
+                : `${backendBaseUrl}/admin/popups/add`;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-ID': currentUserId
+                },
+                body: JSON.stringify(popupData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(isEdit ? 'Popup updated successfully!' : 'Popup created successfully!');
+                    closeModal('popup-modal');
+                    loadPopups();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving popup:', error);
+                alert('An error occurred while saving the popup');
+            });
+        }
+
+        // Edit Popup
+        function editPopup(popupId) {
+            fetch(`${backendBaseUrl}/admin/popups`, {
+                headers: { 'User-ID': currentUserId }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const popup = data.popups.find(p => p._id === popupId);
+                    if (popup) {
+                        document.getElementById('popup-modal-title').textContent = 'Edit Popup';
+                        document.getElementById('popup-id').value = popup._id;
+                        document.getElementById('popup-title').value = popup.title || '';
+                        document.getElementById('popup-description').value = popup.description || '';
+                        document.getElementById('popup-link-type').value = popup.link_type || 'none';
+                        document.getElementById('popup-link-url').value = popup.link_url || '';
+                        document.getElementById('popup-button-text').value = popup.button_text || 'View Now';
+                        document.getElementById('popup-frequency').value = popup.display_frequency || 'always';
+                        document.getElementById('popup-active').checked = popup.is_active || false;
+                        document.getElementById('popup-cloudinary-public-id').value = popup.cloudinary_public_id || '';
+
+                        if (popup.image_url) {
+                            currentPopupImageData = popup.image_url;
+                            document.getElementById('popup-dropzone-content').classList.add('hidden');
+                            document.getElementById('popup-image-preview').classList.remove('hidden');
+                            document.getElementById('popup-preview-img').src = popup.image_url;
+                        } else {
+                            currentPopupImageData = null;
+                            document.getElementById('popup-dropzone-content').classList.remove('hidden');
+                            document.getElementById('popup-image-preview').classList.add('hidden');
+                        }
+
+                        updatePopupLinkFields();
+                        populatePopupSelectors().then(() => {
+                            // Set link target after selectors are populated
+                            if (popup.link_type === 'product') {
+                                document.getElementById('popup-link-product').value = popup.link_target || '';
+                            } else if (popup.link_type === 'category') {
+                                document.getElementById('popup-link-category').value = popup.link_target || '';
+                            }
+                        });
+
+                        document.getElementById('popup-modal').classList.add('active');
+                    }
+                }
+            })
+            .catch(error => console.error('Error loading popup:', error));
+        }
+
+        // Toggle Popup Active Status
+        function togglePopup(popupId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${action} this popup?${!currentStatus ? '\n\nThis will deactivate all other popups.' : ''}`)) {
+                return;
+            }
+
+            // We update by setting is_active
+            fetch(`${backendBaseUrl}/admin/popups`, {
+                headers: { 'User-ID': currentUserId }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const popup = data.popups.find(p => p._id === popupId);
+                    if (popup) {
+                        popup.is_active = !currentStatus;
+                        return fetch(`${backendBaseUrl}/admin/popups/update/${popupId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'User-ID': currentUserId
+                            },
+                            body: JSON.stringify(popup)
+                        });
+                    }
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Popup ${currentStatus ? 'deactivated' : 'activated'} successfully!`);
+                    loadPopups();
+                } else {
+                    alert('Failed to update popup status');
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling popup:', error);
+                alert('An error occurred while updating the popup');
+            });
+        }
+
+        // Delete Popup
+        function deletePopup(popupId) {
+            if (!confirm('Are you sure you want to delete this popup? This action cannot be undone.')) {
+                return;
+            }
+
+            fetch(`${backendBaseUrl}/admin/popups/delete/${popupId}`, {
+                method: 'DELETE',
+                headers: { 'User-ID': currentUserId }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Popup deleted successfully!');
+                    loadPopups();
+                } else {
+                    alert(data.message || 'Failed to delete popup');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting popup:', error);
+                alert('An error occurred while deleting the popup');
             });
         }
     </script>

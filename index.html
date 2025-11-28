@@ -544,11 +544,16 @@
                     </div>
                 </a>
 
-                <div class="search-container flex items-center w-full md:w-1/3 lg:w-1/4 relative mb-4 md:mb-0">
-                    <input type="text" id="search-input" placeholder="Search products..." class="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-primary text-sm pr-10">
-                    <i class="fas fa-search absolute right-3 text-gray-500"></i>
-                    <div id="search-results-dropdown" class="hidden">
-                        </div>
+                <div class="search-container flex items-center w-full md:w-2/5 lg:w-1/3 relative mb-4 md:mb-0">
+                    <input type="text" id="search-input" placeholder="Search for products..." 
+                           class="w-full px-5 py-3 border-2 border-purple-200 rounded-full focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 text-base pr-12 shadow-sm transition-all"
+                           autocomplete="off">
+                    <button class="absolute right-2 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-purple-700 transition">
+                        <i class="fas fa-search text-sm"></i>
+                    </button>
+                    <div id="search-results-dropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 max-h-80 overflow-y-auto z-50">
+                        <!-- Search suggestions will be populated here -->
+                    </div>
                 </div>
 
                 <div class="flex items-center space-x-4">
@@ -626,14 +631,50 @@
 
     <!-- Running Banner Section -->
     <div id="offer-banner-container" class="hidden">
-        <div id="offer-banner" class="overflow-hidden py-3 cursor-pointer" style="background-color: #FF6B6B;">
-            <div class="banner-content-wrapper">
-                <div id="banner-text" class="banner-scroll text-white font-bold text-lg whitespace-nowrap inline-block" style="color: #FFFFFF;">
-                    <!-- Banner text will be loaded here -->
+        <div id="offer-banner" class="overflow-hidden py-3 cursor-pointer relative" style="background-color: #FF6B6B;">
+            <!-- Continuous Ticker - All announcements visible and scrolling -->
+            <div class="banner-ticker-wrapper flex">
+                <div id="banner-ticker" class="banner-ticker flex items-center whitespace-nowrap">
+                    <!-- All banner texts will be loaded here in sequence -->
+                </div>
+                <div id="banner-ticker-clone" class="banner-ticker flex items-center whitespace-nowrap">
+                    <!-- Clone for seamless loop -->
                 </div>
             </div>
         </div>
     </div>
+    
+    <style>
+        /* Continuous Ticker Animation */
+        .banner-ticker-wrapper {
+            animation: ticker-scroll 30s linear infinite;
+        }
+        
+        .banner-ticker-wrapper:hover {
+            animation-play-state: paused;
+        }
+        
+        @keyframes ticker-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .banner-ticker-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 2rem;
+        }
+        
+        .banner-ticker-item::after {
+            content: "•";
+            margin-left: 2rem;
+            opacity: 0.6;
+        }
+        
+        .banner-ticker-item:last-child::after {
+            content: "";
+        }
+    </style>
 
     <section id="products" class="py-16">
         <div class="container mx-auto px-4">
@@ -1696,12 +1737,16 @@
             return searchFiltered;
         }
 
+        let selectedSearchIndex = -1; // Track selected item for keyboard navigation
+
         function updateSearchResultsDropdown(query) {
             searchResultsDropdown.innerHTML = ''; // Clear previous results
+            selectedSearchIndex = -1; // Reset selection
             const lowerCaseQuery = query.toLowerCase();
 
             if (lowerCaseQuery.length === 0) {
                 searchResultsDropdown.classList.remove('visible');
+                searchResultsDropdown.classList.add('hidden');
                 return;
             }
 
@@ -1714,24 +1759,56 @@
 
             const matchingProducts = relevantProducts.filter(product =>
                 product.name.toLowerCase().includes(lowerCaseQuery)
-            );
+            ).slice(0, 8); // Limit to 8 results
 
             if (matchingProducts.length > 0) {
-                matchingProducts.forEach(product => {
+                matchingProducts.forEach((product, index) => {
                     const item = document.createElement('div');
-                    item.classList.add('dropdown-item');
-                    item.textContent = product.name;
-                    item.setAttribute('data-product-id', product.id); // Store product ID
+                    item.classList.add('dropdown-item', 'px-4', 'py-3', 'cursor-pointer', 'hover:bg-purple-50', 'transition', 'flex', 'items-center', 'gap-3', 'border-b', 'border-gray-100', 'last:border-b-0');
+                    item.innerHTML = `
+                        <img src="${product.image}" alt="${product.name}" class="w-10 h-10 object-cover rounded" onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=?'">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">${highlightMatch(product.name, lowerCaseQuery)}</div>
+                            <div class="text-sm text-purple-600 font-semibold">₹${product.price}</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400"></i>
+                    `;
+                    item.setAttribute('data-product-id', product.id);
+                    item.setAttribute('data-index', index);
                     searchResultsDropdown.appendChild(item);
                 });
                 searchResultsDropdown.classList.add('visible');
+                searchResultsDropdown.classList.remove('hidden');
             } else {
                 const noResultsItem = document.createElement('div');
-                noResultsItem.classList.add('no-results');
-                noResultsItem.textContent = 'No products found';
+                noResultsItem.classList.add('no-results', 'px-4', 'py-6', 'text-center', 'text-gray-500');
+                noResultsItem.innerHTML = `
+                    <i class="fas fa-search text-2xl text-gray-300 mb-2"></i>
+                    <p>No products found for "${query}"</p>
+                `;
                 searchResultsDropdown.appendChild(noResultsItem);
                 searchResultsDropdown.classList.add('visible');
+                searchResultsDropdown.classList.remove('hidden');
             }
+        }
+
+        // Highlight matching text
+        function highlightMatch(text, query) {
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="bg-yellow-200 font-semibold">$1</span>');
+        }
+
+        // Update selected item styling
+        function updateSearchSelection() {
+            const items = searchResultsDropdown.querySelectorAll('.dropdown-item');
+            items.forEach((item, index) => {
+                if (index === selectedSearchIndex) {
+                    item.classList.add('bg-purple-100');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('bg-purple-100');
+                }
+            });
         }
 
         // Event listener for typing in the search input (updates dropdown)
@@ -1744,36 +1821,58 @@
         searchResultsDropdown.addEventListener('click', (e) => {
             const clickedItem = e.target.closest('.dropdown-item');
             if (clickedItem) {
-                const productId = parseInt(clickedItem.getAttribute('data-product-id'));
-                // Filter the grid to show only the selected product
-                const selectedProduct = products.find(p => p.id === productId);
-                if (selectedProduct) {
-                    displayProducts([selectedProduct]); // Display only the selected product
-
-                    // Scroll to the product grid section
-                    const productsSection = document.getElementById('products');
-                    if (productsSection) {
-                         productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                }
-                searchInput.value = clickedItem.textContent; // Set search input value to selected item
-                searchResultsDropdown.classList.remove('visible'); // Hide the dropdown
+                selectSearchItem(clickedItem);
             }
         });
 
-        // Event listener for pressing Enter in the search input
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent default form submission
-                const query = searchInput.value;
-                filterProductsBySearch(query); // Filter the main grid based on the full query
-                searchResultsDropdown.classList.remove('visible'); // Hide the dropdown
+        // Select a search item
+        function selectSearchItem(item) {
+            const productId = item.getAttribute('data-product-id');
+            const selectedProduct = products.find(p => p.id === productId);
+            if (selectedProduct) {
+                displayProducts([selectedProduct]);
+                const productsSection = document.getElementById('products');
+                if (productsSection) {
+                    productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+            searchInput.value = item.querySelector('.font-medium')?.textContent || '';
+            searchResultsDropdown.classList.remove('visible');
+            searchResultsDropdown.classList.add('hidden');
+        }
 
-                // Scroll to the products section after filtering
-                 const productsSection = document.getElementById('products');
-                 if (productsSection) {
-                      productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                 }
+        // Event listener for keyboard navigation in search
+        searchInput.addEventListener('keydown', (e) => {
+            const items = searchResultsDropdown.querySelectorAll('.dropdown-item');
+            const isVisible = searchResultsDropdown.classList.contains('visible');
+
+            if (e.key === 'ArrowDown' && isVisible) {
+                e.preventDefault();
+                selectedSearchIndex = Math.min(selectedSearchIndex + 1, items.length - 1);
+                updateSearchSelection();
+            } else if (e.key === 'ArrowUp' && isVisible) {
+                e.preventDefault();
+                selectedSearchIndex = Math.max(selectedSearchIndex - 1, -1);
+                updateSearchSelection();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedSearchIndex >= 0 && items[selectedSearchIndex]) {
+                    selectSearchItem(items[selectedSearchIndex]);
+                } else {
+                    // No item selected, do regular search
+                    const query = searchInput.value;
+                    filterProductsBySearch(query);
+                    searchResultsDropdown.classList.remove('visible');
+                    searchResultsDropdown.classList.add('hidden');
+                    const productsSection = document.getElementById('products');
+                    if (productsSection) {
+                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                searchResultsDropdown.classList.remove('visible');
+                searchResultsDropdown.classList.add('hidden');
+                selectedSearchIndex = -1;
             }
         });
 
@@ -2669,39 +2768,48 @@
                     const banner = data.banner;
                     const container = document.getElementById('offer-banner-container');
                     const bannerElement = document.getElementById('offer-banner');
-                    const bannerText = document.getElementById('banner-text');
+                    const bannerTicker = document.getElementById('banner-ticker');
+                    const bannerTickerClone = document.getElementById('banner-ticker-clone');
                     
                     // Get all announcement texts (support both single text and multiple texts)
                     const texts = banner.texts && Array.isArray(banner.texts) && banner.texts.length > 0 
-                        ? banner.texts 
-                        : [banner.text];
+                        ? banner.texts.filter(t => t && t.trim()) 
+                        : [banner.text].filter(t => t && t.trim());
                     
-                    // Set colors
-                    bannerElement.style.backgroundColor = banner.background_color || '#FF6B6B';
-                    bannerText.style.color = banner.text_color || '#FFFFFF';
-                    
-                    // If multiple texts, rotate them
-                    if (texts.length > 1) {
-                        let currentIndex = 0;
-                        
-                        // Set initial text
-                        bannerText.textContent = `🔥 ${texts[currentIndex]} 🔥`;
-                        
-                        // Rotate texts every 5 seconds
-                        setInterval(() => {
-                            currentIndex = (currentIndex + 1) % texts.length;
-                            bannerText.textContent = `🔥 ${texts[currentIndex]} 🔥`;
-                        }, 5000);
-                    } else {
-                        // Single text
-                        bannerText.textContent = `🔥 ${texts[0]} 🔥`;
+                    if (texts.length === 0) {
+                        container.classList.add('hidden');
+                        return;
                     }
+                    
+                    // Set background color (support gradient)
+                    if (banner.gradient_enabled && banner.gradient_start && banner.gradient_end) {
+                        bannerElement.style.background = `linear-gradient(90deg, ${banner.gradient_start}, ${banner.gradient_end})`;
+                    } else {
+                        bannerElement.style.backgroundColor = banner.background_color || '#FF6B6B';
+                    }
+                    
+                    const textColor = banner.text_color || '#FFFFFF';
+                    
+                    // Create ticker content - ALL announcements visible and scrolling
+                    const tickerContent = texts.map((text, index) => `
+                        <span class="banner-ticker-item text-lg font-bold" style="color: ${textColor}">
+                            🔥 ${text}
+                        </span>
+                    `).join('');
+                    
+                    // Set content to both original and clone (for seamless loop)
+                    bannerTicker.innerHTML = tickerContent;
+                    bannerTickerClone.innerHTML = tickerContent;
+                    
+                    // Adjust animation speed based on content length
+                    const totalLength = texts.join('').length;
+                    const animationDuration = Math.max(15, totalLength * 0.3); // Min 15s, scale with content
+                    document.querySelector('.banner-ticker-wrapper').style.animationDuration = `${animationDuration}s`;
                     
                     // Set click handler based on link type
                     if (banner.link_type === 'product' && banner.link_id) {
                         bannerElement.style.cursor = 'pointer';
                         bannerElement.onclick = () => {
-                            // Scroll to products and filter by this product
                             scrollToElement('products');
                         };
                     } else if (banner.link_type === 'url' && banner.link_url) {
@@ -2911,6 +3019,151 @@
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Message';
             }
         }
+
+        // ========== WELCOME POPUP SYSTEM ==========
+        
+        // Check and show welcome popup
+        async function checkAndShowWelcomePopup() {
+            try {
+                const response = await fetch(`${backendBaseUrl}/popups/active`);
+                const data = await response.json();
+                
+                if (data.success && data.popup) {
+                    const popup = data.popup;
+                    
+                    // Check display frequency
+                    const popupId = popup._id;
+                    const frequencyKey = `popup_shown_${popupId}`;
+                    
+                    if (popup.display_frequency === 'once_per_session') {
+                        if (sessionStorage.getItem(frequencyKey)) return;
+                        sessionStorage.setItem(frequencyKey, 'true');
+                    } else if (popup.display_frequency === 'once_per_day') {
+                        const lastShown = localStorage.getItem(frequencyKey);
+                        const today = new Date().toDateString();
+                        if (lastShown === today) return;
+                        localStorage.setItem(frequencyKey, today);
+                    }
+                    
+                    // Show the popup
+                    showWelcomePopup(popup);
+                }
+            } catch (error) {
+                console.error('Error loading welcome popup:', error);
+            }
+        }
+
+        // Display the welcome popup (center modal style)
+        function showWelcomePopup(popup) {
+            // Create popup overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'welcome-popup-overlay';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4';
+            overlay.style.animation = 'fadeIn 0.3s ease-out';
+            
+            // Determine link URL based on link type
+            let linkHref = '';
+            let linkOnClick = '';
+            
+            if (popup.link_type === 'url' && popup.link_url) {
+                linkHref = popup.link_url;
+                linkOnClick = '';
+            } else if (popup.link_type === 'product' && popup.link_target) {
+                linkHref = '#';
+                linkOnClick = `onclick="closeWelcomePopup(); showProductDetails('${popup.link_target}'); return false;"`;
+            } else if (popup.link_type === 'category' && popup.link_target) {
+                linkHref = '#';
+                linkOnClick = `onclick="closeWelcomePopup(); filterByCategory('${popup.link_target}'); return false;"`;
+            }
+            
+            const hasLink = popup.link_type !== 'none' && (popup.link_url || popup.link_target);
+            
+            overlay.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all" style="animation: scaleIn 0.3s ease-out">
+                    <!-- Close Button -->
+                    <button onclick="closeWelcomePopup()" class="absolute top-4 right-4 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition z-10">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    
+                    <!-- Image -->
+                    ${popup.image_url ? `
+                        <div class="relative">
+                            <img src="${popup.image_url}" alt="${popup.title}" class="w-full h-auto max-h-80 object-cover">
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Content -->
+                    <div class="p-6 text-center">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">${popup.title}</h2>
+                        ${popup.description ? `<p class="text-gray-600 mb-4">${popup.description}</p>` : ''}
+                        
+                        <div class="flex gap-3 justify-center">
+                            ${hasLink ? `
+                                <a href="${linkHref}" ${linkOnClick} ${popup.link_type === 'url' ? 'target="_blank"' : ''} 
+                                   class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
+                                    ${popup.button_text || 'View Now'}
+                                </a>
+                            ` : ''}
+                            <button onclick="closeWelcomePopup()" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                                ${hasLink ? 'Close' : 'Got it'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add animation styles if not already present
+            if (!document.getElementById('popup-animations')) {
+                const style = document.createElement('style');
+                style.id = 'popup-animations';
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes scaleIn {
+                        from { transform: scale(0.9); opacity: 0; }
+                        to { transform: scale(1); opacity: 1; }
+                    }
+                    @keyframes fadeOut {
+                        from { opacity: 1; }
+                        to { opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(overlay);
+            
+            // Close on overlay click (outside modal)
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeWelcomePopup();
+                }
+            });
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function escHandler(e) {
+                if (e.key === 'Escape') {
+                    closeWelcomePopup();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            });
+        }
+
+        // Close welcome popup
+        function closeWelcomePopup() {
+            const overlay = document.getElementById('welcome-popup-overlay');
+            if (overlay) {
+                overlay.style.animation = 'fadeOut 0.2s ease-out';
+                setTimeout(() => overlay.remove(), 200);
+            }
+        }
+
+        // Show popup after page loads (with small delay for better UX)
+        setTimeout(() => {
+            checkAndShowWelcomePopup();
+        }, 1000);
 
 
     </script>
