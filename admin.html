@@ -1556,14 +1556,18 @@
                 return;
             }
             
-            container.innerHTML = additionalImagesData.map((img, index) => `
-                <div class="relative border rounded overflow-hidden">
-                    <img src="${img.data || img}" class="w-full h-20 object-cover">
-                    <button type="button" onclick="removeAdditionalImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
-                        <i class="fas fa-times text-xs"></i>
-                    </button>
-                </div>
-            `).join('');
+            container.innerHTML = additionalImagesData.map((img, index) => {
+                // Handle both object format {data: base64} and direct URL string
+                const imgSrc = typeof img === 'string' ? img : (img.data || img.url || '');
+                return `
+                    <div class="relative border rounded overflow-hidden">
+                        <img src="${imgSrc}" class="w-full h-20 object-cover">
+                        <button type="button" onclick="removeAdditionalImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Remove additional image
@@ -1600,6 +1604,10 @@
             
             const productId = document.getElementById('product-id').value;
             const isEdit = !!productId;
+            
+            console.log('=== SAVING PRODUCT ===');
+            console.log('Is Edit Mode:', isEdit);
+            console.log('Additional Images Data:', additionalImagesData);
             
             const productData = {
                 name: document.getElementById('product-name').value,
@@ -1649,7 +1657,12 @@
             // Upload additional images to Cloudinary
             if (additionalImagesData.length > 0) {
                 for (const imgData of additionalImagesData) {
-                    if (imgData.data && imgData.data.startsWith('data:image')) {
+                    // Check if it's a new image (base64 data)
+                    const isNewImage = typeof imgData === 'object' && imgData.data && imgData.data.startsWith('data:image');
+                    const isExistingUrl = typeof imgData === 'string' && imgData.startsWith('http');
+                    
+                    if (isNewImage) {
+                        // Upload new image to Cloudinary
                         try {
                             const uploadResponse = await fetch(`${backendBaseUrl}/admin/upload-image`, {
                                 method: 'POST',
@@ -1668,12 +1681,17 @@
                         } catch (error) {
                             console.error('Error uploading additional image:', error);
                         }
-                    } else if (typeof imgData === 'string') {
-                        // Existing URL
+                    } else if (isExistingUrl) {
+                        // Keep existing image URL
                         productData.images.push(imgData);
                     }
                 }
             }
+            
+            console.log('=== FINAL PRODUCT DATA ===');
+            console.log('Images Array:', productData.images);
+            console.log('Images Count:', productData.images.length);
+            console.log('Full Product Data:', productData);
             
             // Save product
             const url = isEdit 

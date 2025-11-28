@@ -1530,6 +1530,11 @@
                 const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
                 const hasMultipleImages = productImages.length > 1;
                 
+                // Debug logging for images
+                if (product.images && product.images.length > 1) {
+                    console.log(`Product "${product.name}" has ${product.images.length} images:`, product.images);
+                }
+                
                 // Added slide-up animation class
                 const productCard = `
                     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300 slide-up flex flex-col" data-product-id="${product.id}">
