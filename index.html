@@ -2791,6 +2791,30 @@
         }
 
         // --- Initial Setup ---
+        
+        // Handle individual announcement click in banner
+        function handleAnnouncementClick(event) {
+            event.stopPropagation();
+            const element = event.target.closest('.banner-ticker-item');
+            if (!element) return;
+            
+            const linkType = element.dataset.linkType;
+            const linkUrl = element.dataset.linkUrl;
+            const linkProduct = element.dataset.linkProduct;
+            const linkCategory = element.dataset.linkCategory;
+            
+            console.log('Announcement clicked:', { linkType, linkUrl, linkProduct, linkCategory });
+            
+            if (linkType === 'url' && linkUrl) {
+                window.open(linkUrl, '_blank');
+            } else if (linkType === 'product' && linkProduct) {
+                showProductDetails(linkProduct);
+            } else if (linkType === 'category' && linkCategory) {
+                filterByCategory(linkCategory);
+                scrollToElement('products');
+            }
+        }
+        
         // Load Active Banner
         async function loadActiveBanner() {
             try {
@@ -2823,45 +2847,42 @@
                     
                     const textColor = banner.text_color || '#FFFFFF';
                     
-                    // Create ticker content - ALL announcements visible and scrolling
-                    const tickerContent = texts.map((text, index) => `
-                        <span class="banner-ticker-item text-lg font-bold" style="color: ${textColor}">
-                            🔥 ${text}
-                        </span>
-                    `).join('');
+                    // Check if we have the new announcements array with individual links
+                    const announcements = banner.announcements && banner.announcements.length > 0 
+                        ? banner.announcements 
+                        : texts.map(t => ({ text: t, link_type: 'none' }));
+                    
+                    // Create ticker content - EACH announcement is individually clickable
+                    const tickerContent = announcements.map((ann, index) => {
+                        const hasLink = ann.link_type && ann.link_type !== 'none' && 
+                            (ann.link_url || ann.link_product || ann.link_category);
+                        const cursorClass = hasLink ? 'cursor-pointer hover:underline' : '';
+                        const dataAttrs = `data-link-type="${ann.link_type || 'none'}" 
+                            data-link-url="${ann.link_url || ''}" 
+                            data-link-product="${ann.link_product || ''}" 
+                            data-link-category="${ann.link_category || ''}"`;
+                        
+                        return `
+                            <span class="banner-ticker-item text-lg font-bold ${cursorClass}" 
+                                  style="color: ${textColor}" ${dataAttrs}
+                                  onclick="handleAnnouncementClick(event)">
+                                🔥 ${ann.text}
+                            </span>
+                        `;
+                    }).join('');
                     
                     // Set content to both original and clone (for seamless loop)
                     bannerTicker.innerHTML = tickerContent;
                     bannerTickerClone.innerHTML = tickerContent;
                     
                     // Adjust animation speed based on content length
-                    const totalLength = texts.join('').length;
+                    const totalLength = announcements.map(a => a.text).join('').length;
                     const animationDuration = Math.max(15, totalLength * 0.3); // Min 15s, scale with content
                     document.querySelector('.banner-ticker-wrapper').style.animationDuration = `${animationDuration}s`;
                     
-                    // Set click handler based on link type
-                    if (banner.link_type === 'product' && banner.link_id) {
-                        bannerElement.style.cursor = 'pointer';
-                        bannerElement.onclick = () => {
-                            // Show the specific product
-                            showProductDetails(banner.link_id);
-                        };
-                    } else if (banner.link_type === 'category' && banner.link_category) {
-                        bannerElement.style.cursor = 'pointer';
-                        bannerElement.onclick = () => {
-                            // Filter by category and scroll to products
-                            filterByCategory(banner.link_category);
-                            scrollToElement('products');
-                        };
-                    } else if (banner.link_type === 'url' && banner.link_url) {
-                        bannerElement.style.cursor = 'pointer';
-                        bannerElement.onclick = () => {
-                            window.open(banner.link_url, '_blank');
-                        };
-                    } else {
-                        bannerElement.style.cursor = 'default';
-                        bannerElement.onclick = null;
-                    }
+                    // Remove old click handler from banner element (individual items handle their own clicks now)
+                    bannerElement.style.cursor = 'default';
+                    bannerElement.onclick = null;
                     
                     // Show the banner
                     container.classList.remove('hidden');
@@ -3101,7 +3122,7 @@
             const overlay = document.createElement('div');
             overlay.id = 'welcome-popup-overlay';
             overlay.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
-            overlay.style.cssText = 'background: rgba(0,0,0,0.92); animation: fadeIn 0.4s ease-out;';
+            overlay.style.cssText = 'background: rgba(0,0,0,0.6); animation: fadeIn 0.4s ease-out; backdrop-filter: blur(8px);';
             
             // Determine click action based on link type
             const hasLink = popup.link_type && popup.link_type !== 'none' && (popup.link_url || popup.link_target);

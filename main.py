@@ -2864,13 +2864,27 @@ def add_banner():
         else:
             texts = [sanitize_string(data['text'])]
         
+        # Handle announcements array (each with text and individual link)
+        announcements_raw = data.get('announcements', [])
+        announcements = []
+        for ann in announcements_raw:
+            if ann.get('text'):
+                announcements.append({
+                    'text': sanitize_string(ann.get('text', '')),
+                    'link_type': ann.get('link_type', 'none'),
+                    'link_url': ann.get('link_url', ''),
+                    'link_product': ann.get('link_product', ''),
+                    'link_category': ann.get('link_category', '')
+                })
+        
         new_banner = {
             "text": texts[0],  # Main text (backward compatibility)
-            "texts": texts,  # Array of all announcement texts
-            "link_type": data.get('link_type', 'none'),  # 'product', 'category', 'url', 'none'
-            "link_id": data.get('link_id', ''),  # Product ID
-            "link_category": data.get('link_category', ''),  # Category name
-            "link_url": data.get('link_url', ''),  # External URL
+            "texts": texts,  # Array of all announcement texts (backward compat)
+            "announcements": announcements,  # NEW: Array of announcement objects with individual links
+            "link_type": data.get('link_type', 'none'),  # 'product', 'category', 'url', 'none' (backward compat)
+            "link_id": data.get('link_id', ''),  # Product ID (backward compat)
+            "link_category": data.get('link_category', ''),  # Category name (backward compat)
+            "link_url": data.get('link_url', ''),  # External URL (backward compat)
             "background_color": data.get('background_color', '#FF6B6B'),
             "text_color": data.get('text_color', '#FFFFFF'),
             "gradient_enabled": data.get('gradient_enabled', False),
@@ -2920,6 +2934,21 @@ def update_banner(banner_id):
         elif 'text' in data:
             update_fields['text'] = sanitize_string(data['text'])
             update_fields['texts'] = [sanitize_string(data['text'])]
+        
+        # Handle announcements array (each with text and individual link)
+        if 'announcements' in data:
+            announcements_raw = data.get('announcements', [])
+            announcements = []
+            for ann in announcements_raw:
+                if ann.get('text'):
+                    announcements.append({
+                        'text': sanitize_string(ann.get('text', '')),
+                        'link_type': ann.get('link_type', 'none'),
+                        'link_url': ann.get('link_url', ''),
+                        'link_product': ann.get('link_product', ''),
+                        'link_category': ann.get('link_category', '')
+                    })
+            update_fields['announcements'] = announcements
         if 'link_type' in data:
             update_fields['link_type'] = data['link_type']
         if 'link_id' in data:
