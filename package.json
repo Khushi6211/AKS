@@ -1,0 +1,12 @@
+{
+  "name": "arun-karyana-store",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Arun Karyana Store storefront (static frontend). Backend lives in main.py.",
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.js -i assets/css/src/tailwind.css -o assets/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

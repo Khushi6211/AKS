@@ -4,7 +4,7 @@ Production-ready Flask application with security improvements,
 Cloudinary image hosting, SendGrid emails, and Sentry monitoring
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -87,7 +87,9 @@ app = Flask(__name__)
 
 # Configuration from environment variables
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'change-this-jwt-secret-in-production')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or secrets.token_urlsafe(48)
+if not os.environ.get('JWT_SECRET_KEY'):
+    logging.getLogger(__name__).warning("JWT_SECRET_KEY not set; using a random key (users are logged out on every restart).")
 JWT_EXPIRATION_HOURS = 24
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '*')
 
@@ -97,6 +99,7 @@ CORS(app, resources={r"/*": {
     "origins": cors_origins,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "allow_headers": ["Content-Type", "Authorization", "User-ID"],
+    "expose_headers": ["X-Auth-Error"],
     "supports_credentials": True
 }})
 
@@ -104,14 +107,16 @@ CORS(app, resources={r"/*": {
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["5000 per day", "600 per hour"],
     storage_uri="memory://"
 )
 
 # MongoDB Connection Setup
-MONGO_USERNAME = os.environ.get('MONGO_USERNAME', 'arunflaskuser')
-MONGO_PASSWORD = os.environ.get('MONGO_PASSWORD', 'Ash6211@')
-MONGO_CLUSTER_URI = os.environ.get('MONGO_CLUSTER_URI', 'mystorecluster.d17bljx.mongodb.net')
+MONGO_USERNAME = os.environ.get('MONGO_USERNAME', '')
+MONGO_PASSWORD = os.environ.get('MONGO_PASSWORD', '')
+MONGO_CLUSTER_URI = os.environ.get('MONGO_CLUSTER_URI', '')
+if not (MONGO_USERNAME and MONGO_PASSWORD and MONGO_CLUSTER_URI):
+    logger.error("❌ MONGO_USERNAME, MONGO_PASSWORD and MONGO_CLUSTER_URI must be set as environment variables.")
 MONGO_PARAMS = os.environ.get('MONGO_PARAMS', '/?retryWrites=true&w=majority&appName=MyStoreCluster')
 
 encoded_username = urllib.parse.quote_plus(MONGO_USERNAME)
@@ -502,6 +507,11 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
     subject = f"Order Status Update - #{order_data['order_id']}"
     status_message = status_messages.get(new_status, f"Order status updated to: {new_status}")
     
+    cancellation_html = (
+        '<div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">'
+        '<h3 style="color: #856404; margin-top: 0; font-family: Georgia, serif;">Cancellation Reason</h3>'
+        '<p style="color: #856404; margin: 0;">' + str(cancellation_reason) + '</p></div>'
+    ) if cancellation_reason else ''
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -532,7 +542,7 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
                 <p><strong>Current Status:</strong> <span style="color: #9C6F44; font-weight: bold;">{new_status}</span></p>
             </div>
             
-            {'<div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;"><h3 style="color: #856404; margin-top: 0; font-family: \'Playfair Display\', serif;"><i class="fas fa-info-circle"></i> Cancellation Reason</h3><p style="color: #856404; margin: 0;">' + str(cancellation_reason) + '</p></div>' if cancellation_reason else ''}
+            {cancellation_html}
             
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
@@ -621,24 +631,68 @@ def send_password_reset_email(user, reset_url):
     
     return send_email(user['email'], subject, html_content, plain_content)
 
-# Security decorator for admin routes
+# ---------- Authentication (signed JWT bearer tokens) ----------
+def create_auth_token(user):
+    """Signed login token returned by /login and sent back as `Authorization: Bearer <token>`."""
+    now = datetime.datetime.utcnow()
+    payload = {
+        "sub": str(user['_id']),
+        "role": user.get('role', 'customer'),
+        "iat": now,
+        "exp": now + datetime.timedelta(hours=JWT_EXPIRATION_HOURS),
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
+
+def read_auth_token():
+    """Claims of a valid bearer token on the current request, or None."""
+    header = request.headers.get('Authorization', '')
+    if not header.startswith('Bearer '):
+        return None
+    try:
+        return jwt.decode(header[7:].strip(), JWT_SECRET_KEY, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+
+def auth_error(message, status=401):
+    response = jsonify({"success": False, "message": message})
+    response.status_code = status
+    if status == 401:
+        response.headers['X-Auth-Error'] = 'token'
+    return response
+
 def admin_required(f):
+    """Only a logged-in user whose account currently has the admin role."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        user_id = request.headers.get('User-ID')
-        if not user_id:
-            logger.warning("Admin access attempted without User-ID")
-            return jsonify({"success": False, "message": "Authentication required."}), 401
-        
+        claims = read_auth_token()
+        if not claims:
+            logger.warning("Admin access attempted without a valid token")
+            return auth_error("Please log in again.")
         try:
-            user = users_collection.find_one({"_id": ObjectId(user_id)})
-            if not user or user.get('role') != 'admin':
-                logger.warning(f"Unauthorized admin access attempt by user: {user_id}")
-                return jsonify({"success": False, "message": "Admin access required."}), 403
+            user = users_collection.find_one({"_id": ObjectId(claims['sub'])}, {"role": 1})
         except Exception as e:
-            logger.error(f"Error verifying admin access: {e}")
-            return jsonify({"success": False, "message": "Invalid User ID or server error."}), 401
-        
+            logger.error(f"❌ Error during admin authentication: {e}")
+            return auth_error("Please log in again.")
+        if not user or user.get('role') != 'admin':
+            logger.warning(f"Unauthorized admin access attempt by user: {claims.get('sub')}")
+            return auth_error("Admin access required.", 403)
+        g.user_id = claims['sub']
+        return f(*args, **kwargs)
+    return decorated_function
+
+def self_required(f):
+    """Only the logged-in owner of the `user_id` in the URL or JSON body (or an admin)."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        claims = read_auth_token()
+        if not claims:
+            return auth_error("Please log in to continue.")
+        target = kwargs.get('user_id')
+        if target is None:
+            target = (request.get_json(silent=True) or {}).get('user_id')
+        if target is None or (str(target) != claims['sub'] and claims.get('role') != 'admin'):
+            return auth_error("You can only access your own account.", 403)
+        g.user_id = claims['sub']
         return f(*args, **kwargs)
     return decorated_function
 
@@ -796,7 +850,8 @@ def login_user():
                 "message": "Login successful!",
                 "user_id": user_id,
                 "name": user.get('name'),
-                "role": user.get('role', 'customer')
+                "role": user.get('role', 'customer'),
+                "token": create_auth_token(user)
             }), 200
         else:
             logger.warning(f"⚠️ Failed login attempt for: {email_phone}")
@@ -940,6 +995,81 @@ def reset_password():
         return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
 
 # Submit Order
+DELIVERY_FEE = float(os.environ.get('DELIVERY_FEE', 40))
+FREE_DELIVERY_THRESHOLD = float(os.environ.get('FREE_DELIVERY_THRESHOLD', 500))
+MAX_QTY_PER_ITEM = 100
+
+def calculate_offer_discount(offer, subtotal):
+    """Discount an active offer gives on a subtotal (0 if it doesn't apply)."""
+    if not offer or not offer.get('active'):
+        return 0
+    end_date = offer.get('end_date')
+    if isinstance(end_date, datetime.datetime) and end_date < datetime.datetime.utcnow():
+        return 0
+    if subtotal < float(offer.get('min_purchase', 0) or 0):
+        return 0
+    value = float(offer.get('discount_value', 0) or 0)
+    if offer.get('discount_type') == 'percentage':
+        amount = subtotal * value / 100
+        max_discount = offer.get('max_discount')
+        if max_discount:
+            amount = min(amount, float(max_discount))
+    else:
+        amount = value
+    return round(max(0, min(amount, subtotal)), 2)
+
+def price_order(items, discount_source):
+    """Rebuild order lines, discount, delivery fee and total from the database.
+    Returns (priced_order, error_message)."""
+    if products_collection is None:
+        return None, "Database connection not available."
+    lines = []
+    for item in items:
+        if not isinstance(item, dict):
+            return None, "Invalid item in order."
+        try:
+            product = products_collection.find_one({"_id": ObjectId(str(item.get('id')))})
+        except Exception:
+            product = None
+        if not product:
+            return None, f"'{item.get('name', 'An item')}' is no longer available. Please remove it from your bag."
+        try:
+            quantity = int(item.get('quantity', 0))
+        except (TypeError, ValueError):
+            quantity = 0
+        if quantity < 1 or quantity > MAX_QTY_PER_ITEM:
+            return None, f"Invalid quantity for '{product.get('name')}'."
+        stock = product.get('stock')
+        if isinstance(stock, (int, float)) and quantity > stock:
+            if stock <= 0:
+                return None, f"Sorry, '{product.get('name')}' is out of stock."
+            return None, f"Only {int(stock)} of '{product.get('name')}' left in stock."
+        price = float(product.get('price', 0))
+        lines.append({"id": str(product['_id']), "name": product.get('name'), "price": price, "quantity": quantity})
+    if not lines:
+        return None, "Order must contain items."
+
+    subtotal = round(sum(l['price'] * l['quantity'] for l in lines), 2)
+    discount, source = 0, None
+    if isinstance(discount_source, dict) and discount_source.get('offer_id') and offers_collection is not None:
+        try:
+            offer = offers_collection.find_one({"_id": ObjectId(str(discount_source['offer_id']))})
+        except Exception:
+            offer = None
+        discount = calculate_offer_discount(offer, subtotal)
+        if discount > 0:
+            source = {"type": offer.get('offer_type'), "title": offer.get('title'), "code": offer.get('code'), "offer_id": str(offer['_id'])}
+    after_discount = subtotal - discount
+    delivery_fee = 0 if after_discount >= FREE_DELIVERY_THRESHOLD else DELIVERY_FEE
+    return {
+        "items": lines,
+        "subtotal": subtotal,
+        "discount": discount,
+        "discount_source": source,
+        "delivery_fee": delivery_fee,
+        "total": round(after_discount + delivery_fee, 2),
+    }, None
+
 @app.route('/submit-order', methods=['POST'])
 @limiter.limit("10 per minute")
 def submit_order():
@@ -979,16 +1109,23 @@ def submit_order():
         if customer.get('email'):
             sanitized_customer['email'] = customer['email'].strip().lower()
         
+        # Re-price the order from the database so totals can't be tampered with in the browser
+        priced, error = price_order(data['items'], data.get('discount_source'))
+        if error:
+            return jsonify({"success": False, "message": error}), 400
+        
         # Create order
         new_order = {
             "customer_info": sanitized_customer,
-            "items": data['items'],
-            "subtotal": data.get('subtotal'),
-            "delivery_fee": data.get('deliveryFee', 0),
-            "total_amount": data['total'],
+            "items": priced['items'],
+            "subtotal": priced['subtotal'],
+            "discount": priced['discount'],
+            "discount_source": priced['discount_source'],
+            "delivery_fee": priced['delivery_fee'],
+            "total_amount": priced['total'],
             "order_date": datetime.datetime.utcnow(),
             "status": "Pending",
-            "user_id": data.get('user_id')
+            "user_id": (read_auth_token() or {}).get('sub')
         }
         
         inserted_order = orders_collection.insert_one(new_order)
@@ -1001,10 +1138,10 @@ def submit_order():
                 "customer_name": sanitized_customer['name'],
                 "customer_phone": sanitized_customer['phone'],
                 "customer_address": sanitized_customer['address'],
-                "items": data['items'],
-                "subtotal": data.get('subtotal', 0),
-                "delivery_fee": data.get('deliveryFee', 0),
-                "total_amount": data['total'],
+                "items": priced['items'],
+                "subtotal": priced['subtotal'],
+                "delivery_fee": priced['delivery_fee'],
+                "total_amount": priced['total'],
                 "order_date": datetime.datetime.utcnow().strftime('%B %d, %Y at %I:%M %p')
             }
             send_order_confirmation_email(order_email_data, sanitized_customer['email'])
@@ -1023,6 +1160,7 @@ def submit_order():
 
 # Get Cart
 @app.route('/cart/<user_id>', methods=['GET'])
+@self_required
 def get_cart(user_id):
     """Get user's cart"""
     try:
@@ -1040,6 +1178,7 @@ def get_cart(user_id):
 
 # Update Cart
 @app.route('/cart/update', methods=['POST'])
+@self_required
 @limiter.limit("30 per minute")
 def update_cart():
     """Update user's cart"""
@@ -1068,6 +1207,7 @@ def update_cart():
 
 # Get User Orders
 @app.route('/orders/<user_id>', methods=['GET'])
+@self_required
 def get_user_orders(user_id):
     """Get all orders for a user"""
     try:
@@ -1091,6 +1231,7 @@ def get_user_orders(user_id):
 
 # Get User Profile
 @app.route('/profile/<user_id>', methods=['GET'])
+@self_required
 def get_user_profile(user_id):
     """Get user profile"""
     try:
@@ -1125,6 +1266,7 @@ def get_user_profile(user_id):
 
 # Update User Profile
 @app.route('/profile/update', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def update_user_profile():
     """Update user profile"""
@@ -1186,6 +1328,7 @@ def update_user_profile():
 
 # Upload and Update Profile Picture (Old endpoint - kept for compatibility)
 @app.route('/profile/upload-picture', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def upload_profile_picture():
     """Upload profile picture to Cloudinary and update user profile"""
@@ -1234,6 +1377,7 @@ def upload_profile_picture():
 
 # Update Profile Picture (New endpoint - used by frontend)
 @app.route('/profile/update-picture', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def update_profile_picture():
     """Update user profile picture with Cloudinary URL"""
@@ -1272,6 +1416,7 @@ def update_profile_picture():
 
 # Add Address to Profile
 @app.route('/profile/address/add', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def add_address():
     """Add a new address to user profile"""
@@ -1330,6 +1475,7 @@ def add_address():
 
 # Update Address
 @app.route('/profile/address/update', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def update_address():
     """Update an existing address"""
@@ -1380,6 +1526,7 @@ def update_address():
 
 # Delete Address
 @app.route('/profile/address/delete', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def delete_address():
     """Delete an address from user profile"""
@@ -1426,6 +1573,7 @@ def delete_address():
 
 # Set Default Address
 @app.route('/profile/address/set-default', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def set_default_address():
     """Set an address as default"""
@@ -1458,6 +1606,7 @@ def set_default_address():
 
 # Submit Order Review
 @app.route('/order/review/submit', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def submit_order_review():
     """Submit a review for a delivered order"""
@@ -2542,7 +2691,7 @@ def update_order_status():
         status_history_entry = {
             "status": new_status,
             "timestamp": datetime.datetime.utcnow(),
-            "updated_by": request.headers.get('User-ID')
+            "updated_by": g.user_id
         }
         
         result = orders_collection.update_one(

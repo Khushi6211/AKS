@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin.html
+Disallow: /reset-password.html
+Allow: /
+
+Sitemap: https://arun-karyana-store.netlify.app/sitemap.xml
