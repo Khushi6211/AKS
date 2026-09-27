@@ -34,6 +34,18 @@
         clear: clearSession,
     };
 
+    // Shared page chrome: reveal the dashboard link for admins and lift the nav once the page scrolls.
+    document.addEventListener('DOMContentLoaded', function () {
+        var admin = document.getElementById('admin-nav-link');
+        if (admin && get('userRole') === 'admin' && get('loggedInUserId')) admin.classList.remove('hidden');
+        var nav = document.querySelector('.page-nav');
+        if (nav) {
+            var onScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        }
+    });
+
     if (!API || !window.fetch) return;
     var nativeFetch = window.fetch.bind(window);
 

@@ -69,43 +69,23 @@
     window.showToast = toast;
 
     // ======================================================================
-    // Navigation: theme follows the section underneath, tucks away on scroll down
+    // Navigation
     // ======================================================================
     function setupNav() {
         const nav = $('#nav');
-        const sections = $$('[data-theme]');
-        const onScroll = () => {
-            const probe = nav.getBoundingClientRect().bottom + 4;
-            const under = sections.find((s) => { const r = s.getBoundingClientRect(); return r.top <= probe && r.bottom > probe; });
-            nav.classList.toggle('on-paper', !!under && under.dataset.theme === 'paper');
-            const y = window.scrollY;
-            const bannerH = $('#announce').offsetHeight || 0;
-            nav.style.top = `${Math.max(16, bannerH - y + 16)}px`;
-            // hero progress for CSS
-            const hero = $('[data-hero]');
-            if (hero) {
-                const r = hero.getBoundingClientRect();
-                const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)));
-                hero.style.setProperty('--p', p.toFixed(3));
-            }
-        };
+        const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
         window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', onScroll);
         onScroll();
 
-        // mobile menu
         const menu = $('#menu');
-        const btn = $('#menu-btn');
         const toggle = (open) => {
             menu.classList.toggle('open', open);
             menu.setAttribute('aria-hidden', String(!open));
-            btn.setAttribute('aria-expanded', String(open));
-            btn.innerHTML = open ? '<i class="fas fa-xmark"></i>' : '<i class="fas fa-bars-staggered"></i>';
+            $('#menu-btn').setAttribute('aria-expanded', String(open));
             document.body.classList.toggle('locked', open);
-            nav.classList.remove('tucked');
-            nav.classList.toggle('on-paper', false);
         };
-        btn.addEventListener('click', () => toggle(!menu.classList.contains('open')));
+        $('#menu-btn').addEventListener('click', () => toggle(true));
+        $('#menu-close').addEventListener('click', () => toggle(false));
         $$('[data-close-menu]').forEach((a) => a.addEventListener('click', () => toggle(false)));
     }
 
@@ -117,19 +97,19 @@
         const menuAccount = $('#menu-account');
         if (S.userId) {
             const name = ls.get('userName') || '';
-            $('#account-name').textContent = name ? `Namaste, ${name.split(' ')[0]}` : 'Namaste';
+            $('#account-name').textContent = name ? `Namaste, ${name.split(' ')[0]}!` : 'Namaste!';
             $('#admin-link').classList.toggle('hidden', ls.get('userRole') !== 'admin');
             link.setAttribute('href', 'profile.html');
             link.setAttribute('aria-label', 'Your account');
             link.innerHTML = '<i class="fas fa-user"></i>';
-            menuAccount.innerHTML = '<span>05</span>My account';
-            menuAccount.setAttribute('href', 'profile.html');
+            menuAccount.innerHTML = 'My account <span>Orders &amp; profile</span>';
+            menuAccount.setAttribute('href', ls.get('userRole') === 'admin' ? 'admin.html' : 'profile.html');
         } else {
             link.setAttribute('href', 'login.html');
             link.setAttribute('aria-label', 'Sign in');
             link.innerHTML = '<i class="far fa-user"></i>';
             $('#account-pop').classList.remove('open');
-            menuAccount.innerHTML = '<span>05</span>Sign in';
+            menuAccount.innerHTML = 'Sign in <span>Orders &amp; profile</span>';
             menuAccount.setAttribute('href', 'login.html');
         }
     }
@@ -146,12 +126,13 @@
             Object.assign(S, { userId: null, profile: null, addresses: [], cart: [] });
             renderAuth();
             cartChanged({ persist: false });
-            toast('Logged out. See you soon.');
+            toast('Logged out. See you soon!');
         });
     }
 
     // ======================================================================
-    // Announcement banner (Admin → Banners)
+    // Announcement bar (Admin → Banners): one message at a time, gently rotating.
+    // The text and links come from the dashboard; colours follow the site.
     // ======================================================================
     async function loadBanner() {
         try {
@@ -163,28 +144,42 @@
                 : (Array.isArray(b.texts) && b.texts.length ? b.texts : [b.text]).map((t) => ({ text: t, link_type: 'none' })))
                 .filter((a) => a && String(a.text || '').trim());
             if (!items.length) return;
-            const color = b.text_color || '#f4ecdf';
-            const bg = b.gradient_enabled && b.gradient_start && b.gradient_end ? `linear-gradient(90deg, ${b.gradient_start}, ${b.gradient_end})` : (b.background_color || '#c4531a');
-            const style = [`color:${color}`, b.font_size ? `font-size:${b.font_size}` : '', b.font_weight ? `font-weight:${b.font_weight}` : '', b.font_style ? `font-style:${b.font_style}` : ''].filter(Boolean).join(';');
-            const one = (a) => {
-                const linked = a.link_type && a.link_type !== 'none' && (a.link_url || a.link_product || a.link_category);
-                return `<span class="ticker-item${linked ? ' linked' : ''}" style="${esc(style)}" data-link-type="${esc(a.link_type || 'none')}" data-link-url="${esc(a.link_url || '')}" data-link-product="${esc(a.link_product || '')}" data-link-category="${esc(a.link_category || '')}" ${linked ? 'role="link" tabindex="0"' : ''}>${esc(a.text)}</span><span class="ticker-item" style="color:${esc(color)};opacity:.5">✦</span>`;
-            };
-            const run = items.map(one).join('');
+            let dismissed = false;
+            try { dismissed = sessionStorage.getItem('announce-hidden') === '1'; } catch { /* ignore */ }
+            if (dismissed) return;
             const host = $('#announce');
-            if (b.display_mode === 'static') {
-                host.innerHTML = `<div style="background:${esc(bg)};padding:9px 16px;text-align:center">${items.map(one).join('')}</div>`;
-            } else {
-                const dur = Math.max(22, items.map((a) => a.text).join('').length * 0.32);
-                host.innerHTML = `<div class="ticker" style="background:${esc(bg)};padding:9px 0"><div class="ticker-track" style="animation-duration:${dur}s">${run}${run}</div><div class="ticker-track" aria-hidden="true" style="animation-duration:${dur}s">${run}${run}</div></div>`;
-            }
+            const msg = (a, i) => {
+                const linked = a.link_type && a.link_type !== 'none' && (a.link_url || a.link_product || a.link_category);
+                return `<div class="announce-msg${i === 0 ? ' on' : ''}${linked ? ' linked' : ''}" data-link-type="${esc(a.link_type || 'none')}" data-link-url="${esc(a.link_url || '')}" data-link-product="${esc(a.link_product || '')}" data-link-category="${esc(a.link_category || '')}" ${linked ? 'role="link" tabindex="0"' : ''}><span class="spark" aria-hidden="true"><i class="fas fa-seedling"></i></span><span class="txt">${esc(String(a.text).trim())}</span>${linked ? '<i class="fas fa-arrow-right go" aria-hidden="true"></i>' : ''}</div>`;
+            };
+            host.innerHTML = `<div class="announce-inner">
+                ${items.length > 1 ? '<button type="button" data-ann="-1" aria-label="Previous announcement"><i class="fas fa-chevron-left"></i></button>' : '<span style="width:30px"></span>'}
+                <div class="announce-msgs">${items.map(msg).join('')}</div>
+                ${items.length > 1 ? '<button type="button" data-ann="1" aria-label="Next announcement"><i class="fas fa-chevron-right"></i></button>' : ''}
+                <button type="button" data-ann-close aria-label="Hide announcements"><i class="fas fa-xmark"></i></button>
+            </div>`;
             host.classList.remove('hidden');
-            const sync = () => { document.documentElement.style.setProperty('--banner-h', `${host.offsetHeight}px`); window.dispatchEvent(new Event('scroll')); };
-            sync();
-            window.addEventListener('resize', debounce(sync, 150));
-            host.style.position = 'relative';
-            host.addEventListener('click', (e) => followLink(e.target.closest('.ticker-item')));
-            host.addEventListener('keydown', (e) => { if (e.key === 'Enter') followLink(e.target.closest('.ticker-item')); });
+            const msgs = $$('.announce-msg', host);
+            let i = 0; let timer;
+            const show = (n) => {
+                const prev = msgs[i];
+                i = (n + msgs.length) % msgs.length;
+                if (prev === msgs[i]) return;
+                prev.classList.remove('on'); prev.classList.add('out');
+                setTimeout(() => prev.classList.remove('out'), 600);
+                msgs[i].classList.add('on');
+            };
+            const auto = () => { clearInterval(timer); if (msgs.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) timer = setInterval(() => show(i + 1), 4500); };
+            auto();
+            host.addEventListener('mouseenter', () => clearInterval(timer));
+            host.addEventListener('mouseleave', auto);
+            host.addEventListener('click', (e) => {
+                const step = e.target.closest('[data-ann]');
+                if (step) { show(i + Number(step.dataset.ann)); auto(); return; }
+                if (e.target.closest('[data-ann-close]')) { host.classList.add('hidden'); clearInterval(timer); try { sessionStorage.setItem('announce-hidden', '1'); } catch { /* ignore */ } return; }
+                followLink(e.target.closest('.announce-msg.linked'));
+            });
+            host.addEventListener('keydown', (e) => { if (e.key === 'Enter') followLink(e.target.closest('.announce-msg.linked')); });
         } catch (err) {
             console.warn('Banner unavailable', err);
         }
@@ -243,7 +238,7 @@
         skeletons();
         const started = Date.now();
         const slowTimer = setTimeout(() => {
-            $('#result-line').textContent = 'Opening the shop — the server takes up to a minute to wake after a quiet spell…';
+            $('#result-line').textContent = 'Opening the shutters — after a quiet spell the shop takes up to a minute to wake up…';
         }, 4000);
         try {
             const { ok, status, data } = await api('/products', {}, 70000);
@@ -257,9 +252,10 @@
             const reason = err.name === 'AbortError' ? 'The server did not answer in time.' : (err.message === 'Failed to fetch' ? 'Could not reach the server.' : String(err.message || err));
             console.error('Products failed:', reason, `(${Math.round((Date.now() - started) / 1000)}s)`);
             $('#grid').innerHTML = `<div class="state">
-                <p class="h3">The shelves are being stocked.</p>
+                <div class="ic"><i class="fas fa-mug-hot"></i></div>
+                <p class="h3">Just opening the shutters…</p>
                 <p>We couldn't reach the store just now. ${productAttempts < 3 ? 'Trying again automatically…' : 'Please try again in a minute, or call us on +91 94168 91710.'}</p>
-                <button class="btn btn-ink" onclick="location.reload()">Try again <span class="arrow"><i class="fas fa-rotate-right"></i></span></button>
+                <button class="btn" onclick="location.reload()">Try again <span class="arrow"><i class="fas fa-rotate-right"></i></span></button>
                 <code>${esc(reason)}</code>
             </div>`;
             $('#result-line').textContent = '';
@@ -271,22 +267,53 @@
     }
 
     function skeletons() {
-        $('#grid').innerHTML = Array.from({ length: 6 }, () => `<div aria-hidden="true"><div class="skel" style="aspect-ratio:4/5"></div><div class="skel" style="height:12px;width:40%;margin-top:18px;border-radius:6px"></div><div class="skel" style="height:20px;width:80%;margin-top:10px;border-radius:6px"></div></div>`).join('');
+        $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skel" aria-hidden="true" style="aspect-ratio:0.72"></div>').join('');
     }
 
+    // category icons and pastel tints for the aisle tiles
+    const AISLE_STYLE = [
+        [/atta|flour|grain|wheat|rice|chawal|dal|pulse|grocer|staple|kitchen/, 'fa-wheat-awn', 't-butter'],
+        [/oil|ghee/, 'fa-bottle-droplet', 't-butter'],
+        [/spice|masala|salt/, 'fa-pepper-hot', 't-blush'],
+        [/tea|coffee|beverage|drink|juice/, 'fa-mug-hot', 't-lilac'],
+        [/snack|biscuit|namkeen|chips|cookie/, 'fa-cookie-bite', 't-butter'],
+        [/dairy|milk|paneer|curd|butter|cheese/, 'fa-cow', 't-sky'],
+        [/detergent|wash|clean|dish|household|home/, 'fa-spray-can-sparkles', 't-sky'],
+        [/soap|bath|shampoo/, 'fa-soap', 't-leaf'],
+        [/personal|care|beauty|cosmetic|hair|skin|tooth/, 'fa-spa', 't-blush'],
+        [/baby|kid/, 'fa-baby', 't-blush'],
+        [/fruit|veg|fresh/, 'fa-apple-whole', 't-leaf'],
+        [/dry|nut|seed/, 'fa-seedling', 't-leaf'],
+        [/sweet|chocolate|candy|sugar/, 'fa-candy-cane', 't-blush'],
+        [/food|noodle|instant|ready/, 'fa-bowl-food', 't-leaf'],
+        [/pooja|puja|agarbatti/, 'fa-fire-flame-simple', 't-butter'],
+    ];
+    const tints = ['t-leaf', 't-butter', 't-blush', 't-sky', 't-lilac'];
+    function aisleStyle(label, i) {
+        const n = label.toLowerCase();
+        const hit = AISLE_STYLE.find(([re]) => re.test(n));
+        return { icon: hit ? hit[1] : 'fa-basket-shopping', tint: hit ? hit[2] : tints[i % tints.length] };
+    }
     function renderAisles() {
         const counts = new Map();
         S.products.forEach((p) => { const k = catKey(p); if (k) counts.set(k, (counts.get(k) || 0) + 1); });
         const keys = Array.from(counts.keys()).sort((a, b) => counts.get(b) - counts.get(a) || catLabel(a).localeCompare(catLabel(b)));
-        const row = (key, label, n, i) => `<li><button role="tab" data-cat="${esc(key)}" class="${S.cat === key ? 'on' : ''}" aria-selected="${S.cat === key}"><span class="i">${String(i).padStart(2, '0')}</span><span class="n">${esc(label)}</span><span class="c">${n}</span></button></li>`;
-        $('#aisles').innerHTML = row('all', 'Everything', S.products.length, 0) + keys.map((k, i) => row(k, catLabel(k), counts.get(k), i + 1)).join('');
+        const chip = (key, label, n) => `<button class="chip${S.cat === key ? ' on' : ''}" role="tab" data-cat="${esc(key)}" aria-selected="${S.cat === key}">${esc(label)} <span class="c">${n}</span></button>`;
+        $('#aisles').innerHTML = chip('all', 'Everything', S.products.length) + keys.map((k) => chip(k, catLabel(k), counts.get(k))).join('');
+        $('#aisle-tiles').innerHTML = keys.map((k, i) => {
+            const label = catLabel(k);
+            const { icon, tint } = aisleStyle(label, i);
+            return `<button class="aisle-tile ${tint} rv" data-cat="${esc(k)}" data-scroll="1"><span class="ic"><i class="fas ${icon}"></i></span><span class="go"><i class="fas fa-arrow-right"></i></span><span><span class="n">${esc(label)}</span><br><span class="c">${counts.get(k)} item${counts.get(k) === 1 ? '' : 's'}</span></span></button>`;
+        }).join('');
+        $('#aisles-sec').classList.toggle('hidden', !keys.length);
+        observeReveal($('#aisle-tiles'));
     }
 
     function selectCat(nameOrKey, scroll = false) {
         const k = slug(nameOrKey);
         const match = S.categories.find((c) => slug(c.name) === k || slug(c.display_name) === k);
         S.cat = !k || k === 'all' || k === 'all-items' ? 'all' : (match ? slug(match.name) : k);
-        $$('#aisles button').forEach((b) => { const on = b.dataset.cat === S.cat; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+        $$('#aisles .chip').forEach((b) => { const on = b.dataset.cat === S.cat; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); if (on) b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
         renderGrid();
         if (scroll) document.getElementById('shop').scrollIntoView({ behavior: 'smooth' });
     }
@@ -317,10 +344,9 @@
     function card(p, i) {
         return `<article class="card" style="animation-delay:${Math.min(i, 10) * 60}ms">
             <div class="card-media" data-open="${esc(p.id)}" role="button" tabindex="0" aria-label="View ${esc(p.name)}">
-                <span class="shadow"></span>
                 <img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${PLACEHOLDER}'">
                 ${tag(p)}
-                <span class="look">Quick look</span>
+                <span class="look" aria-hidden="true"><i class="fas fa-expand"></i></span>
             </div>
             <div class="card-body">
                 <span class="card-cat">${esc(catLabel(catKey(p)))}</span>
@@ -335,7 +361,7 @@
         $('#result-line').innerHTML = filtered
             ? `${list.length} item${list.length === 1 ? '' : 's'}${S.cat !== 'all' ? ` in ${esc(catLabel(S.cat))}` : ''}${S.query ? ` matching “${esc(S.query)}”` : ''}<button type="button" id="clear-filters">Clear</button>`
             : `${S.products.length} products on the shelves`;
-        $('#grid').innerHTML = list.length ? list.map(card).join('') : `<div class="state"><p class="h3">Nothing on this shelf — yet.</p><p>Try another aisle or search. If you need something specific, call us and we'll add it to your order.</p></div>`;
+        $('#grid').innerHTML = list.length ? list.map(card).join('') : `<div class="state"><div class="ic"><i class="fas fa-basket-shopping"></i></div><p class="h3">Nothing on this shelf — yet.</p><p>Try another aisle or search. If you need something specific, call us and we'll add it to your order.</p></div>`;
     }
     function refreshControls() {
         $$('[data-ctl]').forEach((el) => {
@@ -556,11 +582,11 @@
 
     function openCart() {
         $('#drawer').classList.add('open'); $('#drawer').setAttribute('aria-hidden', 'false');
-        $('#scrim').classList.add('open'); document.body.classList.add('locked');
+        $('#scrim').classList.add('open'); document.body.classList.add('locked', 'bag-open');
         setTimeout(() => $('#close-cart').focus(), 60);
     }
     function closeCart() {
-        $('#drawer').classList.remove('open'); $('#drawer').setAttribute('aria-hidden', 'true');
+        $('#drawer').classList.remove('open'); $('#drawer').setAttribute('aria-hidden', 'true'); document.body.classList.remove('bag-open');
         if (!$('.modal.open')) { $('#scrim').classList.remove('open'); document.body.classList.remove('locked'); }
     }
     function setStep(n) {
@@ -635,24 +661,25 @@
     // Offers
     // ======================================================================
     async function loadOffers() {
-        const box = $('#offers');
+        const box = $('#offers-list');
         try { const { data } = await api('/offers'); S.offers = data.success && Array.isArray(data.offers) ? data.offers : []; } catch { S.offers = []; }
         if (!S.offers.length) {
-            box.innerHTML = '<div class="ed-empty" style="grid-column:1/-1"><p class="h3">New offers are on their way.</p><p>Check back soon — or ask at the counter.</p></div>';
+            box.innerHTML = '<div class="ed-empty"><p class="h3" style="color:var(--text)">New offers are on their way</p><p style="margin:8px 0 0">Check back soon — or ask us at the counter.</p></div>';
             return;
         }
         box.classList.toggle('three', S.offers.length >= 3);
         const date = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        const num = (v) => { const n = Number(v) || 0; return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10); };
         box.innerHTML = S.offers.map((o, i) => {
             const pct = o.discount_type === 'percentage';
-            return `<article class="edition rv">
-                <div class="ed-no"><span>Offer Nº ${String(i + 1).padStart(2, '0')}</span><span>${o.end_date ? `Till ${esc(date(o.end_date))}` : 'Limited time'}</span></div>
-                <div class="ed-val">${pct ? `${esc(o.discount_value)}%` : money(o.discount_value)}<small>off</small></div>
+            return `<article class="coupon c${i % 4} rv">
+                <div class="top"><span><i class="fas fa-tag"></i>&nbsp; ${o.offer_type === 'promo_code' ? 'Promo code' : 'Automatic offer'}</span><span>${o.end_date ? `Till ${esc(date(o.end_date))}` : 'Limited time'}</span></div>
+                <div class="val">${pct ? `${esc(num(o.discount_value))}%` : money(o.discount_value)}<small>off</small></div>
                 <h3>${esc(o.title)}</h3>
                 <p>${esc(o.description)}</p>
-                <div class="ed-foot">
+                <div class="foot">
                     ${o.offer_type === 'promo_code' && o.code ? `<button class="code" data-copy="${esc(o.code)}" title="Copy code">${esc(o.code)} <i class="far fa-copy"></i></button>` : '<span class="auto-tag"><i class="fas fa-wand-magic-sparkles"></i> Applied automatically</span>'}
-                    <button class="link-u" data-offer="${i}" style="color:var(--cream)">Details</button>
+                    <button class="link-u" data-offer="${i}">Details</button>
                 </div>
             </article>`;
         }).join('');
@@ -667,11 +694,11 @@
             o.max_discount ? ['Maximum saving', money(o.max_discount)] : null,
             o.end_date ? ['Valid until', long(o.end_date)] : null,
         ].filter(Boolean);
-        $('#offer-body').innerHTML = `<p class="chapter-no" style="color:var(--saffron)">${o.offer_type === 'promo_code' ? 'PROMO CODE' : 'AUTOMATIC OFFER'}</p>
+        $('#offer-body').innerHTML = `<span class="label">${o.offer_type === 'promo_code' ? 'Promo code' : 'Automatic offer'}</span>
             <h2 class="h2" id="offer-title" style="margin-top:12px;font-size:clamp(34px,4vw,52px);padding-right:40px">${esc(o.title)}</h2>
             <p style="color:var(--muted);margin:16px 0 0">${esc(o.description)}</p>
             <div class="pdp-meta" style="margin-top:24px">${rows.map(([a, b]) => `<div><span>${a}</span><span>${b}</span></div>`).join('')}</div>
-            <div class="pdp-actions" style="margin-top:26px">${o.offer_type === 'promo_code' && o.code ? `<button class="btn btn-ink" data-copy="${esc(o.code)}">Copy ${esc(o.code)} <span class="arrow"><i class="far fa-copy"></i></span></button>` : ''}<button class="link-u" data-close-modal data-go-shop>Shop now</button></div>`;
+            <div class="pdp-actions" style="margin-top:26px">${o.offer_type === 'promo_code' && o.code ? `<button class="btn" data-copy="${esc(o.code)}">Copy ${esc(o.code)} <span class="arrow"><i class="far fa-copy"></i></span></button>` : ''}<button class="link-u" data-close-modal data-go-shop>Shop now</button></div>`;
         openModal('#offer-modal');
     }
     async function copyCode(code) {
@@ -682,32 +709,22 @@
     // ======================================================================
     // Reviews
     // ======================================================================
-    let voiceIdx = 0; let voiceTimer = null;
     async function loadReviews() {
         try { const { data } = await api('/reviews/featured'); S.reviews = data.success && Array.isArray(data.reviews) ? data.reviews.filter((r) => r.review_text) : []; } catch { S.reviews = []; }
         if (!S.reviews.length) { $('#voices').classList.add('hidden'); return; }
-        $('#voice-stage').innerHTML = S.reviews.map((r, i) => {
+        const tintsR = ['t-leaf', 't-butter', 't-blush', 't-sky', 't-lilac'];
+        $('#reviews').innerHTML = S.reviews.slice(0, 6).map((r, i) => {
             const nm = r.user_name || 'A neighbour';
             const pic = safeUrl(r.user_profile_picture);
             const rating = Math.max(0, Math.min(5, Number(r.rating) || 0));
             const when = r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '';
-            return `<figure class="voice${i === 0 ? ' on' : ''}" style="margin:0">
-                <div class="stars" aria-label="${rating} out of 5">${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}</div>
-                <blockquote>${esc(r.review_text)}</blockquote>
-                <figcaption class="who">${pic ? `<img class="av" src="${esc(pic)}" alt="">` : `<span class="av">${esc(nm.charAt(0).toUpperCase())}</span>`}<div><strong>${esc(nm)}</strong><span>Customer${when ? ` · ${esc(when)}` : ''}</span></div></figcaption>
+            return `<figure class="review rv" style="margin:0">
+                <div class="stars" aria-label="${rating} out of 5">${'★'.repeat(rating)}<span style="color:var(--bg-3)">${'★'.repeat(5 - rating)}</span></div>
+                <blockquote>“${esc(r.review_text)}”</blockquote>
+                <figcaption class="who">${pic ? `<img class="av" src="${esc(pic)}" alt="">` : `<span class="av ${tintsR[i % tintsR.length]}">${esc(nm.charAt(0).toUpperCase())}</span>`}<div><strong>${esc(nm)}</strong><span>${when ? esc(when) : 'Customer'}</span></div></figcaption>
             </figure>`;
         }).join('');
-        $('#voice-nav').classList.toggle('hidden', S.reviews.length < 2);
-        showVoice(0);
-    }
-    function showVoice(i) {
-        const n = S.reviews.length;
-        voiceIdx = (i + n) % n;
-        $$('.voice').forEach((v, k) => v.classList.toggle('on', k === voiceIdx));
-        $('#voice-count').textContent = `${String(voiceIdx + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`;
-        $('#voice-bar').style.width = `${((voiceIdx + 1) / n) * 100}%`;
-        clearTimeout(voiceTimer);
-        if (n > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) voiceTimer = setTimeout(() => showVoice(voiceIdx + 1), 7000);
+        observeReveal($('#reviews'));
     }
 
     // ======================================================================
@@ -828,11 +845,10 @@
         const hours = hoursFor(day);
         const fmt = (m) => { const h = Math.floor(m / 60); return `${((h + 11) % 12) + 1}${m % 60 ? ':' + String(m % 60).padStart(2, '0') : ''} ${h >= 12 ? 'PM' : 'AM'}`; };
         const open = mins >= hours[0] && mins < hours[1];
-        const el = $('#open-status');
-        el.classList.toggle('closed', !open);
-        $('.t', el).textContent = open
+        const text = open
             ? `Open now · until ${fmt(hours[1])}`
             : mins < hours[0] ? `Opens today at ${fmt(hours[0])} · order online anytime` : `Opens tomorrow at ${fmt(hoursFor((day + 1) % 7)[0])} · order online anytime`;
+        $$('.open-status').forEach((el) => { el.classList.toggle('closed', !open); $('.t', el).textContent = text; });
         $$('#hours [data-days]').forEach((row) => row.classList.toggle('today', row.dataset.days.split(',').includes(String(day))));
     }
 
@@ -854,7 +870,7 @@
             const q = t.closest('[data-qty]'); if (q) { changeQty(q.dataset.qty, Number(q.dataset.d)); return; }
             const rm = t.closest('[data-remove]'); if (rm) { const l = S.cart.find((i) => i.id === rm.dataset.remove); if (l) changeQty(l.id, -l.quantity); return; }
             const op = t.closest('[data-open]'); if (op) { openProduct(op.dataset.open); return; }
-            const cat = t.closest('[data-cat]'); if (cat) { selectCat(cat.dataset.cat); return; }
+            const cat = t.closest('[data-cat]'); if (cat) { selectCat(cat.dataset.cat, !!cat.dataset.scroll); return; }
             const cp = t.closest('[data-copy]'); if (cp) { copyCode(cp.dataset.copy); return; }
             const of = t.closest('[data-offer]'); if (of) { showOffer(Number(of.dataset.offer)); return; }
             const th = t.closest('[data-thumb]'); if (th) { showImg(Number(th.dataset.thumb)); return; }
@@ -887,10 +903,8 @@
         });
         $('#sort-select').addEventListener('change', (e) => { S.sort = e.target.value; renderGrid(); });
         $('#in-stock-only').addEventListener('change', (e) => { S.inStock = e.target.checked; renderGrid(); });
-        $('#voice-prev').addEventListener('click', () => showVoice(voiceIdx - 1));
-        $('#voice-next').addEventListener('click', () => showVoice(voiceIdx + 1));
+        $('#open-search-wide').addEventListener('click', () => $('#open-search').click());
         $$('[data-year]').forEach((el) => { el.textContent = new Date().getFullYear(); });
-        $('#stat-years').textContent = String(new Date().getFullYear() - 1977);
     }
 
     function afterCatalogue() {

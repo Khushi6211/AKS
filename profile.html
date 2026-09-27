@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Arun Karyana Store</title>
-    <meta name="theme-color" content="#efe7d9">
+    <meta name="theme-color" content="#fff8ee">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=7fc767e709">
-    <link rel="stylesheet" href="assets/css/app.css?v=6741341694">
-    <link rel="stylesheet" href="assets/css/pages.css?v=76d8e2c8e6">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=90f1aedf82">
+    <link rel="stylesheet" href="assets/css/app.css?v=c4d7c9ed04">
+    <link rel="stylesheet" href="assets/css/pages.css?v=fbfdcfdbf7">
     <style>
         body {
             font-family: 'Inter', -apple-system, sans-serif;
@@ -40,7 +40,7 @@
              left: -10px;
              right: -10px;
              bottom: -10px;
-             border: 1px dashed #b45f24; /* Using original primary color */
+             border: 1px dashed #2f6b4f; /* Using original primary color */
              border-radius: 50%;
              z-index: -2;
              opacity: 0.4;
@@ -56,7 +56,7 @@
             left: 0;
             width: 0;
             height: 2px;
-            background-color: #b45f24; /* Using original primary color */
+            background-color: #2f6b4f; /* Using original primary color */
             transition: width 0.3s ease;
         }
         .nav-link:hover::after {
@@ -179,7 +179,7 @@
          .profile-form input[type="email"]:focus,
          .profile-form input[type="tel"]:focus {
              outline: none;
-             border-color: #b45f24; /* Primary color on focus */
+             border-color: #2f6b4f; /* Primary color on focus */
              box-shadow: 0 0 0 0.1rem rgba(156, 111, 68, 0.25); /* Subtle shadow on focus */
          }
 
@@ -224,7 +224,7 @@
 
         .address-card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-color: #b45f24;
+            border-color: #2f6b4f;
         }
 
         .address-card.default {
@@ -293,14 +293,14 @@
         }
 
         .address-card .btn-default {
-            background-color: #9333ea;
+            background-color: #2f6b4f;
             color: white;
             font-weight: 500;
             transition: all 0.3s ease;
         }
 
         .address-card .btn-default:hover {
-            background-color: #7e22ce;
+            background-color: #24563f;
         }
         
         .address-card .btn-default-active {
@@ -326,22 +326,22 @@
 
     </style>
     <script src="config.js?v=7474b03af7"></script>
-    <script src="assets/js/auth.js?v=e9479268c9"></script>
+    <script src="assets/js/auth.js?v=829609dc60"></script>
 </head>
 <body class="theme-glass">
 
-    <header class="nav on-paper page-nav">
-        <a href="index.html" class="wordmark" aria-label="Arun Karyana Store — home"><b>Arun Karyana</b><small>EST. 1977</small></a>
+    <header class="nav page-nav" id="nav">
+        <a href="index.html" class="wordmark" aria-label="Arun Karyana Store — home"><span><b>Arun Karyana</b><small>Barara · since 1977</small></span></a>
         <nav class="nav-links" aria-label="Primary">
             <a href="index.html#shop">Shop</a>
-            <a href="index.html#editions">Offers</a>
+            <a href="index.html#offers">Offers</a>
             <a href="order-history.html" id="order-history-nav-link" class="hidden">My orders</a>
             <a href="profile.html" id="profile-nav-link" class="hidden">Profile</a>
-            <a href="admin.html" id="admin-nav-link" class="hidden">Admin</a>
+            <a href="admin.html" id="admin-nav-link" class="hidden">Dashboard</a>
         </nav>
         <div class="nav-actions">
-            <a href="login.html" id="auth-link" class="btn btn-ink btn-sm no-arrow">Login</a>
-            <button class="icon-btn" id="cart-btn" aria-label="Open bag"><i class="fas fa-bag-shopping"></i><span id="cart-count" class="bag-count">0</span></button>
+            <a href="login.html" id="auth-link" class="btn btn-line btn-sm no-arrow">Login</a>
+            <button class="bag-btn" id="cart-btn" aria-label="Open bag"><i class="fas fa-basket-shopping"></i><span class="t">Bag</span><span id="cart-count" class="bag-count">0</span></button>
         </div>
     </header>
 
@@ -362,7 +362,7 @@
                     <div class="flex flex-col items-center">
                         <div class="relative">
                             <img id="display-profile-pic" 
-                                 src="https://via.placeholder.com/150/9C6F44/FFFFFF?text=Upload" 
+                                 src="assets/img/avatar.svg" onerror="this.onerror=null;this.src='assets/img/avatar.svg'" 
                                  alt="Profile Picture" 
                                  class="w-32 h-32 rounded-full object-cover border-4 border-secondary shadow-lg">
                             <button onclick="triggerProfilePicUpload()" 
@@ -488,7 +488,7 @@
                         <a href="mailto:contact@arunkaryanastore.com" aria-label="Email"><i class="far fa-envelope"></i></a>
                     </div>
                 </div>
-                <div><h4>Shop</h4><ul><li><a href="index.html#shop">All products</a></li><li><a href="index.html#editions">Offers</a></li><li><a href="order-history.html" id="order-history-footer-link" class="hidden">My orders</a></li><li><a href="profile.html" id="profile-footer-link" class="hidden">My profile</a></li></ul></div>
+                <div><h4>Shop</h4><ul><li><a href="index.html#shop">All products</a></li><li><a href="index.html#offers">Offers</a></li><li><a href="order-history.html" id="order-history-footer-link" class="hidden">My orders</a></li><li><a href="profile.html" id="profile-footer-link" class="hidden">My profile</a></li></ul></div>
                 <div><h4>Help</h4><ul><li><a href="faq.html">FAQs</a></li><li><a href="shipping-policy.html">Shipping</a></li><li><a href="return-policy.html">Returns</a></li><li><a href="privacy-policy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li></ul></div>
                 <div><h4>Visit</h4><ul><li><a href="index.html#visit">Railway Road, Barara<br>Ambala, Haryana 133201</a></li><li><a href="tel:+919416891710">+91 94168 91710</a></li></ul></div>
             </div>

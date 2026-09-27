@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login / Register - Arun Karyana Store</title>
-    <meta name="theme-color" content="#efe7d9">
+    <meta name="theme-color" content="#fff8ee">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=7fc767e709">
-    <link rel="stylesheet" href="assets/css/app.css?v=6741341694">
-    <link rel="stylesheet" href="assets/css/pages.css?v=76d8e2c8e6">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=90f1aedf82">
+    <link rel="stylesheet" href="assets/css/app.css?v=c4d7c9ed04">
+    <link rel="stylesheet" href="assets/css/pages.css?v=fbfdcfdbf7">
     <style>
         body {
             font-family: 'Inter', -apple-system, sans-serif;
@@ -40,7 +40,7 @@
              left: -10px;
              right: -10px;
              bottom: -10px;
-             border: 1px dashed #b45f24; /* Using original primary color */
+             border: 1px dashed #2f6b4f; /* Using original primary color */
              border-radius: 50%;
              z-index: -2;
              opacity: 0.4;
@@ -56,7 +56,7 @@
             left: 0;
             width: 0;
             height: 2px;
-            background-color: #b45f24; /* Using original primary color */
+            background-color: #2f6b4f; /* Using original primary color */
             transition: width 0.3s ease;
         }
         .nav-link:hover::after {
@@ -170,7 +170,7 @@
          .form-group input[type="password"]:focus,
          .form-group input[type="tel"]:focus {
              outline: none;
-             border-color: #b45f24; /* Primary color on focus */
+             border-color: #2f6b4f; /* Primary color on focus */
              box-shadow: 0 0 0 0.1rem rgba(156, 111, 68, 0.25); /* Subtle shadow on focus */
          }
 
@@ -202,15 +202,15 @@
          }
 
          #show-login-btn.active-tab, #show-register-btn.active-tab {
-             background-color: #b45f24; /* Primary color for active */
+             background-color: #2f6b4f;
              color: white;
-             border-color: #b45f24;
+             border-color: #2f6b4f;
          }
 
          #show-login-btn.inactive-tab, #show-register-btn.inactive-tab {
-             background-color: #f0f0f0;
-             color: #555;
-             border-color: #cccccc;
+             background-color: #f8eddc;
+             color: #7a6a5a;
+             border-color: transparent;
          }
 
          #show-login-btn.active-tab {
@@ -230,28 +230,29 @@
 
     </style>
     <script src="config.js?v=7474b03af7"></script>
-    <script src="assets/js/auth.js?v=e9479268c9"></script>
+    <script src="assets/js/auth.js?v=829609dc60"></script>
 </head>
 <body class="theme-glass">
 
-    <header class="nav on-paper page-nav">
-        <a href="index.html" class="wordmark" aria-label="Arun Karyana Store — home"><b>Arun Karyana</b><small>EST. 1977</small></a>
+    <header class="nav page-nav" id="nav">
+        <a href="index.html" class="wordmark" aria-label="Arun Karyana Store — home"><span><b>Arun Karyana</b><small>Barara · since 1977</small></span></a>
         <nav class="nav-links" aria-label="Primary">
             <a href="index.html#shop">Shop</a>
-            <a href="index.html#editions">Offers</a>
+            <a href="index.html#offers">Offers</a>
             <a href="order-history.html" id="order-history-nav-link" class="hidden">My orders</a>
             <a href="profile.html" id="profile-nav-link" class="hidden">Profile</a>
-            <a href="admin.html" id="admin-nav-link" class="hidden">Admin</a>
+            <a href="admin.html" id="admin-nav-link" class="hidden">Dashboard</a>
         </nav>
         <div class="nav-actions">
-            <a href="login.html" id="auth-link" class="btn btn-ink btn-sm no-arrow">Login</a>
-            <button class="icon-btn" id="cart-btn" aria-label="Open bag"><i class="fas fa-bag-shopping"></i><span id="cart-count" class="bag-count">0</span></button>
+            <a href="login.html" id="auth-link" class="btn btn-line btn-sm no-arrow">Login</a>
+            <button class="bag-btn" id="cart-btn" aria-label="Open bag"><i class="fas fa-basket-shopping"></i><span class="t">Bag</span><span id="cart-count" class="bag-count">0</span></button>
         </div>
     </header>
 
     <main class="container mx-auto px-4 py-12">
         <div class="text-center mb-8">
-            <h2 class="font-heading text-3xl font-bold mb-2">Account Access</h2>
+            <h2 class="font-heading text-3xl font-bold mb-2">Namaste! Welcome in.</h2>
+            <p class="text-gray-600 mb-4">Sign in to see your orders and saved addresses — or create an account in a minute.</p>
             <div class="w-20 h-1 bg-primary mx-auto"></div>
         </div>
 
@@ -325,7 +326,7 @@
                         <a href="mailto:contact@arunkaryanastore.com" aria-label="Email"><i class="far fa-envelope"></i></a>
                     </div>
                 </div>
-                <div><h4>Shop</h4><ul><li><a href="index.html#shop">All products</a></li><li><a href="index.html#editions">Offers</a></li><li><a href="order-history.html" id="order-history-footer-link" class="hidden">My orders</a></li><li><a href="profile.html" id="profile-footer-link" class="hidden">My profile</a></li></ul></div>
+                <div><h4>Shop</h4><ul><li><a href="index.html#shop">All products</a></li><li><a href="index.html#offers">Offers</a></li><li><a href="order-history.html" id="order-history-footer-link" class="hidden">My orders</a></li><li><a href="profile.html" id="profile-footer-link" class="hidden">My profile</a></li></ul></div>
                 <div><h4>Help</h4><ul><li><a href="faq.html">FAQs</a></li><li><a href="shipping-policy.html">Shipping</a></li><li><a href="return-policy.html">Returns</a></li><li><a href="privacy-policy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li></ul></div>
                 <div><h4>Visit</h4><ul><li><a href="index.html#visit">Railway Road, Barara<br>Ambala, Haryana 133201</a></li><li><a href="tel:+919416891710">+91 94168 91710</a></li></ul></div>
             </div>
@@ -638,57 +639,58 @@
                 return;
             }
 
-            const backendUrl = `${backendBaseUrl}/login`; // Your backend login endpoint
-            console.log("Attempting login with URL:", backendUrl); // Debug log
+            const backendUrl = `${backendBaseUrl}/login`;
+            const submitBtn = loginForm.querySelector('button[type=submit]');
+            const label = submitBtn.textContent;
+            submitBtn.disabled = true; submitBtn.textContent = 'Signing in…';
 
-            try {
+            // The store's server sleeps when idle and can take up to a minute to wake,
+            // so network errors and gateway responses are retried for a while before giving up.
+            const attempt = async () => {
                 const response = await fetch(backendUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email_phone: email, password: password }) // Changed to email_phone
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email_phone: email.trim(), password: password })
                 });
+                if ([502, 503, 504].includes(response.status)) throw new Error('waking');
+                let result = {};
+                try { result = await response.json(); } catch (e) { throw new Error('waking'); }
+                return { response, result };
+            };
 
-                console.log("Login fetch response received:", response); // Debug log
-                const result = await response.json();
-                console.log("Login response JSON:", result); // Debug log
-
-
-                if (response.ok) { // Check if the HTTP status code is in the 2xx range
-                    if (result.success) {
-                        showMessage(loginMessageDiv, result.message, "success");
-
-                        // Store the user ID and role in local storage
-                        localStorage.setItem('loggedInUserId', result.user_id);
-                        localStorage.setItem('userRole', result.role);
-                        localStorage.setItem('userName', result.name);
-                        if (result.token) { localStorage.setItem('authToken', result.token); } else { localStorage.removeItem('authToken'); }
-                        console.log("User ID stored in localStorage:", result.user_id);
-                        console.log("User role stored in localStorage:", result.role);
-
-                        // Redirect the user to the main page after successful login
-                        console.log("Login successful, redirecting to /"); // Debug log
-                        window.location.href = "/"; // Redirect to index.html
-
-                         loginForm.reset(); // Clear the form fields after successful login
-
-                    } else {
-                        // Backend returned success: false (e.g., invalid credentials)
-                        console.error("Login failed:", result.message); // Debug log
-                        showMessage(loginMessageDiv, result.message, "error");
+            try {
+                let outcome = null;
+                for (let i = 0; i < 6 && !outcome; i++) {
+                    try {
+                        outcome = await attempt();
+                    } catch (e) {
+                        if (i === 5) throw e;
+                        showMessage(loginMessageDiv, 'Waking up the store — this can take up to a minute the first time. Please hold on…', 'success');
+                        await new Promise((r) => setTimeout(r, 6000));
                     }
-                } else {
-                     // Handle HTTP errors (e.g., 401 Unauthorized, 500 Internal Server Error)
-                     // The backend sends error messages in the JSON response
-                     console.error("Login HTTP error:", response.status, response.statusText, result.message); // Debug log
-                     showMessage(loginMessageDiv, result.message || `Error: ${response.status}`, "error");
                 }
+                const { response, result } = outcome;
 
+                if (response.ok && result.success) {
+                    showMessage(loginMessageDiv, `Welcome back${result.name ? ', ' + result.name : ''}!`, 'success');
+                    localStorage.setItem('loggedInUserId', result.user_id);
+                    localStorage.setItem('userRole', result.role || 'customer');
+                    localStorage.setItem('userName', result.name || '');
+                    if (result.token) { localStorage.setItem('authToken', result.token); } else { localStorage.removeItem('authToken'); }
+                    loginForm.reset();
+
+                    // Admins land on the store dashboard; everyone else goes back to where they were.
+                    const next = new URLSearchParams(location.search).get('next');
+                    const safeNext = next && /^[a-z0-9-]+\.html([?#].*)?$/i.test(next) ? next : null;
+                    window.location.href = result.role === 'admin' ? 'admin.html' : (safeNext || 'index.html');
+                    return;
+                }
+                showMessage(loginMessageDiv, result.message || `Sign-in failed (error ${response.status}). Please try again.`, 'error');
             } catch (error) {
-                // Handle network errors (e.g., backend not running, incorrect URL)
-                console.error('Error during login fetch:', error); // Debug log
-                showMessage(loginMessageDiv, "An error occurred during login. Please try again.", "error");
+                console.error('Error during login fetch:', error);
+                showMessage(loginMessageDiv, "We couldn't reach the store just now. Please check your internet connection and try again in a minute.", 'error');
+            } finally {
+                submitBtn.disabled = false; submitBtn.textContent = label;
             }
         });
 

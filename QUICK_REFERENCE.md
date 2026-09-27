@@ -16,10 +16,9 @@
 
 ## 🔑 Admin Credentials
 
-**Email:** `admin@arunkaryana.com`  
-**Password:** `admin123`  
-
-⚠️ **Remember to change these credentials in production!**
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` on the Render backend (Environment tab) and redeploy.
+That account is created (or promoted) as the store admin on startup; sign in at `/login.html`
+and you are taken straight to the dashboard. See README → "Store dashboard (admin) access".
 
 ---
 
