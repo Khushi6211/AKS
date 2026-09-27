@@ -22,9 +22,10 @@
         }
     }
 
-    // Sessions from before login tokens existed, expired tokens, or a token left behind after logout.
+    // Expired tokens, or a token left behind after logout. A session without a token is kept:
+    // the server answers 401 if it needs one, and the handler below signs the visitor out then.
     var token = get('authToken');
-    if ((get('loggedInUserId') && (!token || tokenExpired(token))) || (token && !get('loggedInUserId'))) {
+    if ((token && tokenExpired(token)) || (token && !get('loggedInUserId'))) {
         clearSession();
     }
 

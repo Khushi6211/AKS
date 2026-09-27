@@ -93,14 +93,14 @@ if not os.environ.get('JWT_SECRET_KEY'):
 JWT_EXPIRATION_HOURS = 24
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '*')
 
-# Configure CORS - Restrict to frontend domain only
-cors_origins = [FRONTEND_URL] if FRONTEND_URL != '*' else '*'
+# CORS: the API authenticates with bearer tokens (never cookies), so any site origin may call it.
+# This keeps the storefront working on Netlify, Vercel, deploy previews and custom domains alike.
 CORS(app, resources={r"/*": {
-    "origins": cors_origins,
+    "origins": "*",
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "allow_headers": ["Content-Type", "Authorization", "User-ID"],
     "expose_headers": ["X-Auth-Error"],
-    "supports_credentials": True
+    "supports_credentials": False
 }})
 
 # Configure rate limiting
@@ -112,16 +112,28 @@ limiter = Limiter(
 )
 
 # MongoDB Connection Setup
-MONGO_USERNAME = os.environ.get('MONGO_USERNAME', '')
+# Either a full MONGO_URI, or MONGO_USERNAME + MONGO_PASSWORD + MONGO_CLUSTER_URI.
+MONGO_URI = os.environ.get('MONGO_URI', '').strip()
+MONGO_USERNAME = os.environ.get('MONGO_USERNAME', '').strip()
 MONGO_PASSWORD = os.environ.get('MONGO_PASSWORD', '')
-MONGO_CLUSTER_URI = os.environ.get('MONGO_CLUSTER_URI', '')
-if not (MONGO_USERNAME and MONGO_PASSWORD and MONGO_CLUSTER_URI):
-    logger.error("❌ MONGO_USERNAME, MONGO_PASSWORD and MONGO_CLUSTER_URI must be set as environment variables.")
+MONGO_CLUSTER_URI = os.environ.get('MONGO_CLUSTER_URI', '').strip()
+for _prefix in ('mongodb+srv://', 'mongodb://'):
+    if MONGO_CLUSTER_URI.startswith(_prefix):
+        MONGO_CLUSTER_URI = MONGO_CLUSTER_URI[len(_prefix):]
+MONGO_CLUSTER_URI = MONGO_CLUSTER_URI.split('/')[0]
 MONGO_PARAMS = os.environ.get('MONGO_PARAMS', '/?retryWrites=true&w=majority&appName=MyStoreCluster')
+MISSING_DB_SETTINGS = [] if MONGO_URI else [k for k, v in (
+    ('MONGO_USERNAME', MONGO_USERNAME), ('MONGO_PASSWORD', MONGO_PASSWORD), ('MONGO_CLUSTER_URI', MONGO_CLUSTER_URI)) if not v]
+if MISSING_DB_SETTINGS:
+    logger.error(f"❌ Missing environment variables: {', '.join(MISSING_DB_SETTINGS)} (or set MONGO_URI).")
 
-encoded_username = urllib.parse.quote_plus(MONGO_USERNAME)
-encoded_password = urllib.parse.quote_plus(MONGO_PASSWORD)
-mongo_uri = f"mongodb+srv://{encoded_username}:{encoded_password}@{MONGO_CLUSTER_URI}{MONGO_PARAMS}"
+if MONGO_URI:
+    mongo_uri = MONGO_URI
+else:
+    encoded_username = urllib.parse.quote_plus(MONGO_USERNAME)
+    encoded_password = urllib.parse.quote_plus(MONGO_PASSWORD)
+    mongo_uri = f"mongodb+srv://{encoded_username}:{encoded_password}@{MONGO_CLUSTER_URI}{MONGO_PARAMS}"
+DB_STARTUP_ERROR = None
 
 logger.info(f"Connecting to MongoDB... (pymongo version: {pymongo.version})")
 
@@ -141,7 +153,7 @@ popups_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection, popups_collection
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection, popups_collection, DB_STARTUP_ERROR
     
     try:
         # Optimized MongoDB connection for Render free tier
@@ -215,8 +227,9 @@ def initialize_database():
             logger.info("✅ Initial categories added to database")
             
     except Exception as e:
+        # Keep the web server up so /health can explain the problem instead of the service crash-looping.
+        DB_STARTUP_ERROR = str(e)
         logger.error(f"❌ Error connecting to MongoDB: {e}")
-        raise
 
 # Initialize database on startup
 initialize_database()
@@ -743,7 +756,8 @@ def health_check():
         health_status["status"] = "unhealthy"
         health_status["database"] = {
             "status": "disconnected",
-            "error": str(e)
+            "error": DB_STARTUP_ERROR or str(e),
+            "missing_settings": MISSING_DB_SETTINGS,
         }
         return jsonify(health_status), 500
 
@@ -1018,6 +1032,21 @@ def calculate_offer_discount(offer, subtotal):
         amount = value
     return round(max(0, min(amount, subtotal)), 2)
 
+def find_product(product_id):
+    """Look a product up by id; the starter catalogue uses integer ids, newer products ObjectIds."""
+    raw = str(product_id or '').strip()
+    candidates = []
+    if ObjectId.is_valid(raw):
+        candidates.append(ObjectId(raw))
+    if raw.lstrip('-').isdigit():
+        candidates.append(int(raw))
+    candidates.append(raw)
+    for candidate in candidates:
+        product = products_collection.find_one({"_id": candidate})
+        if product:
+            return product
+    return None
+
 def price_order(items, discount_source):
     """Rebuild order lines, discount, delivery fee and total from the database.
     Returns (priced_order, error_message)."""
@@ -1027,10 +1056,7 @@ def price_order(items, discount_source):
     for item in items:
         if not isinstance(item, dict):
             return None, "Invalid item in order."
-        try:
-            product = products_collection.find_one({"_id": ObjectId(str(item.get('id')))})
-        except Exception:
-            product = None
+        product = find_product(item.get('id'))
         if not product:
             return None, f"'{item.get('name', 'An item')}' is no longer available. Please remove it from your bag."
         try:

@@ -2,30 +2,33 @@
 
 **Est. 1977 | Barara, Haryana**
 
-## 2026 revamp: "Liquid Glass" storefront
+## 2026 redesign: "Weighed fairly, since 1977"
 
-The frontend was redesigned as a modern e-commerce site with an Apple-style frosted-glass look
-and a real-time 3D hero (three.js, modelled in code, no model files to download).
+The storefront tells the store's story in chapters: dark, gallery-quiet sections for the story
+(inspired by To'ak Chocolate's editorial style) and warm paper sections for shopping (inspired by
+Scout Motors' heritage storytelling, bold condensed type and floating pill navigation).
 
 | What | Where |
 | --- | --- |
-| Storefront (home, catalogue, search, cart drawer, checkout, offers, reviews, contact) | `index.html`, `assets/js/store.js` |
-| 3D hero scene | `assets/js/hero3d.js` (three.js vendored in `assets/vendor/three`) |
-| Design system (glass surfaces, buttons, drawer, modals) | `assets/css/app.css` |
-| Glass theme for account/info pages | `assets/css/pages.css` |
-| Tailwind for account & admin pages (pre-compiled) | `assets/css/tailwind.css` (source: `tailwind.config.js`) |
-| Icons, favicon, PWA manifest, SEO | `assets/img/`, `manifest.webmanifest`, `robots.txt`, `sitemap.xml`, `404.html` |
-| Netlify config (headers, caching) | `netlify.toml` |
+| Home page (story chapters, shop, offers, reviews, visit, contact) | `index.html`, `assets/css/home.css` |
+| Storefront logic (catalogue, search, bag, checkout, offers, banner, popup) | `assets/js/shop.js` |
+| 3D hero: brass tarazu on the counter under a single bulb (three.js, modelled in code) | `assets/js/counter-scene.js` |
+| Design system (type, buttons, nav, drawer, modals, footer) | `assets/css/app.css` |
+| Theme for login, profile, orders, thank-you, FAQ, policies | `assets/css/pages.css` (+ pre-built `assets/css/tailwind.css`) |
+| Self-hosted fonts: Cormorant Garamond, Barlow Condensed, Inter, Tiro Devanagari Hindi | `assets/fonts/`, `assets/css/fonts.css` |
+| Share image (WhatsApp/Facebook preview) and hero poster | `assets/img/og.jpg`, `assets/img/hero-poster.jpg` |
+| Login token helper used by every page | `assets/js/auth.js` |
 
-Everything runs without a build step and without third-party CDNs (only Google Fonts and the
-Google Maps embed are loaded from outside). If you edit the Tailwind classes in any page other
-than `index.html`, rebuild the CSS: `npm install && npm run build:css`.
+No build step and no third-party CDNs are needed (only the Google Maps embed loads from outside).
+If you edit Tailwind classes in a page other than `index.html`, run `npm install && npm run build:css`.
 
 ### Going live checklist
 
 1. **Backend (Render)**: make sure these environment variables are set on the service:
    `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_CLUSTER_URI`, `SECRET_KEY`, `JWT_SECRET_KEY`,
    `FRONTEND_URL` (your live site URL, e.g. `https://arun-karyana-store.netlify.app`).
+   Instead of the three `MONGO_*` values you can set a single `MONGO_URI` (the full connection string from Atlas).
+   Open `https://arun-karyana-backend.onrender.com/health` to check: it names any missing setting.
    The database password is no longer hard-coded in `main.py`, and it was previously committed
    to git, so **rotate it in MongoDB Atlas** and put the new one in Render.
 2. **Frontend (Netlify)**: deploy the repository root (publish directory `.`, no build command).
