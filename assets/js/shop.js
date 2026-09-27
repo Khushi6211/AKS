@@ -74,7 +74,6 @@
     function setupNav() {
         const nav = $('#nav');
         const sections = $$('[data-theme]');
-        let lastY = window.scrollY;
         const onScroll = () => {
             const probe = nav.getBoundingClientRect().bottom + 4;
             const under = sections.find((s) => { const r = s.getBoundingClientRect(); return r.top <= probe && r.bottom > probe; });
@@ -82,10 +81,6 @@
             const y = window.scrollY;
             const bannerH = $('#announce').offsetHeight || 0;
             nav.style.top = `${Math.max(16, bannerH - y + 16)}px`;
-            const menuOpen = $('#menu').classList.contains('open');
-            nav.classList.toggle('tucked', !menuOpen && y > lastY + 4 && y > window.innerHeight * 0.9);
-            if (y < lastY - 4) nav.classList.remove('tucked');
-            lastY = y;
             // hero progress for CSS
             const hero = $('[data-hero]');
             if (hero) {
@@ -184,7 +179,7 @@
                 host.innerHTML = `<div class="ticker" style="background:${esc(bg)};padding:9px 0"><div class="ticker-track" style="animation-duration:${dur}s">${run}${run}</div><div class="ticker-track" aria-hidden="true" style="animation-duration:${dur}s">${run}${run}</div></div>`;
             }
             host.classList.remove('hidden');
-            const sync = () => document.documentElement.style.setProperty('--banner-h', `${host.offsetHeight}px`);
+            const sync = () => { document.documentElement.style.setProperty('--banner-h', `${host.offsetHeight}px`); window.dispatchEvent(new Event('scroll')); };
             sync();
             window.addEventListener('resize', debounce(sync, 150));
             host.style.position = 'relative';
@@ -225,7 +220,8 @@
     // Category labels: the API may send {name, display_name}; products store either form.
     function catLabel(key) {
         const c = S.categories.find((x) => slug(x.name) === key || slug(x.display_name) === key);
-        return c ? (c.display_name || titleCase(c.name)) : titleCase(key);
+        const pretty = (t) => (/[-_]/.test(t) || t === t.toLowerCase() ? titleCase(t) : t);
+        return pretty(c ? (c.display_name || c.name) : key);
     }
     const catKey = (p) => {
         const k = slug(p.category);
