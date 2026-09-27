@@ -233,6 +233,7 @@
 
     </style>
     <script src="config.js"></script>
+    <script src="assets/js/auth.js"></script>
 </head>
 <body class="theme-glass">
     <div class="aurora" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
@@ -701,6 +702,7 @@
                         localStorage.setItem('loggedInUserId', result.user_id);
                         localStorage.setItem('userRole', result.role);
                         localStorage.setItem('userName', result.name);
+                        localStorage.setItem('authToken', result.token || '');
                         console.log("User ID stored in localStorage:", result.user_id);
                         console.log("User role stored in localStorage:", result.role);
 
@@ -843,5 +845,14 @@
 
     </script>
 
+    <script>
+        // Shown when a session expired or the site asked the visitor to sign in again
+        if (new URLSearchParams(location.search).get('expired')) {
+            document.addEventListener('DOMContentLoaded', function () {
+                var box = document.getElementById('login-message');
+                if (box) { box.textContent = 'Please log in again to continue.'; box.className = 'form-message'; box.classList.remove('hidden'); }
+            });
+        }
+    </script>
 </body>
 </html>

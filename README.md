@@ -40,6 +40,10 @@ than `index.html`, rebuild the CSS: `npm install && npm run build:css`.
 - Default rate limit raised from 50/hour to 600/hour per visitor: one page view makes ~8 API calls,
   so the old limit blocked normal shoppers after a few pages.
 - `main.py` now parses on Python 3.11 (the version pinned in `render.yaml`).
+- Logins now return a signed token (JWT). Admin endpoints and each customer's cart, profile,
+  addresses, orders and reviews require it, instead of trusting a user ID sent by the browser.
+  `assets/js/auth.js` attaches the token to API calls on every page. Everyone is asked to log in
+  once more after this update. `JWT_SECRET_KEY` must be set on Render (render.yaml generates it).
 
 ---
 

@@ -4,7 +4,7 @@ Production-ready Flask application with security improvements,
 Cloudinary image hosting, SendGrid emails, and Sentry monitoring
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -87,7 +87,9 @@ app = Flask(__name__)
 
 # Configuration from environment variables
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'change-this-jwt-secret-in-production')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or secrets.token_urlsafe(48)
+if not os.environ.get('JWT_SECRET_KEY'):
+    logging.getLogger(__name__).warning("JWT_SECRET_KEY not set; using a random key (users are logged out on every restart).")
 JWT_EXPIRATION_HOURS = 24
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '*')
 
@@ -97,6 +99,7 @@ CORS(app, resources={r"/*": {
     "origins": cors_origins,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "allow_headers": ["Content-Type", "Authorization", "User-ID"],
+    "expose_headers": ["X-Auth-Error"],
     "supports_credentials": True
 }})
 
@@ -628,24 +631,68 @@ def send_password_reset_email(user, reset_url):
     
     return send_email(user['email'], subject, html_content, plain_content)
 
-# Security decorator for admin routes
+# ---------- Authentication (signed JWT bearer tokens) ----------
+def create_auth_token(user):
+    """Signed login token returned by /login and sent back as `Authorization: Bearer <token>`."""
+    now = datetime.datetime.utcnow()
+    payload = {
+        "sub": str(user['_id']),
+        "role": user.get('role', 'customer'),
+        "iat": now,
+        "exp": now + datetime.timedelta(hours=JWT_EXPIRATION_HOURS),
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
+
+def read_auth_token():
+    """Claims of a valid bearer token on the current request, or None."""
+    header = request.headers.get('Authorization', '')
+    if not header.startswith('Bearer '):
+        return None
+    try:
+        return jwt.decode(header[7:].strip(), JWT_SECRET_KEY, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+
+def auth_error(message, status=401):
+    response = jsonify({"success": False, "message": message})
+    response.status_code = status
+    if status == 401:
+        response.headers['X-Auth-Error'] = 'token'
+    return response
+
 def admin_required(f):
+    """Only a logged-in user whose account currently has the admin role."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        user_id = request.headers.get('User-ID')
-        if not user_id:
-            logger.warning("Admin access attempted without User-ID")
-            return jsonify({"success": False, "message": "Authentication required."}), 401
-        
+        claims = read_auth_token()
+        if not claims:
+            logger.warning("Admin access attempted without a valid token")
+            return auth_error("Please log in again.")
         try:
-            user = users_collection.find_one({"_id": ObjectId(user_id)})
-            if not user or user.get('role') != 'admin':
-                logger.warning(f"Unauthorized admin access attempt by user: {user_id}")
-                return jsonify({"success": False, "message": "Admin access required."}), 403
+            user = users_collection.find_one({"_id": ObjectId(claims['sub'])}, {"role": 1})
         except Exception as e:
-            logger.error(f"Error verifying admin access: {e}")
-            return jsonify({"success": False, "message": "Invalid User ID or server error."}), 401
-        
+            logger.error(f"❌ Error during admin authentication: {e}")
+            return auth_error("Please log in again.")
+        if not user or user.get('role') != 'admin':
+            logger.warning(f"Unauthorized admin access attempt by user: {claims.get('sub')}")
+            return auth_error("Admin access required.", 403)
+        g.user_id = claims['sub']
+        return f(*args, **kwargs)
+    return decorated_function
+
+def self_required(f):
+    """Only the logged-in owner of the `user_id` in the URL or JSON body (or an admin)."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        claims = read_auth_token()
+        if not claims:
+            return auth_error("Please log in to continue.")
+        target = kwargs.get('user_id')
+        if target is None:
+            target = (request.get_json(silent=True) or {}).get('user_id')
+        if target is None or (str(target) != claims['sub'] and claims.get('role') != 'admin'):
+            return auth_error("You can only access your own account.", 403)
+        g.user_id = claims['sub']
         return f(*args, **kwargs)
     return decorated_function
 
@@ -803,7 +850,8 @@ def login_user():
                 "message": "Login successful!",
                 "user_id": user_id,
                 "name": user.get('name'),
-                "role": user.get('role', 'customer')
+                "role": user.get('role', 'customer'),
+                "token": create_auth_token(user)
             }), 200
         else:
             logger.warning(f"⚠️ Failed login attempt for: {email_phone}")
@@ -1077,7 +1125,7 @@ def submit_order():
             "total_amount": priced['total'],
             "order_date": datetime.datetime.utcnow(),
             "status": "Pending",
-            "user_id": data.get('user_id')
+            "user_id": (read_auth_token() or {}).get('sub')
         }
         
         inserted_order = orders_collection.insert_one(new_order)
@@ -1112,6 +1160,7 @@ def submit_order():
 
 # Get Cart
 @app.route('/cart/<user_id>', methods=['GET'])
+@self_required
 def get_cart(user_id):
     """Get user's cart"""
     try:
@@ -1129,6 +1178,7 @@ def get_cart(user_id):
 
 # Update Cart
 @app.route('/cart/update', methods=['POST'])
+@self_required
 @limiter.limit("30 per minute")
 def update_cart():
     """Update user's cart"""
@@ -1157,6 +1207,7 @@ def update_cart():
 
 # Get User Orders
 @app.route('/orders/<user_id>', methods=['GET'])
+@self_required
 def get_user_orders(user_id):
     """Get all orders for a user"""
     try:
@@ -1180,6 +1231,7 @@ def get_user_orders(user_id):
 
 # Get User Profile
 @app.route('/profile/<user_id>', methods=['GET'])
+@self_required
 def get_user_profile(user_id):
     """Get user profile"""
     try:
@@ -1214,6 +1266,7 @@ def get_user_profile(user_id):
 
 # Update User Profile
 @app.route('/profile/update', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def update_user_profile():
     """Update user profile"""
@@ -1275,6 +1328,7 @@ def update_user_profile():
 
 # Upload and Update Profile Picture (Old endpoint - kept for compatibility)
 @app.route('/profile/upload-picture', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def upload_profile_picture():
     """Upload profile picture to Cloudinary and update user profile"""
@@ -1323,6 +1377,7 @@ def upload_profile_picture():
 
 # Update Profile Picture (New endpoint - used by frontend)
 @app.route('/profile/update-picture', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def update_profile_picture():
     """Update user profile picture with Cloudinary URL"""
@@ -1361,6 +1416,7 @@ def update_profile_picture():
 
 # Add Address to Profile
 @app.route('/profile/address/add', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def add_address():
     """Add a new address to user profile"""
@@ -1419,6 +1475,7 @@ def add_address():
 
 # Update Address
 @app.route('/profile/address/update', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def update_address():
     """Update an existing address"""
@@ -1469,6 +1526,7 @@ def update_address():
 
 # Delete Address
 @app.route('/profile/address/delete', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def delete_address():
     """Delete an address from user profile"""
@@ -1515,6 +1573,7 @@ def delete_address():
 
 # Set Default Address
 @app.route('/profile/address/set-default', methods=['POST'])
+@self_required
 @limiter.limit("20 per minute")
 def set_default_address():
     """Set an address as default"""
@@ -1547,6 +1606,7 @@ def set_default_address():
 
 # Submit Order Review
 @app.route('/order/review/submit', methods=['POST'])
+@self_required
 @limiter.limit("10 per minute")
 def submit_order_review():
     """Submit a review for a delivered order"""
@@ -2631,7 +2691,7 @@ def update_order_status():
         status_history_entry = {
             "status": new_status,
             "timestamp": datetime.datetime.utcnow(),
-            "updated_by": request.headers.get('User-ID')
+            "updated_by": g.user_id
         }
         
         result = orders_collection.update_one(

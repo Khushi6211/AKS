@@ -118,7 +118,7 @@
             if (!e.target.closest('#account-menu') && !e.target.closest('#auth-link')) menu.classList.remove('open');
         });
         $('#logout-btn').addEventListener('click', () => {
-            ['loggedInUserId', 'userRole', 'userName', 'arunKaryanaCart'].forEach(store.del);
+            ['loggedInUserId', 'userRole', 'userName', 'authToken', 'arunKaryanaCart'].forEach(store.del);
             state.userId = null;
             state.profile = null;
             state.addresses = [];
