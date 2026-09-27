@@ -2,25 +2,38 @@
 
 **Est. 1977 | Barara, Haryana**
 
-## 2026 redesign: "Weighed fairly, since 1977"
+## 2026 redesign: "Your friendly corner store, since 1977"
 
-The storefront tells the store's story in chapters: dark, gallery-quiet sections for the story
-(inspired by To'ak Chocolate's editorial style) and warm paper sections for shopping (inspired by
-Scout Motors' heritage storytelling, bold condensed type and floating pill navigation).
+A warm, light and homely storefront: cream paper, leaf green, marigold and terracotta, with
+soft rounded type (Fraunces + DM Sans) and a hand-built 3D model of the shop front in the hero.
 
 | What | Where |
 | --- | --- |
-| Home page (story chapters, shop, offers, reviews, visit, contact) | `index.html`, `assets/css/home.css` |
-| Storefront logic (catalogue, search, bag, checkout, offers, banner, popup) | `assets/js/shop.js` |
-| 3D hero: brass tarazu on the counter under a single bulb (three.js, modelled in code) | `assets/js/counter-scene.js` |
-| Design system (type, buttons, nav, drawer, modals, footer) | `assets/css/app.css` |
+| Home page (hero, aisles, shop, offers, story, reviews, visit, contact) | `index.html`, `assets/css/home.css` |
+| Storefront logic (catalogue, search, bag, checkout, offers, banner ribbon, popup) | `assets/js/shop.js` |
+| 3D hero: the store front with awning, marigold toran, sacks and tarazu (three.js, modelled in code) | `assets/js/shopfront-scene.js` |
+| Design system (type, buttons, nav, announcement ribbon, drawer, modals, footer) | `assets/css/app.css` |
 | Theme for login, profile, orders, thank-you, FAQ, policies | `assets/css/pages.css` (+ pre-built `assets/css/tailwind.css`) |
-| Self-hosted fonts: Cormorant Garamond, Barlow Condensed, Inter, Tiro Devanagari Hindi | `assets/fonts/`, `assets/css/fonts.css` |
-| Share image (WhatsApp/Facebook preview) and hero poster | `assets/img/og.jpg`, `assets/img/hero-poster.jpg` |
+| Self-hosted fonts: Fraunces, DM Sans, Inter, Tiro Devanagari Hindi | `assets/fonts/`, `assets/css/fonts.css` |
+| Share image (WhatsApp/Facebook preview), hero poster, story picture | `assets/img/og.jpg`, `assets/img/shopfront.png`, `assets/img/story-counter.jpg` |
 | Login token helper used by every page | `assets/js/auth.js` |
 
 No build step and no third-party CDNs are needed (only the Google Maps embed loads from outside).
 If you edit Tailwind classes in a page other than `index.html`, run `npm install && npm run build:css`.
+After editing any CSS/JS, run `npm run stamp` so visitors get the new files straight away.
+
+### Store dashboard (admin) access
+
+Set these on the Render backend service (Environment tab), then redeploy:
+
+| Variable | Example | Meaning |
+| --- | --- | --- |
+| `ADMIN_EMAIL` | `owner@example.com` | Email of the admin account. Created if it doesn't exist, promoted to admin if it does. |
+| `ADMIN_PASSWORD` | at least 8 characters | Password for that account. It is re-applied on every start, so changing it here resets it. |
+| `ADMIN_NAME` / `ADMIN_PHONE` | optional | Shown in the dashboard. |
+
+Then sign in at `/login.html` with that email and password — admins are taken straight to `admin.html`.
+The old sample credentials (`admin@arunkaryana.com` / `admin123`) in older docs must not be used in production.
 
 ### Going live checklist
 

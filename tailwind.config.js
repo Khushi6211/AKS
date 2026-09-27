@@ -8,15 +8,15 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                primary: '#c4531a',
-                secondary: '#c49a52',
-                accent: '#16110d',
-                dark: '#1c1510',
-                light: '#efe7d9',
+                primary: '#2f6b4f',
+                secondary: '#f5a524',
+                accent: '#e0673c',
+                dark: '#2f241b',
+                light: '#fff8ee',
             },
             fontFamily: {
-                heading: ['Cormorant Garamond', 'Georgia', 'serif'],
-                body: ['Inter Variable', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                heading: ['Fraunces Variable', 'Georgia', 'serif'],
+                body: ['DM Sans Variable', 'Inter Variable', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
             },
         },
     },

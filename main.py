@@ -234,6 +234,77 @@ def initialize_database():
 # Initialize database on startup
 initialize_database()
 
+
+# ---------- Login helpers ----------
+def find_user_for_login(identifier):
+    """Find a user by email (any capitalisation) or phone (with or without +91, spaces, dashes)."""
+    identifier = (identifier or '').strip()
+    if '@' in identifier:
+        return users_collection.find_one({"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}})
+    digits = re.sub(r'\D', '', identifier)
+    candidates = {identifier, digits}
+    if len(digits) >= 10:
+        last10 = digits[-10:]
+        candidates |= {last10, f"+91{last10}", f"91{last10}", f"0{last10}", f"+91 {last10}"}
+    return users_collection.find_one({"phone": {"$in": [c for c in candidates if c]}})
+
+def password_matches(user, password):
+    """Check a password against the stored value. Accepts bcrypt hashes stored as bytes or text,
+    and upgrades any legacy plain-text password to a bcrypt hash on a successful match."""
+    stored = user.get('password')
+    if not stored or not password:
+        return False
+    try:
+        if isinstance(stored, str) and stored.startswith('$2'):
+            stored = stored.encode('utf-8')
+        if isinstance(stored, (bytes, bytearray)):
+            return bcrypt.checkpw(password.encode('utf-8'), bytes(stored))
+        if isinstance(stored, str) and secrets.compare_digest(stored, password):
+            users_collection.update_one({"_id": user['_id']}, {"$set": {"password": bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())}})
+            logger.info(f"🔐 Upgraded a plain-text password to bcrypt for user {user['_id']}")
+            return True
+    except Exception as e:
+        logger.error(f"❌ Password check failed for user {user.get('_id')}: {e}")
+    return False
+
+def ensure_admin_account():
+    """Create or restore the owner's admin login from ADMIN_EMAIL / ADMIN_PASSWORD (Render settings).
+    Runs at startup, so the owner can always get back into the dashboard by setting these."""
+    email = os.environ.get('ADMIN_EMAIL', '').strip().lower()
+    password = os.environ.get('ADMIN_PASSWORD', '')
+    if not email or not password or users_collection is None:
+        return
+    if len(password) < 8:
+        logger.error("❌ ADMIN_PASSWORD must be at least 8 characters; admin account not changed.")
+        return
+    try:
+        user = users_collection.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        if user:
+            update = {"role": "admin"}
+            if not password_matches(user, password):
+                update["password"] = hashed
+            users_collection.update_one({"_id": user['_id']}, {"$set": update})
+            logger.info(f"✅ Admin access ensured for {email}")
+        else:
+            doc = {
+                "name": os.environ.get('ADMIN_NAME', 'Store Admin'),
+                "email": email,
+                "password": hashed,
+                "role": "admin",
+                "created_at": datetime.datetime.utcnow(),
+                "addresses": [],
+            }
+            phone = os.environ.get('ADMIN_PHONE', '').strip()
+            if phone:
+                doc["phone"] = phone
+            users_collection.insert_one(doc)
+            logger.info(f"✅ Admin account created for {email}")
+    except Exception as e:
+        logger.error(f"❌ Could not set up the admin account: {e}")
+
+ensure_admin_account()
+
 # Input validation helpers
 def validate_email(email):
     """Validate email format"""
@@ -853,10 +924,9 @@ def login_user():
         if not email_phone or not password:
             return jsonify({"success": False, "message": "Email/Phone and password are required."}), 400
         
-        # Find user
-        user = users_collection.find_one({"$or": [{"email": email_phone}, {"phone": email_phone}]})
+        user = find_user_for_login(email_phone)
         
-        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
+        if user and password_matches(user, password):
             user_id = str(user['_id'])
             logger.info(f"✅ User logged in: {email_phone}")
             return jsonify({

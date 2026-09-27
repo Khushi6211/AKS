@@ -4,17 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Arun Karyana Store</title>
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=7fc767e709">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=90f1aedf82">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
     <script src="config.js?v=7474b03af7"></script>
-    <script src="assets/js/auth.js?v=e9479268c9"></script>
+    <script src="assets/js/auth.js?v=829609dc60"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/fonts.css?v=d6565be129">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans Variable', 'Inter Variable', -apple-system, 'Segoe UI', sans-serif;
+            background: #fff8ee !important;
+            color: #2f241b;
         }
+        /* store palette: leaf green, marigold, terracotta on warm cream */
+        h1, h2, h3, #sidebar h1 { font-family: 'Fraunces Variable', Georgia, serif; letter-spacing: -0.01em; }
+        #sidebar.bg-gray-900, #sidebar .bg-gray-900 { background: #24563f; }
+        #sidebar .bg-purple-600 { background: #f5a524 !important; }
+        #sidebar .bg-red-600 { background: rgba(255, 248, 238, 0.14) !important; }
+        #sidebar .hover\:bg-red-700:hover { background: #e0673c !important; }
+        #sidebar .bg-gray-800, #sidebar .nav-item:hover { background: rgba(255, 248, 238, 0.12) !important; }
+        #sidebar .border-gray-800, #sidebar .border-gray-700 { border-color: rgba(255, 248, 238, 0.14) !important; }
+        #sidebar .text-gray-400, #sidebar .text-gray-300 { color: rgba(255, 248, 238, 0.72) !important; }
+        .bg-purple-600, .bg-purple-500 { background-color: #2f6b4f !important; }
+        .hover\:bg-purple-700:hover, .bg-purple-700 { background-color: #24563f !important; }
+        .text-purple-600, .text-purple-700 { color: #2f6b4f !important; }
+        .bg-purple-100 { background-color: #e3f0e6 !important; }
+        .border-purple-500, .border-purple-600 { border-color: #2f6b4f !important; }
+        .focus\:ring-purple-500:focus, .focus\:border-purple-500:focus { --tw-ring-color: rgba(47, 107, 79, 0.4); border-color: #2f6b4f; }
+        .bg-white.rounded-xl, .bg-white.rounded-lg { border-radius: 20px; box-shadow: 0 1px 2px rgba(47, 36, 27, 0.05), 0 18px 40px -24px rgba(90, 60, 25, 0.3) !important; }
+        .rounded-lg.px-6.py-3, button.rounded-lg { border-radius: 999px; }
         .sidebar {
             transition: transform 0.3s ease;
         }
@@ -94,16 +113,16 @@
             }
         }
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2f6b4f 0%, #3f8a66 100%);
         }
         .stat-card-2 {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #e0673c 0%, #ee8d5f 100%);
         }
         .stat-card-3 {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #d98a12 0%, #f2ad3d 100%);
         }
         .stat-card-4 {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            background: linear-gradient(135deg, #3d7486 0%, #5c97aa 100%);
         }
         .modal {
             display: none;
@@ -460,11 +479,11 @@
                         <strong>How Banner Display Works:</strong>
                     </div>
                     <ul class="ml-6 list-disc space-y-1">
-                        <li><strong>Active Banner:</strong> Only ONE banner can be active at a time. The active banner is displayed prominently on the homepage with animated scrolling text.</li>
-                        <li><strong>Set as Active:</strong> Click the "Activate" button to make a banner live. This will automatically deactivate any previously active banner.</li>
-                        <li><strong>Multiple Banners:</strong> You can create and save multiple banners, but only the active one will be visible to customers.</li>
-                        <li><strong>Visual Effect:</strong> Active banners appear with LED-style glowing text, gradient background, and smooth scrolling animation on the homepage.</li>
-                        <li><strong>Testing:</strong> After activating a banner, visit your homepage to see it in action!</li>
+                        <li><strong>Where it shows:</strong> The active banner appears in the soft yellow ribbon at the very top of the store. Only one banner is active at a time; if it has several messages, they take turns every few seconds.</li>
+                        <li><strong>Keep it short:</strong> One friendly line works best, e.g. "Free delivery on orders above ₹500" or "Diwali sale — use code BALE".</li>
+                        <li><strong>Links:</strong> A banner can open a product, a category or a web page when tapped.</li>
+                        <li><strong>Colours:</strong> The ribbon always uses the store's own colours so it matches the website; the colour options below are kept only for older banners.</li>
+                        <li><strong>Testing:</strong> After activating a banner, open the store homepage to see it live.</li>
                     </ul>
                 </div>
                 <div class="grid grid-cols-1 gap-4" id="banners-grid">
@@ -1346,40 +1365,41 @@
             });
         });
 
-        // Check authentication on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        // Check authentication on page load. The store's server can take up to a minute to wake
+        // from sleep, so the role check is retried instead of bouncing the admin back to login.
+        window.addEventListener('DOMContentLoaded', async () => {
             currentUserId = localStorage.getItem('loggedInUserId');
-            if (!currentUserId) {
-                alert('Please login first!');
-                window.location.href = 'login.html';
+            if (!currentUserId || !localStorage.getItem('authToken')) {
+                window.location.href = 'login.html?next=admin.html';
                 return;
             }
-
-            // Verify admin role
-            fetch(`${backendBaseUrl}/user_role/${currentUserId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success || data.role !== 'admin') {
-                        alert('Access denied. Admin privileges required.');
-                        window.location.href = 'index.html';
-                        return;
-                    }
-                    // Load admin name
-                    return fetch(`${backendBaseUrl}/profile/${currentUserId}`);
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('admin-name').textContent = data.user.name;
-                    }
-                    // Load dashboard data
-                    loadDashboard();
-                })
-                .catch(error => {
-                    console.error('Authentication error:', error);
-                    alert('Authentication failed. Please login again.');
-                    window.location.href = 'login.html';
-                });
+            const getJson = async (url) => {
+                for (let i = 0; i < 8; i++) {
+                    try {
+                        const res = await fetch(url);
+                        if (![502, 503, 504].includes(res.status)) return { status: res.status, data: await res.json() };
+                    } catch (e) { /* server still waking up */ }
+                    document.getElementById('admin-name').textContent = 'Waking up the store…';
+                    await new Promise((r) => setTimeout(r, 5000));
+                }
+                throw new Error('Store server is not responding');
+            };
+            try {
+                const role = await getJson(`${backendBaseUrl}/user_role/${currentUserId}`);
+                if (!role.data.success || role.data.role !== 'admin') {
+                    alert('This account does not have dashboard access. Please sign in with the store admin account.');
+                    localStorage.removeItem('loggedInUserId'); localStorage.removeItem('userRole'); localStorage.removeItem('authToken');
+                    window.location.href = 'login.html?next=admin.html';
+                    return;
+                }
+                localStorage.setItem('userRole', 'admin');
+                const profile = await getJson(`${backendBaseUrl}/profile/${currentUserId}`);
+                document.getElementById('admin-name').textContent = (profile.data.success && profile.data.user && profile.data.user.name) || 'Admin';
+                loadDashboard();
+            } catch (error) {
+                console.error('Authentication error:', error);
+                alert('The store server is not responding right now. Please try again in a minute.');
+            }
         });
 
         // Navigation
@@ -1709,7 +1729,7 @@
                 return `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition ${isLowStock ? 'ring-2 ring-red-500' : ''}">
                     ${isLowStock ? '<div class="bg-red-600 text-white text-xs font-bold px-3 py-1 text-center"><i class="fas fa-exclamation-triangle mr-1"></i>LOW STOCK ALERT</div>' : ''}
-                    <img src="${product.image || 'https://via.placeholder.com/300x300?text=No+Image'}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <img src="${product.image || 'assets/img/favicon.svg'}" alt="${product.name}" class="w-full h-48 object-cover">
                     <div class="p-4">
                         <h4 class="font-bold text-lg mb-2 truncate">${product.name}</h4>
                         <div class="flex justify-between items-center mb-2">
