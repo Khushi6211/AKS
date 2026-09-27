@@ -4,7 +4,8 @@
   "private": true,
   "description": "Arun Karyana Store storefront (static frontend). Backend lives in main.py.",
   "scripts": {
-    "build:css": "tailwindcss -c tailwind.config.js -i assets/css/src/tailwind.css -o assets/css/tailwind.css --minify"
+    "build:css": "tailwindcss -c tailwind.config.js -i assets/css/src/tailwind.css -o assets/css/tailwind.css --minify",
+    "stamp": "python3 scripts/stamp-assets.py"
   },
   "devDependencies": {
     "tailwindcss": "3.4.17"
