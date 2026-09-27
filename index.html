@@ -3,44 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Arun Karyana Store · Groceries & Daily Essentials in Barara, since 1977</title>
-    <meta name="description" content="Order groceries, staples, snacks, beverages and household essentials online from Arun Karyana Store, Railway Road, Barara (Ambala). Trusted since 1977. Free delivery on orders over ₹500.">
-    <meta name="theme-color" content="#f4efe8">
+    <title>Arun Karyana Store · Weighed fairly, since 1977 · Barara</title>
+    <meta name="description" content="Dal, atta, masale, chai and every daily essential from Barara's trusted neighbourhood store on Railway Road, since 1977. Order online — free delivery over ₹500, pay on delivery.">
+    <meta name="theme-color" content="#0e0b08">
     <link rel="canonical" href="https://arun-karyana-store.netlify.app/">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Arun Karyana Store · Since 1977">
-    <meta property="og:description" content="Everyday groceries and essentials from Barara's trusted neighbourhood store, delivered to your door.">
-    <meta property="og:image" content="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png">
+    <meta property="og:site_name" content="Arun Karyana Store">
+    <meta property="og:title" content="Arun Karyana Store · Weighed fairly, since 1977">
+    <meta property="og:description" content="Barara's trusted counter since 1977 — now delivering dal, atta, masale and daily essentials to your door.">
+    <meta property="og:image" content="https://arun-karyana-store.netlify.app/assets/img/og.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/img/icon-192.png">
     <link rel="manifest" href="manifest.webmanifest">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="preload" href="assets/fonts/cormorant-garamond-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="assets/fonts/barlow-condensed-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="assets/css/app.css">
+    <link rel="stylesheet" href="assets/css/home.css">
     <link rel="modulepreload" href="assets/vendor/three/three.module.min.js">
-
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "GroceryStore",
         "name": "Arun Karyana Store",
         "foundingDate": "1977",
-        "image": "https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png",
+        "founder": { "@type": "Person", "name": "Arun Kumar" },
+        "image": "https://arun-karyana-store.netlify.app/assets/img/og.jpg",
+        "url": "https://arun-karyana-store.netlify.app/",
         "telephone": "+91-94168-91710",
         "email": "contact@arunkaryanastore.com",
         "priceRange": "₹",
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "Railway Road",
-            "addressLocality": "Barara",
-            "addressRegion": "Haryana",
-            "postalCode": "133201",
-            "addressCountry": "IN"
-        },
+        "paymentAccepted": "Cash, UPI",
+        "address": { "@type": "PostalAddress", "streetAddress": "Railway Road", "addressLocality": "Barara", "addressRegion": "Haryana", "postalCode": "133201", "addressCountry": "IN" },
         "geo": { "@type": "GeoCoordinates", "latitude": 30.21358, "longitude": 77.03929 },
         "openingHoursSpecification": [
             { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "08:00", "closes": "21:00" },
@@ -52,414 +49,360 @@
     <script src="config.js"></script>
     <script src="assets/js/auth.js"></script>
 </head>
-<body class="has-tabbar">
-    <div class="aurora" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+<body class="grain">
 
-    <!-- Announcement banner (managed from Admin → Banners) -->
-    <div id="site-banner" class="site-banner hidden" role="region" aria-label="Announcements"></div>
+    <div id="announce" class="announce hidden" role="region" aria-label="Announcements"></div>
 
-    <!-- Header -->
-    <header id="site-header" class="site-header glass">
-        <div class="bar">
-            <a href="/" class="brand" aria-label="Arun Karyana Store home">
-                <span class="brand-mark">
-                    <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="" width="44" height="44"
-                         onerror="this.remove()">
-                    AK
-                </span>
-                <span>
-                    <span class="brand-name">Arun Karyana</span><br>
-                    <span class="brand-sub">Barara · since 1977</span>
-                </span>
-            </a>
-
-            <nav class="nav-links" aria-label="Primary">
-                <a href="#shop">Shop</a>
-                <a href="#offers">Offers</a>
-                <a href="#about">Our Story</a>
-                <a href="#contact">Contact</a>
-            </nav>
-
-            <div class="header-search search-container" data-search>
-                <i class="fas fa-magnifying-glass"></i>
-                <input type="search" id="search-input" placeholder="Search atta, dal, soap…" autocomplete="off" aria-label="Search products" aria-controls="search-results" aria-expanded="false">
-                <kbd>/</kbd>
-                <div id="search-results" class="search-results glass-strong hidden" role="listbox"></div>
-            </div>
-
-            <div class="header-actions">
-                <div style="position:relative">
-                    <a href="login.html" id="auth-link" class="btn btn-glass btn-sm account-btn"><i class="fas fa-user"></i><span id="auth-label">Sign in</span></a>
-                    <div id="account-menu" class="account-menu glass-strong" role="menu">
-                        <div class="who"><strong id="account-name">Hello!</strong><span>Welcome back</span></div>
-                        <a href="profile.html" role="menuitem"><i class="fas fa-user-circle"></i>My Profile</a>
-                        <a href="order-history.html" role="menuitem"><i class="fas fa-receipt"></i>My Orders</a>
-                        <a href="admin.html" id="admin-nav-link" class="hidden" role="menuitem"><i class="fas fa-gauge-high"></i>Admin Dashboard</a>
-                        <button type="button" id="logout-btn" role="menuitem"><i class="fas fa-arrow-right-from-bracket"></i>Log out</button>
-                    </div>
+    <!-- Floating navigation -->
+    <header class="nav" id="nav">
+        <a href="#top" class="wordmark" aria-label="Arun Karyana Store — home"><b>Arun Karyana</b><small>EST. 1977</small></a>
+        <nav class="nav-links" aria-label="Primary">
+            <a href="#story">Story</a>
+            <a href="#shop">Shop</a>
+            <a href="#editions">Offers</a>
+            <a href="#visit">Visit</a>
+        </nav>
+        <div class="nav-actions">
+            <button class="icon-btn" id="open-search" aria-label="Search products"><i class="fas fa-magnifying-glass"></i></button>
+            <div style="position:relative">
+                <a href="login.html" id="auth-link" class="icon-btn nav-account" aria-label="Account"><i class="far fa-user"></i></a>
+                <div class="account-pop" id="account-pop" role="menu">
+                    <div class="who"><strong id="account-name">Namaste</strong><span>Signed in</span></div>
+                    <a href="profile.html" role="menuitem"><i class="far fa-user"></i>Profile &amp; addresses</a>
+                    <a href="order-history.html" role="menuitem"><i class="fas fa-receipt"></i>My orders</a>
+                    <a href="admin.html" id="admin-link" class="hidden" role="menuitem"><i class="fas fa-gauge-high"></i>Admin dashboard</a>
+                    <button type="button" id="logout-btn" role="menuitem"><i class="fas fa-arrow-right-from-bracket"></i>Log out</button>
                 </div>
-                <button id="cart-btn" class="icon-btn btn-glass" aria-label="Open cart">
-                    <i class="fas fa-bag-shopping"></i>
-                    <span id="cart-count" class="badge-count">0</span>
-                </button>
             </div>
-        </div>
-        <div class="mobile-search">
-            <div class="header-search search-container" data-search>
-                <i class="fas fa-magnifying-glass"></i>
-                <input type="search" id="search-input-mobile" placeholder="Search groceries & essentials" autocomplete="off" aria-label="Search products">
-                <div id="search-results-mobile" class="search-results glass-strong hidden" role="listbox"></div>
-            </div>
+            <button class="icon-btn" id="cart-btn" aria-label="Open bag"><i class="fas fa-bag-shopping"></i><span class="bag-count" id="cart-count" hidden>0</span></button>
+            <button class="icon-btn menu-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false"><i class="fas fa-bars-staggered"></i></button>
         </div>
     </header>
 
+    <!-- Mobile menu -->
+    <div class="menu-sheet" id="menu" aria-hidden="true">
+        <nav aria-label="Menu">
+            <a href="#story" data-close-menu><span>01</span>Our story</a>
+            <a href="#shop" data-close-menu><span>02</span>Shop</a>
+            <a href="#editions" data-close-menu><span>03</span>Offers</a>
+            <a href="#visit" data-close-menu><span>04</span>Visit</a>
+            <a href="login.html" id="menu-account"><span>05</span>Sign in</a>
+        </nav>
+        <div class="foot">
+            <a href="tel:+919416891710"><i class="fas fa-phone"></i>&nbsp; +91 94168 91710</a>
+            <a href="https://wa.me/919416891710" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i>&nbsp; WhatsApp the store</a>
+            <span>Railway Road, Barara · Haryana 133201</span>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-sheet" id="search" role="dialog" aria-modal="true" aria-label="Search products" aria-hidden="true">
+        <div class="field-big">
+            <i class="fas fa-magnifying-glass" style="font-size:26px;opacity:.5"></i>
+            <input id="search-input" type="search" placeholder="Search the shelves…" autocomplete="off" aria-label="Search products">
+            <button class="icon-btn" id="close-search" aria-label="Close search"><i class="fas fa-xmark" style="font-size:20px"></i></button>
+        </div>
+        <div class="search-hits" id="search-hits" role="listbox"></div>
+        <div class="search-hint" id="search-hint">Try <button data-q="atta">Atta</button><button data-q="dal">Dal</button><button data-q="tea">Tea</button><button data-q="oil">Oil</button><button data-q="soap">Soap</button></div>
+    </div>
+
     <main id="main">
-        <!-- Hero -->
-        <section class="hero">
-            <div class="container hero-grid">
-                <div class="hero-copy">
-                    <span class="eyebrow glass"><span class="dot"></span>Open today · Delivering across Barara</span>
-                    <h1 class="display">Everyday essentials,<br><span class="grad">delivered</span> <em>fresh.</em></h1>
-                    <p class="lede">From atta and dal to soaps and snacks — the neighbourhood store Barara has trusted since 1977, now at your fingertips.</p>
+
+        <!-- 00 · The counter at night -->
+        <section class="hero dark" id="top" data-hero data-theme="dark">
+            <div class="hero-stage" data-scene>
+                <img class="hero-poster" src="assets/img/hero-poster.jpg" alt="" fetchpriority="high">
+                <canvas aria-label="A brass shop scale on a wooden counter under a single bulb, dal pouring into one pan" role="img"></canvas>
+                <div class="hero-shade"></div>
+                <div class="hero-copy wrap">
+                    <p class="label">Est. 1977 · Railway Road, Barara</p>
+                    <h1 class="display">Weighed <em>fairly,</em><br>since 1977.</h1>
+                    <p class="lede">Dal, atta, masale, chai and every daily essential — from the same counter Barara has trusted for decades, now delivered to your door.</p>
                     <div class="hero-ctas">
-                        <a href="#shop" class="btn btn-primary btn-lg">Start shopping <i class="fas fa-arrow-right"></i></a>
-                        <a href="#offers" class="btn btn-glass btn-lg"><i class="fas fa-tag" style="color:var(--brand)"></i>Today's offers</a>
-                    </div>
-                    <div class="hero-stats">
-                        <div class="stat glass"><strong id="stat-years">48+</strong><span>years of trust</span></div>
-                        <div class="stat glass"><strong id="stat-products">500+</strong><span>products in store</span></div>
-                        <div class="stat glass"><strong>₹500</strong><span>free delivery above</span></div>
+                        <a href="#shop" class="btn btn-saffron">Shop the shelves <span class="arrow"><i class="fas fa-arrow-right"></i></span></a>
+                        <a href="#story" class="link-u" style="color:var(--cream)">Our story</a>
                     </div>
                 </div>
-
-                <div class="hero-stage" id="hero-stage">
-                    <div class="hero-orb" aria-hidden="true"></div>
-                    <div class="hero-fallback" aria-hidden="true">
-                        <span style="left:22%;top:18%">🍎</span>
-                        <span style="right:18%;top:30%;animation-delay:-2s">🥛</span>
-                        <span style="left:34%;bottom:20%;animation-delay:-4s">🛍️</span>
-                    </div>
-                    <canvas id="hero-canvas" aria-label="Animated 3D illustration of groceries" role="img"></canvas>
-                    <div class="float-card fc-1 glass-strong"><span class="ic orb-icon orb-green" style="width:36px;height:36px;border-radius:12px;font-size:15px"><i class="fas fa-truck-fast"></i></span><span>Free delivery<small>on orders over ₹500</small></span></div>
-                    <div class="float-card fc-2 glass-strong"><span class="ic orb-icon orb-gold" style="width:36px;height:36px;border-radius:12px;font-size:15px"><i class="fas fa-bolt"></i></span><span>Same-day<small>local delivery</small></span></div>
-                    <div class="float-card fc-3 glass-strong"><span class="ic orb-icon orb-pink" style="width:36px;height:36px;border-radius:12px;font-size:15px"><i class="fas fa-heart"></i></span><span>Loved locally<small>since 1977</small></span></div>
-                </div>
-            </div>
-
-            <div class="container" style="margin-top:40px">
-                <div class="features">
-                    <div class="feature glass reveal"><span class="orb-icon orb-green"><i class="fas fa-truck-fast"></i></span><div><strong>Free delivery</strong><span>On orders above ₹500</span></div></div>
-                    <div class="feature glass reveal"><span class="orb-icon orb-gold"><i class="fas fa-percent"></i></span><div><strong>Daily offers</strong><span>Promo codes & auto deals</span></div></div>
-                    <div class="feature glass reveal"><span class="orb-icon orb-blue"><i class="fas fa-shield-heart"></i></span><div><strong>Genuine brands</strong><span>Sourced from trusted suppliers</span></div></div>
-                    <div class="feature glass reveal"><span class="orb-icon orb-violet"><i class="fas fa-headset"></i></span><div><strong>Real support</strong><span>Call or WhatsApp the store</span></div></div>
+                <p class="hero-caption">One scale. One ledger. One promise — you take home exactly what you pay for.<small>The counter, Railway Road</small></p>
+                <div class="hero-foot wrap">
+                    <span class="open-status" id="open-status"><span class="dot"></span><span class="t">Railway Road, Barara</span></span>
+                    <span class="scroll-cue">Scroll <span></span></span>
                 </div>
             </div>
         </section>
 
-        <!-- Categories -->
-        <section class="section" id="categories" style="padding-bottom:24px">
-            <div class="container">
-                <div class="section-head reveal">
-                    <div>
-                        <span class="eyebrow glass"><span class="dot"></span>Browse</span>
-                        <h2 class="title">Shop by <em>category</em></h2>
+        <!-- 01 · The counter (manifesto) -->
+        <section class="manifesto dark" id="story" data-theme="dark">
+            <div class="wrap manifesto-grid">
+                <div>
+                    <p class="chapter-no">01 — THE COUNTER</p>
+                    <div class="seal" aria-hidden="true">
+                        <svg viewBox="0 0 200 200"><defs><path id="circle" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
+                            <text font-family="Barlow Condensed, sans-serif" font-size="15.5" letter-spacing="4.2" fill="#b7a993"><textPath href="#circle">ARUN KARYANA STORE • BARARA • HARYANA • </textPath></text></svg>
+                        <div class="core"><div>1977<small>EST.</small></div></div>
                     </div>
                 </div>
-                <div class="cat-rail" id="category-cards">
-                    <!-- filled by store.js -->
+                <div>
+                    <p class="manifesto-text" data-words>Before the supermarkets. Before the apps. There was a counter on Railway Road. In <span data-gold>1977</span>, Arun Kumar opened it with a brass scale, a ledger, and one simple <span data-gold>promise</span>: every customer takes home exactly what they pay for. The scale has been polished a thousand times since. The promise hasn't changed.</p>
+                    <div class="manifesto-foot">
+                        <span class="deva">अरुण करियाना स्टोर</span>
+                        <span>A neighbourhood store, now at your fingertips.</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Products -->
-        <section class="section" id="shop" style="padding-top:48px">
-            <div class="container">
-                <div class="section-head reveal">
-                    <div>
-                        <span class="eyebrow glass"><span class="dot"></span>In stock now</span>
-                        <h2 class="title">Our <em>products</em></h2>
-                    </div>
-                    <p class="lede" style="margin:0">Tap a product for details. Add to your bag and check out in under a minute.</p>
-                </div>
+        <!-- staples marquee -->
+        <section class="staples dark" aria-label="What we stock" data-theme="dark">
+            <div class="row"><div class="track" aria-hidden="true"><span>Atta</span><span class="deva">आटा</span><span class="dot">✦</span><span>Dal</span><span class="deva">दाल</span><span class="dot">✦</span><span>Chawal</span><span class="deva">चावल</span><span class="dot">✦</span><span>Masale</span><span class="deva">मसाले</span><span class="dot">✦</span></div><div class="track" aria-hidden="true"><span>Atta</span><span class="deva">आटा</span><span class="dot">✦</span><span>Dal</span><span class="deva">दाल</span><span class="dot">✦</span><span>Chawal</span><span class="deva">चावल</span><span class="dot">✦</span><span>Masale</span><span class="deva">मसाले</span><span class="dot">✦</span></div></div>
+            <div class="row rev"><div class="track" aria-hidden="true"><span>Chai</span><span class="deva">चाय</span><span class="dot">✦</span><span>Tel</span><span class="deva">तेल</span><span class="dot">✦</span><span>Sabun</span><span class="deva">साबुन</span><span class="dot">✦</span><span>Namkeen</span><span class="deva">नमकीन</span><span class="dot">✦</span></div><div class="track" aria-hidden="true"><span>Chai</span><span class="deva">चाय</span><span class="dot">✦</span><span>Tel</span><span class="deva">तेल</span><span class="dot">✦</span><span>Sabun</span><span class="deva">साबुन</span><span class="dot">✦</span><span>Namkeen</span><span class="deva">नमकीन</span><span class="dot">✦</span></div></div>
+            <p class="sr-only">Atta, dal, chawal, masale, chai, tel, sabun and namkeen.</p>
+        </section>
 
-                <div class="toolbar">
-                    <div class="chip-rail" id="category-chips" role="tablist" aria-label="Filter by category">
-                        <button class="chip glass active" data-category="all" role="tab" aria-selected="true">All items</button>
+        <!-- 02 · The promise -->
+        <section class="promise-sec paper" data-theme="paper">
+            <div class="wrap">
+                <div class="sec-head">
+                    <div>
+                        <p class="chapter-no">02 — THE PROMISE</p>
+                        <h2 class="h2 rv" style="margin-top:18px">Three things we've never <em>cut corners</em> on.</h2>
                     </div>
-                    <div class="toolbar-right">
-                        <label class="switch"><input type="checkbox" id="in-stock-only"> In stock</label>
-                        <div class="select-wrap">
-                            <select id="sort-select" aria-label="Sort products">
-                                <option value="featured">Featured</option>
-                                <option value="price-asc">Price: Low to High</option>
-                                <option value="price-desc">Price: High to Low</option>
-                                <option value="name">Name A–Z</option>
-                            </select>
-                            <i class="fas fa-chevron-down"></i>
+                    <p class="lede rv rv-d1">Four decades in, the store has changed shape — the shelves are fuller, the orders now come by phone and screen — but the way we work is still the way it began.</p>
+                </div>
+                <div class="pillars">
+                    <article class="pillar rv">
+                        <span class="roman">i.</span>
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M32 8v44M18 56h28M10 18h44"/><circle cx="32" cy="8" r="2.5"/><path d="M10 18 4 34h12L10 18ZM54 18l-6 16h12l-6-16Z"/><path d="M4 34a6 4 0 0 0 12 0M48 34a6 4 0 0 0 12 0"/></svg>
+                        <h3>Fair measure</h3>
+                        <p>Every kilo is a full kilo. Goods are weighed and packed with the same care you'd get standing at the counter.</p>
+                    </article>
+                    <article class="pillar rv rv-d1">
+                        <span class="roman">ii.</span>
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14h26M20 24h26M24 14c10 0 14 4 14 10s-4 10-14 10h-4l20 20"/></svg>
+                        <h3>Honest prices</h3>
+                        <p>Fair, competitive prices on the brands your family already trusts — with regular offers for loyal customers.</p>
+                    </article>
+                    <article class="pillar rv rv-d2">
+                        <span class="roman">iii.</span>
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="46" r="9"/><circle cx="50" cy="46" r="9"/><path d="M14 46 24 26h16l10 20M24 26l-4-8h-6M40 26l-8 20H14M36 18h8"/></svg>
+                        <h3>To your doorstep</h3>
+                        <p>Order in a minute, pay in cash or UPI when it arrives. Delivery across Barara is free on orders over ₹500.</p>
+                    </article>
+                </div>
+                <div class="stats rv">
+                    <div class="stat"><b>1977</b><span>Opened on Railway Road</span></div>
+                    <div class="stat"><b id="stat-years">48</b><span>Years behind the counter</span></div>
+                    <div class="stat"><b>₹500</b><span>Free delivery above</span></div>
+                    <div class="stat"><b>7</b><span>Days a week, open</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 03 · The shelves -->
+        <section class="shop paper" id="shop" data-theme="paper">
+            <div class="wrap">
+                <div class="sec-head">
+                    <div>
+                        <p class="chapter-no">03 — THE SHELVES</p>
+                        <h2 class="h2 rv" style="margin-top:18px">The whole store, <em>one scroll</em> away.</h2>
+                    </div>
+                    <p class="lede rv rv-d1">Pick an aisle or search the shelves. Add to your bag and check out in under a minute — no account needed.</p>
+                </div>
+                <div class="shop-layout">
+                    <aside class="aisle">
+                        <div class="aisle-inner">
+                            <h4>Aisles</h4>
+                            <ul class="aisle-list" id="aisles" role="tablist" aria-label="Categories"></ul>
+                            <div class="aisle-note"><strong>Can't find something?</strong>Call or WhatsApp us on +91 94168 91710 — if it's on our shelves in store, we'll add it to your order.</div>
                         </div>
-                    </div>
-                </div>
-                <p class="result-meta" id="result-meta"></p>
-
-                <div class="product-grid" id="product-grid" aria-live="polite">
-                    <!-- skeletons replaced once products load -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Offers -->
-        <section class="section" id="offers">
-            <div class="container">
-                <div class="section-head reveal">
+                    </aside>
                     <div>
-                        <span class="eyebrow glass"><span class="dot"></span>Save more</span>
-                        <h2 class="title">Special <em>offers</em></h2>
-                    </div>
-                    <p class="lede" style="margin:0">Apply a code in your bag, or let automatic offers kick in when you qualify.</p>
-                </div>
-                <div class="offer-grid" id="offers-grid"></div>
-            </div>
-        </section>
-
-        <!-- Reviews -->
-        <section class="section" id="reviews" style="padding-top:24px">
-            <div class="container">
-                <div class="section-head reveal">
-                    <div>
-                        <span class="eyebrow glass"><span class="dot"></span>Kind words</span>
-                        <h2 class="title">Loved by <em>neighbours</em></h2>
-                    </div>
-                </div>
-                <div class="review-rail" id="reviews-grid"></div>
-            </div>
-        </section>
-
-        <!-- About -->
-        <section class="section" id="about">
-            <div class="container about-grid">
-                <div class="story glass reveal">
-                    <span class="eyebrow glass"><span class="dot"></span>Our story</span>
-                    <h2 class="title">Four decades of <em>trust</em>, one neighbourhood.</h2>
-                    <p>Established in 1977 by Arun Kumar, Arun Karyana Store has served the Barara community with quality household products at honest prices.</p>
-                    <p>Our mission hasn't changed: a wide range of daily essentials, the highest standards of quality, and service that feels like family — now with the convenience of ordering online.</p>
-                    <div class="quote">“We believe in building relationships with our customers through trust and quality service.”</div>
-                    <div class="hero-ctas" style="margin-top:24px">
-                        <a href="https://www.google.com/maps/search/?api=1&query=Arun+Karyana+Store,+Railway+Road,+Barara,+Ambala,+Haryana+133201" target="_blank" rel="noopener" class="btn btn-dark"><i class="fas fa-location-dot"></i>Visit the store</a>
-                    </div>
-                    <div class="since" aria-hidden="true">1977</div>
-                </div>
-                <div class="values">
-                    <div class="value glass reveal"><span class="orb-icon orb-gold"><i class="fas fa-star"></i></span><div><h4>Quality assurance</h4><p>We stock only the best products from trusted suppliers and brands.</p></div></div>
-                    <div class="value glass reveal"><span class="orb-icon orb-green"><i class="fas fa-indian-rupee-sign"></i></span><div><h4>Fair pricing</h4><p>Competitive prices, every day, without compromising on quality.</p></div></div>
-                    <div class="value glass reveal"><span class="orb-icon orb-pink"><i class="fas fa-hands-holding-circle"></i></span><div><h4>Personal service</h4><p>Friendly, knowledgeable people who know your name — in store and online.</p></div></div>
-                    <div class="value glass reveal"><span class="orb-icon orb-blue"><i class="fas fa-motorcycle"></i></span><div><h4>Doorstep delivery</h4><p>Quick local delivery across Barara, free on orders over ₹500.</p></div></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Contact -->
-        <section class="section" id="contact">
-            <div class="container">
-                <div class="section-head reveal">
-                    <div>
-                        <span class="eyebrow glass"><span class="dot"></span>Say namaste</span>
-                        <h2 class="title">Get in <em>touch</em></h2>
-                    </div>
-                </div>
-                <div class="contact-grid">
-                    <div class="contact-card glass reveal">
-                        <div class="info-row"><span class="orb-icon"><i class="fas fa-location-dot"></i></span><div><small>Address</small><span>Railway Road, Barara, Ambala, Haryana 133201</span></div></div>
-                        <div class="info-row"><span class="orb-icon orb-green"><i class="fas fa-phone"></i></span><div><small>Call</small><a href="tel:+919416891710">+91 94168 91710</a></div></div>
-                        <div class="info-row"><span class="orb-icon orb-teal"><i class="fab fa-whatsapp"></i></span><div><small>WhatsApp</small><a href="https://wa.me/919416891710" target="_blank" rel="noopener">Chat with the store</a></div></div>
-                        <div class="info-row"><span class="orb-icon orb-blue"><i class="fas fa-envelope"></i></span><div><small>Email</small><a href="mailto:contact@arunkaryanastore.com">contact@arunkaryanastore.com</a></div></div>
-                        <div class="info-row"><span class="orb-icon orb-violet"><i class="fas fa-clock"></i></span><div style="flex:1"><small>Opening hours</small>
-                            <div class="hours">
-                                <div><span>Mon – Fri</span><span>8 AM – 9 PM</span></div>
-                                <div><span>Saturday</span><span>8 AM – 10 PM</span></div>
-                                <div><span>Sunday</span><span>9 AM – 8 PM</span></div>
+                        <div class="shelf-bar">
+                            <label class="shelf-search"><i class="fas fa-magnifying-glass" style="opacity:.5"></i><input id="shelf-search" type="search" placeholder="Search the shelves" autocomplete="off" aria-label="Filter products"></label>
+                            <div class="shelf-tools">
+                                <label class="toggle"><input type="checkbox" id="in-stock-only"> In stock</label>
+                                <label class="pick">Sort
+                                    <select id="sort-select" aria-label="Sort products">
+                                        <option value="featured">Featured</option>
+                                        <option value="price-asc">Price ↑</option>
+                                        <option value="price-desc">Price ↓</option>
+                                        <option value="name">A – Z</option>
+                                    </select><i class="fas fa-chevron-down"></i>
+                                </label>
                             </div>
-                        </div></div>
-                        <div class="map-frame">
-                            <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d215.48897172288514!2d77.03929385143907!3d30.21358324180523!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v1746186395396!5m2!1sen!2sin"
-                                    loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to Arun Karyana Store" allowfullscreen></iframe>
                         </div>
-                    </div>
-
-                    <div class="contact-card glass reveal">
-                        <h3 style="margin:0 0 4px;font-size:22px;letter-spacing:-.025em">Send us a message</h3>
-                        <p style="margin:0 0 20px;color:var(--muted)">Questions, bulk orders or feedback — we usually reply within a day.</p>
-                        <div id="contact-form-message" class="notice hidden" style="margin-bottom:14px"></div>
-                        <form id="contact-form" class="form-grid" novalidate>
-                            <div class="form-grid two">
-                                <div class="field"><label for="contact-name">Your name <span class="req">*</span></label><input id="contact-name" name="name" required autocomplete="name" placeholder="Full name"></div>
-                                <div class="field"><label for="contact-phone">Phone <span class="req">*</span></label><input id="contact-phone" name="phone" type="tel" required autocomplete="tel" placeholder="10-digit mobile"></div>
-                            </div>
-                            <div class="field"><label for="contact-email">Email <span class="req">*</span></label><input id="contact-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
-                            <div class="field"><label for="contact-message">Message <span class="req">*</span></label><textarea id="contact-message" name="message" rows="5" required placeholder="How can we help?"></textarea></div>
-                            <button type="submit" id="contact-submit-btn" class="btn btn-primary btn-lg"><i class="fas fa-paper-plane"></i>Send message</button>
-                        </form>
+                        <p class="result-line" id="result-line" aria-live="polite"></p>
+                        <div class="grid" id="grid"></div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- 04 · Editions (offers) -->
+        <section class="editions dark" id="editions" data-theme="dark">
+            <div class="wrap">
+                <div class="sec-head">
+                    <div>
+                        <p class="chapter-no">04 — THIS WEEK AT THE COUNTER</p>
+                        <h2 class="h2 rv" style="margin-top:18px">Offers, <em>kept simple.</em></h2>
+                    </div>
+                    <p class="lede rv rv-d1">Enter a code in your bag — or don't: automatic offers apply themselves the moment your order qualifies.</p>
+                </div>
+                <div class="ed-grid" id="offers"></div>
+            </div>
+        </section>
+
+        <!-- 05 · Neighbours -->
+        <section class="voices paper" id="voices" data-theme="paper">
+            <div class="wrap">
+                <p class="chapter-no">05 — FROM THE NEIGHBOURHOOD</p>
+                <div class="voice-stage" id="voice-stage" style="margin-top:40px" aria-live="polite"></div>
+                <div class="voice-nav" id="voice-nav">
+                    <button id="voice-prev" aria-label="Previous review"><i class="fas fa-arrow-left"></i></button>
+                    <button id="voice-next" aria-label="Next review"><i class="fas fa-arrow-right"></i></button>
+                    <div class="bar"><i id="voice-bar"></i></div>
+                    <span class="count" id="voice-count"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 06 · Visit -->
+        <section class="visit dark" id="visit" data-theme="dark">
+            <div class="wrap visit-grid">
+                <div>
+                    <p class="chapter-no">06 — COME BY THE COUNTER</p>
+                    <p class="address">Railway Road,<br>Barara, Ambala<br><em style="color:var(--brass-2)">Haryana 133201</em></p>
+                    <div class="hours" id="hours">
+                        <div data-days="1,2,3,4,5"><span>Mon – Fri</span><span>8:00 AM – 9:00 PM</span></div>
+                        <div data-days="6"><span>Saturday</span><span>8:00 AM – 10:00 PM</span></div>
+                        <div data-days="0"><span>Sunday</span><span>9:00 AM – 8:00 PM</span></div>
+                    </div>
+                    <div class="visit-ctas">
+                        <a class="btn btn-saffron" href="https://www.google.com/maps/search/?api=1&query=Arun+Karyana+Store,+Railway+Road,+Barara,+Ambala,+Haryana+133201" target="_blank" rel="noopener">Directions <span class="arrow"><i class="fas fa-arrow-right"></i></span></a>
+                        <a class="btn btn-line no-arrow" href="tel:+919416891710"><i class="fas fa-phone"></i>&nbsp; Call</a>
+                        <a class="btn btn-line no-arrow" href="https://wa.me/919416891710" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i>&nbsp; WhatsApp</a>
+                    </div>
+                </div>
+                <div class="map rv">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d215.48897172288514!2d77.03929385143907!3d30.21358324180523!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v1746186395396!5m2!1sen!2sin" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to Arun Karyana Store"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- Write to us -->
+        <section class="letter paper" id="contact" data-theme="paper">
+            <div class="wrap letter-grid">
+                <div>
+                    <p class="chapter-no">07 — WRITE TO US</p>
+                    <h2 class="h2" style="margin-top:18px">Bulk orders, questions, <em>or just namaste.</em></h2>
+                    <p class="lede" style="margin-top:22px">We usually reply within a day. For anything urgent, a call or WhatsApp is quickest.</p>
+                </div>
+                <form id="contact-form" class="form-grid" novalidate>
+                    <div id="contact-msg" class="notice hidden"></div>
+                    <div class="form-grid two">
+                        <div class="field"><label for="contact-name">Name <span class="req">*</span></label><input id="contact-name" required autocomplete="name"></div>
+                        <div class="field"><label for="contact-phone">Phone <span class="req">*</span></label><input id="contact-phone" type="tel" required autocomplete="tel"></div>
+                    </div>
+                    <div class="field"><label for="contact-email">Email <span class="req">*</span></label><input id="contact-email" type="email" required autocomplete="email"></div>
+                    <div class="field"><label for="contact-message">Message <span class="req">*</span></label><textarea id="contact-message" rows="4" required></textarea></div>
+                    <div><button type="submit" class="btn btn-ink" id="contact-submit">Send message <span class="arrow"><i class="fas fa-arrow-right"></i></span></button></div>
+                </form>
             </div>
         </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="site-footer glass-dark">
-        <div class="container">
-            <div class="footer-grid">
+    <footer class="footer dark" data-theme="dark">
+        <div class="wrap">
+            <div class="footer-top">
                 <div>
-                    <div class="brand"><span class="brand-mark">AK</span><span><span class="brand-name">Arun Karyana Store</span><br><span class="brand-sub">Barara · since 1977</span></span></div>
-                    <p>Your trusted neighbourhood store for all household needs — now online.</p>
-                    <div class="social">
+                    <p class="promise">Weighed <em>fairly,</em><br>since 1977.</p>
+                    <div class="socials">
                         <a href="https://wa.me/919416891710" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        <a href="tel:+919416891710" aria-label="Call the store"><i class="fas fa-phone"></i></a>
-                        <a href="mailto:contact@arunkaryanastore.com" aria-label="Email the store"><i class="fas fa-envelope"></i></a>
+                        <a href="tel:+919416891710" aria-label="Call"><i class="fas fa-phone"></i></a>
+                        <a href="mailto:contact@arunkaryanastore.com" aria-label="Email"><i class="far fa-envelope"></i></a>
                     </div>
                 </div>
-                <div>
-                    <h5>Shop</h5>
-                    <ul>
-                        <li><a href="#shop">All products</a></li>
-                        <li><a href="#categories">Categories</a></li>
-                        <li><a href="#offers">Offers</a></li>
-                        <li><a href="order-history.html">My orders</a></li>
-                        <li><a href="profile.html">My profile</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h5>Help</h5>
-                    <ul>
-                        <li><a href="faq.html">FAQs</a></li>
-                        <li><a href="shipping-policy.html">Shipping policy</a></li>
-                        <li><a href="return-policy.html">Return policy</a></li>
-                        <li><a href="privacy-policy.html">Privacy policy</a></li>
-                        <li><a href="terms.html">Terms & conditions</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h5>Visit</h5>
-                    <ul>
-                        <li><a href="https://www.google.com/maps/search/?api=1&query=Arun+Karyana+Store,+Railway+Road,+Barara,+Ambala,+Haryana+133201" target="_blank" rel="noopener">Railway Road, Barara<br>Ambala, Haryana 133201</a></li>
-                        <li><a href="tel:+919416891710">+91 94168 91710</a></li>
-                        <li><a href="#contact">Opening hours</a></li>
-                    </ul>
-                </div>
+                <div><h4>Shop</h4><ul><li><a href="#shop">All products</a></li><li><a href="#editions">Offers</a></li><li><a href="order-history.html">My orders</a></li><li><a href="profile.html">My profile</a></li></ul></div>
+                <div><h4>Help</h4><ul><li><a href="faq.html">FAQs</a></li><li><a href="shipping-policy.html">Shipping</a></li><li><a href="return-policy.html">Returns</a></li><li><a href="privacy-policy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li></ul></div>
+                <div><h4>Visit</h4><ul><li><a href="#visit">Railway Road, Barara<br>Ambala, Haryana 133201</a></li><li><a href="tel:+919416891710">+91 94168 91710</a></li><li><a href="mailto:contact@arunkaryanastore.com">contact@arunkaryanastore.com</a></li></ul></div>
             </div>
-            <div class="footer-bottom">
-                <span>© <span data-year></span> Arun Karyana Store. All rights reserved.</span>
-                <span>Made with <i class="fas fa-heart" style="color:#ff7b7f"></i> for the Barara community</span>
-            </div>
+            <div class="footer-mark" aria-hidden="true">Arun Karyana<span class="deva">किराना</span></div>
+            <div class="footer-bottom"><span>© <span data-year>2026</span> Arun Karyana Store, Barara.</span><span>Serving the neighbourhood since 1977.</span></div>
         </div>
     </footer>
 
-    <!-- Mobile tab bar -->
-    <nav class="tabbar glass-strong" aria-label="Quick navigation">
-        <a href="#main" class="active" data-tab="home"><i class="fas fa-house"></i>Home</a>
-        <a href="#categories" data-tab="categories"><i class="fas fa-grip"></i>Categories</a>
-        <button type="button" id="tab-cart"><i class="fas fa-bag-shopping"></i>Bag<span id="tab-cart-count" class="badge-count">0</span></button>
-        <a href="login.html" id="tab-account"><i class="fas fa-user"></i><span>Account</span></a>
-    </nav>
-
-    <!-- Cart drawer -->
-    <div id="scrim" class="scrim"></div>
-    <aside id="cart-drawer" class="drawer glass-strong" role="dialog" aria-modal="true" aria-labelledby="cart-heading" aria-hidden="true">
+    <!-- Bag -->
+    <div class="scrim" id="scrim"></div>
+    <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="bag-title" aria-hidden="true">
         <div class="drawer-head">
-            <h2 id="cart-heading">Your bag <span id="cart-heading-count"></span></h2>
-            <button id="close-cart" class="icon-btn btn-glass" aria-label="Close cart"><i class="fas fa-xmark"></i></button>
+            <h2 id="bag-title">Your bag<small id="bag-count-label"></small></h2>
+            <button class="icon-btn" id="close-cart" aria-label="Close bag"><i class="fas fa-xmark"></i></button>
         </div>
-        <div class="steps" aria-hidden="true"><span class="on" data-step="1"></span><span data-step="2"></span></div>
-
-        <div class="drawer-body">
-            <!-- Step 1: items -->
-            <div id="cart-step-items">
-                <div id="free-delivery-card" class="progress-card glass hidden">
-                    <p id="free-delivery-text"></p>
-                    <div class="bar-track"><div class="bar-fill" id="free-delivery-bar" style="width:0%"></div></div>
+        <div class="steps" aria-hidden="true"><span class="on" data-step="1"><b>01</b>Bag</span><span data-step="2"><b>02</b>Delivery</span></div>
+        <div class="drawer-body" id="drawer-body">
+            <div id="step-bag">
+                <div class="meter hidden" id="meter"><p id="meter-text"></p><div class="track"><div class="fill" id="meter-fill" style="width:0"></div></div></div>
+                <div id="bag-lines"></div>
+                <div class="empty-bag hidden" id="bag-empty">
+                    <p class="h3">Your bag is empty.</p>
+                    <p>The shelves are full, though.</p>
+                    <button class="btn btn-ink" data-go-shop>Browse the shelves <span class="arrow"><i class="fas fa-arrow-right"></i></span></button>
                 </div>
-                <div id="cart-items"></div>
-                <div id="cart-empty" class="cart-empty">
-                    <span class="orb-icon orb-gold"><i class="fas fa-bag-shopping"></i></span>
-                    <h3>Your bag is empty</h3>
-                    <p>Add a few essentials and they'll show up here.</p>
-                    <button class="btn btn-primary" data-close-cart>Browse products</button>
-                </div>
-                <div id="promo-block" class="hidden">
-                    <div class="block-title"><i class="fas fa-ticket"></i>Promo code</div>
+                <div class="promo hidden" id="promo">
                     <div class="promo-row" id="promo-row">
-                        <input id="promo-code-input" class="input" placeholder="Enter code" autocomplete="off" aria-label="Promo code">
-                        <button id="apply-promo-btn" class="btn btn-dark">Apply</button>
+                        <div class="field"><label for="promo-input">Promo code</label><input id="promo-input" autocomplete="off"></div>
+                        <button class="btn btn-ink btn-sm no-arrow" id="promo-apply">Apply</button>
                     </div>
-                    <div id="applied-promo" class="applied promo hidden">
-                        <i class="fas fa-circle-check lead"></i>
-                        <div><strong id="applied-promo-code"></strong><span id="applied-promo-desc"></span></div>
-                        <button id="remove-promo-btn" aria-label="Remove promo code"><i class="fas fa-xmark"></i></button>
-                    </div>
-                    <div id="automatic-offer" class="applied auto hidden">
-                        <i class="fas fa-gift lead"></i>
-                        <div><strong id="automatic-offer-title"></strong><span id="automatic-offer-desc"></span></div>
-                    </div>
+                    <div class="applied hidden" id="promo-applied"><i class="fas fa-circle-check lead"></i><div><strong id="promo-title"></strong><span id="promo-desc"></span></div><button id="promo-remove" aria-label="Remove code"><i class="fas fa-xmark"></i></button></div>
+                    <div class="applied hidden" id="auto-offer"><i class="fas fa-gift lead"></i><div><strong id="auto-title"></strong><span id="auto-desc"></span></div></div>
                 </div>
             </div>
-
-            <!-- Step 2: details -->
-            <form id="cart-step-details" class="hidden" novalidate>
-                <button type="button" class="link-btn" id="back-to-items" style="margin:4px 0 8px"><i class="fas fa-arrow-left"></i>Back to bag</button>
-                <div id="saved-addresses-section" class="hidden">
-                    <div class="block-title"><i class="fas fa-location-dot"></i>Saved addresses</div>
-                    <div class="field">
-                        <select id="saved-address-selector" aria-label="Choose a saved address"><option value="">Select a saved address</option></select>
-                    </div>
-                    <button type="button" id="address-mode-toggle" class="link-btn" style="margin-top:8px">Use a new address instead</button>
+            <form id="step-details" class="hidden" novalidate>
+                <button type="button" class="link-u" id="back-to-bag" style="margin-top:20px"><i class="fas fa-arrow-left"></i> Back to bag</button>
+                <div id="saved-addresses" class="hidden">
+                    <p class="block-t">Saved addresses</p>
+                    <div class="field"><select id="address-select" aria-label="Saved addresses"></select></div>
+                    <button type="button" class="link-u" id="address-toggle" style="margin-top:14px">Use a new address</button>
                 </div>
-                <div class="block-title"><i class="fas fa-user"></i>Delivery details</div>
+                <p class="block-t">Delivery details</p>
                 <div class="form-grid">
-                    <div class="field"><label for="customer_name">Full name <span class="req">*</span></label><input id="customer_name" required autocomplete="name" placeholder="Your name"></div>
+                    <div class="field"><label for="customer_name">Full name <span class="req">*</span></label><input id="customer_name" required autocomplete="name"></div>
                     <div class="form-grid two">
-                        <div class="field"><label for="customer_phone">Phone <span class="req">*</span></label><input id="customer_phone" type="tel" required autocomplete="tel" placeholder="10-digit mobile"></div>
-                        <div class="field"><label for="customer_email">Email <span class="req">*</span></label><input id="customer_email" type="email" required autocomplete="email" placeholder="For your receipt"></div>
+                        <div class="field"><label for="customer_phone">Phone <span class="req">*</span></label><input id="customer_phone" type="tel" required autocomplete="tel"></div>
+                        <div class="field"><label for="customer_email">Email <span class="req">*</span></label><input id="customer_email" type="email" required autocomplete="email"></div>
                     </div>
-                    <div class="field"><label for="customer_address">Delivery address <span class="req">*</span></label><textarea id="customer_address" rows="3" required autocomplete="street-address" placeholder="House no., street, landmark, Barara"></textarea></div>
+                    <div class="field"><label for="customer_address">Address <span class="req">*</span></label><textarea id="customer_address" rows="3" required autocomplete="street-address" placeholder="House no., street, landmark"></textarea></div>
                 </div>
-                <div class="notice info" style="margin-top:14px"><i class="fas fa-money-bill-wave"></i>Pay on delivery — cash or UPI at your door.</div>
+                <div class="notice info" style="margin-top:22px"><i class="fas fa-hand-holding-dollar"></i><span>Pay on delivery — cash or UPI at your door.</span></div>
             </form>
         </div>
-
-        <div class="drawer-foot" id="cart-foot">
+        <div class="drawer-foot" id="bag-foot">
             <div class="summary">
-                <div><span class="muted">Subtotal</span><span id="cart-subtotal">₹0</span></div>
-                <div id="discount-row" class="discount hidden"><span><i class="fas fa-tag"></i> Discount</span><span id="cart-discount">−₹0</span></div>
-                <div><span class="muted">Delivery</span><span id="delivery-charges">₹0</span></div>
-                <div class="total"><span>Total</span><span id="cart-total">₹0</span></div>
+                <div><span class="muted">Subtotal</span><span id="sum-sub">₹0</span></div>
+                <div id="sum-off-row" class="off hidden"><span>Discount</span><span id="sum-off">−₹0</span></div>
+                <div><span class="muted">Delivery</span><span id="sum-del">₹0</span></div>
+                <div class="total"><span>Total</span><span id="sum-total">₹0</span></div>
             </div>
-            <button id="checkout-btn" class="btn btn-primary btn-lg btn-block" style="margin-top:14px" disabled>Continue to checkout <i class="fas fa-arrow-right"></i></button>
+            <button class="btn btn-saffron btn-block" id="checkout-btn" style="margin-top:18px" disabled><span id="checkout-label">Checkout</span><span class="arrow"><i class="fas fa-arrow-right"></i></span></button>
         </div>
     </aside>
 
-    <!-- Product quick view -->
-    <div id="product-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="qv-name" aria-hidden="true">
-        <div class="modal-card glass-strong" style="position:relative">
-            <button class="icon-btn btn-glass modal-close" data-close-modal aria-label="Close"><i class="fas fa-xmark"></i></button>
-            <div class="qv-grid">
-                <div>
-                    <div class="qv-stage" id="qv-stage">
-                        <img id="qv-image" src="" alt="">
-                        <button class="qv-nav prev icon-btn btn-glass hidden" id="qv-prev" aria-label="Previous image"><i class="fas fa-chevron-left"></i></button>
-                        <button class="qv-nav next icon-btn btn-glass hidden" id="qv-next" aria-label="Next image"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                    <div class="qv-thumbs" id="qv-thumbs"></div>
-                </div>
-                <div class="qv-info">
-                    <span class="product-cat" id="qv-cat"></span>
-                    <h2 id="qv-name"></h2>
-                    <span class="price" id="qv-price"></span>
-                    <div id="qv-stock" style="margin-top:10px"></div>
-                    <div class="desc" id="qv-desc"></div>
-                    <div class="qv-actions" id="qv-actions"></div>
-                    <div class="qv-perks">
-                        <div><i class="fas fa-circle-check"></i>Genuine product from trusted suppliers</div>
-                        <div><i class="fas fa-circle-check"></i>Free delivery on orders over ₹500</div>
-                        <div><i class="fas fa-circle-check"></i>Pay on delivery — cash or UPI</div>
+    <!-- Product -->
+    <div class="modal" id="pdp" role="dialog" aria-modal="true" aria-labelledby="pdp-name" aria-hidden="true">
+        <div class="modal-card">
+            <button class="icon-btn modal-close" data-close-modal aria-label="Close"><i class="fas fa-xmark"></i></button>
+            <div class="pdp">
+                <div class="pdp-media"><img id="pdp-img" src="" alt=""><div class="pdp-thumbs" id="pdp-thumbs"></div></div>
+                <div class="pdp-info">
+                    <span class="card-cat" id="pdp-cat"></span>
+                    <h2 class="h2" id="pdp-name"></h2>
+                    <span class="pdp-price" id="pdp-price"></span>
+                    <p class="pdp-desc" id="pdp-desc"></p>
+                    <div class="pdp-actions" id="pdp-actions"></div>
+                    <div class="pdp-meta">
+                        <div><span>Availability</span><span id="pdp-stock"></span></div>
+                        <div><span>Delivery</span><span>Free across Barara over ₹500</span></div>
+                        <div><span>Payment</span><span>Cash or UPI on delivery</span></div>
                     </div>
                 </div>
             </div>
@@ -467,16 +410,16 @@
     </div>
 
     <!-- Offer details -->
-    <div id="offer-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="offer-modal-title" aria-hidden="true">
-        <div class="modal-card narrow glass-strong" style="position:relative;padding:28px">
-            <button class="icon-btn btn-glass modal-close" data-close-modal aria-label="Close"><i class="fas fa-xmark"></i></button>
-            <div id="offer-modal-content"></div>
+    <div class="modal" id="offer-modal" role="dialog" aria-modal="true" aria-labelledby="offer-title" aria-hidden="true">
+        <div class="modal-card narrow" style="padding:clamp(28px,4vw,48px)">
+            <button class="icon-btn modal-close" data-close-modal aria-label="Close"><i class="fas fa-xmark"></i></button>
+            <div id="offer-body"></div>
         </div>
     </div>
 
-    <div id="toast-container" class="toast-stack" aria-live="polite"></div>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
 
-    <script src="assets/js/store.js"></script>
-    <script type="module" src="assets/js/hero3d.js"></script>
+    <script src="assets/js/shop.js"></script>
+    <script type="module" src="assets/js/counter-scene.js"></script>
 </body>
 </html>
