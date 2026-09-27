@@ -1347,29 +1347,28 @@
         // Check authentication on page load
         window.addEventListener('DOMContentLoaded', () => {
             currentUserId = localStorage.getItem('loggedInUserId');
-            if (!currentUserId) {
+            if (!currentUserId || !getAuthToken()) {
                 alert('Please login first!');
                 window.location.href = 'login.html';
                 return;
             }
 
-            // Verify admin role
-            fetch(`${backendBaseUrl}/user_role/${currentUserId}`)
-                .then(response => response.json())
+            // Verify the token and admin role (the backend enforces this on every admin call)
+            fetch(`${backendBaseUrl}/profile`, { headers: authHeaders() })
+                .then(response => {
+                    if (response.status === 401) {
+                        clearAuth();
+                        throw new Error('Session expired');
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    if (!data.success || data.role !== 'admin') {
+                    if (!data.success || data.user.role !== 'admin') {
                         alert('Access denied. Admin privileges required.');
                         window.location.href = 'index.html';
                         return;
                     }
-                    // Load admin name
-                    return fetch(`${backendBaseUrl}/profile/${currentUserId}`);
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('admin-name').textContent = data.user.name;
-                    }
+                    document.getElementById('admin-name').textContent = data.user.name;
                     // Load dashboard data
                     loadDashboard();
                 })
@@ -1438,7 +1437,7 @@
         // Load Dashboard
         function loadDashboard() {
             fetch(`${backendBaseUrl}/admin/dashboard/stats`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -1483,7 +1482,7 @@
         // Load Orders
         function loadOrders() {
             fetch(`${backendBaseUrl}/admin/orders`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -1584,7 +1583,7 @@
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify(requestBody)
             })
@@ -1608,7 +1607,7 @@
 
         // View order details
         function viewOrderDetails(orderId) {
-            fetch(`${backendBaseUrl}/order/${orderId}`)
+            fetch(`${backendBaseUrl}/order/${orderId}`, { headers: authHeaders() })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -1679,7 +1678,7 @@
         // Load Products
         function loadProducts() {
             fetch(`${backendBaseUrl}/admin/products`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -1815,7 +1814,7 @@
         // Edit product
         function editProduct(productId) {
             fetch(`${backendBaseUrl}/admin/products`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -1997,7 +1996,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'User-ID': currentUserId
+                            ...authHeaders()
                         },
                         body: JSON.stringify({ image_data: currentImageData })
                     });
@@ -2036,7 +2035,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                    'User-ID': currentUserId
+                                    ...authHeaders()
                                 },
                                 body: JSON.stringify({ image_data: imgData.data })
                             });
@@ -2071,7 +2070,7 @@
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify(productData)
             })
@@ -2098,7 +2097,7 @@
             
             fetch(`${backendBaseUrl}/admin/products/delete/${productId}`, {
                 method: 'DELETE',
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2123,7 +2122,7 @@
         // Load Offers
         function loadOffers() {
             fetch(`${backendBaseUrl}/admin/offers`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2285,7 +2284,7 @@
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'User-ID': currentUserId
+                        ...authHeaders()
                     },
                     body: JSON.stringify(offerData)
                 });
@@ -2311,7 +2310,7 @@
             
             fetch(`${backendBaseUrl}/admin/offers/toggle/${offerId}`, {
                 method: 'PUT',
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2334,7 +2333,7 @@
             
             fetch(`${backendBaseUrl}/admin/offers/delete/${offerId}`, {
                 method: 'DELETE',
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2354,7 +2353,7 @@
         // Load Customers
         function loadCustomers() {
             fetch(`${backendBaseUrl}/admin/customers/stats`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2394,7 +2393,7 @@
         // Logout
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('userId');
+                clearAuth();
                 window.location.href = 'login.html';
             }
         }
@@ -2533,7 +2532,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'User-ID': currentUserId
+                        ...authHeaders()
                     },
                     body: JSON.stringify({ products: parsedExcelData })
                 });
@@ -2563,7 +2562,7 @@
         // Load Reviews
         function loadReviews() {
             fetch(`${backendBaseUrl}/admin/reviews`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2663,7 +2662,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify({
                     review_id: reviewId,
@@ -2692,7 +2691,7 @@
         // Load Messages
         function loadMessages() {
             fetch(`${backendBaseUrl}/admin/messages`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -2793,7 +2792,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify({
                     message_id: messageId,
@@ -2824,7 +2823,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify({
                     message_id: messageId
@@ -2908,7 +2907,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify({ category_name: categoryName.trim() })
             })
@@ -2936,7 +2935,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify({ 
                     old_category: oldName, 
@@ -2974,7 +2973,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify({ category_name: categoryName })
             })
@@ -3002,7 +3001,7 @@
         // Load Banners
         function loadBanners() {
             fetch(`${backendBaseUrl}/admin/banners`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
                 .then(response => response.json())
                 .then(data => {
@@ -3415,7 +3414,7 @@
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'User-ID': currentUserId
+                                ...authHeaders()
                             },
                             body: JSON.stringify({ image_data: currentBannerImageData })
                         });
@@ -3442,7 +3441,7 @@
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'User-ID': currentUserId
+                        ...authHeaders()
                     },
                     body: JSON.stringify(bannerData)
                 })
@@ -3469,7 +3468,7 @@
         async function editBanner(bannerId) {
             try {
                 const response = await fetch(`${backendBaseUrl}/admin/banners`, {
-                    headers: { 'User-ID': currentUserId }
+                    headers: authHeaders()
                 });
                 const data = await response.json();
                 
@@ -3667,7 +3666,7 @@
             // Populate products
             try {
                 const productsResponse = await fetch(`${backendBaseUrl}/admin/products`, {
-                    headers: { 'User-ID': currentUserId }
+                    headers: authHeaders()
                 });
                 const productsData = await productsResponse.json();
                 if (productsData.success) {
@@ -3704,7 +3703,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 }
             })
             .then(response => response.json())
@@ -3731,7 +3730,7 @@
             fetch(`${backendBaseUrl}/admin/banners/delete/${bannerId}`, {
                 method: 'DELETE',
                 headers: {
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 }
             })
             .then(response => response.json())
@@ -3756,7 +3755,7 @@
         // Load Popups
         function loadPopups() {
             fetch(`${backendBaseUrl}/admin/popups`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -3841,7 +3840,7 @@
             // Populate products
             try {
                 const productsResponse = await fetch(`${backendBaseUrl}/admin/products`, {
-                    headers: { 'User-ID': currentUserId }
+                    headers: authHeaders()
                 });
                 const productsData = await productsResponse.json();
                 if (productsData.success) {
@@ -3952,7 +3951,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'User-ID': currentUserId
+                            ...authHeaders()
                         },
                         body: JSON.stringify({ image_data: currentPopupImageData })
                     });
@@ -3983,7 +3982,7 @@
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-ID': currentUserId
+                    ...authHeaders()
                 },
                 body: JSON.stringify(popupData)
             })
@@ -4011,7 +4010,7 @@
         // Edit Popup
         function editPopup(popupId) {
             fetch(`${backendBaseUrl}/admin/popups`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -4068,7 +4067,7 @@
 
             // We update by setting is_active
             fetch(`${backendBaseUrl}/admin/popups`, {
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {
@@ -4080,7 +4079,7 @@
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'User-ID': currentUserId
+                                ...authHeaders()
                             },
                             body: JSON.stringify(popup)
                         });
@@ -4110,7 +4109,7 @@
 
             fetch(`${backendBaseUrl}/admin/popups/delete/${popupId}`, {
                 method: 'DELETE',
-                headers: { 'User-ID': currentUserId }
+                headers: authHeaders()
             })
             .then(response => response.json())
             .then(data => {

@@ -724,8 +724,8 @@
             try {
                 const response = await fetch(backendUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: loggedInUserId, items: cart })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ items: cart })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {
@@ -745,11 +745,11 @@
                 loadCartFromLocalStorage();
                 return;
             }
-            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            const backendUrl = `${backendBaseUrl}/cart`;
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: authHeaders({ 'Accept': 'application/json' })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {
@@ -840,7 +840,7 @@
 
         function handleLogoutLinkClick(event) {
             event.preventDefault();
-            localStorage.removeItem('loggedInUserId');
+            clearAuth();
             loggedInUserId = null;
             cart = [];
             saveCartToLocalStorage();
@@ -888,14 +888,14 @@
 
             showOrderHistoryStatus(loadingOrdersMessage); // Show loading message
 
-            const backendUrl = `${backendBaseUrl}/orders/${loggedInUserId}`; // Endpoint to get orders for a specific user
+            const backendUrl = `${backendBaseUrl}/orders`; // Endpoint to get the logged-in user's orders
 
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: {
+                    headers: authHeaders({
                         'Accept': 'application/json'
-                    }
+                    })
                 });
 
                 const result = await response.json();
@@ -1042,10 +1042,9 @@
             try {
                 const response = await fetch(`${backendBaseUrl}/order/review/submit`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: authHeaders({'Content-Type': 'application/json'}),
                     body: JSON.stringify({
                         order_id: orderId,
-                        user_id: loggedInUserId,
                         rating: parseInt(rating),
                         review_text: reviewText
                     })

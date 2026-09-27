@@ -858,8 +858,8 @@
             try {
                 const response = await fetch(backendUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: loggedInUserId, items: cart })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ items: cart })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {
@@ -879,11 +879,11 @@
                 loadCartFromLocalStorage();
                 return;
             }
-            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            const backendUrl = `${backendBaseUrl}/cart`;
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: authHeaders({ 'Accept': 'application/json' })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {
@@ -974,7 +974,7 @@
 
         function handleLogoutLinkClick(event) {
             event.preventDefault();
-            localStorage.removeItem('loggedInUserId');
+            clearAuth();
             loggedInUserId = null;
             cart = [];
             saveCartToLocalStorage();
@@ -1049,11 +1049,10 @@
                         // Upload through backend (which handles Cloudinary authentication)
                         const backendResponse = await fetch(`${backendBaseUrl}/profile/upload-picture`, {
                             method: 'POST',
-                            headers: {
+                            headers: authHeaders({
                                 'Content-Type': 'application/json'
-                            },
+                            }),
                             body: JSON.stringify({
-                                user_id: loggedInUserId,
                                 image_data: base64Image
                             })
                         });
@@ -1124,14 +1123,14 @@
 
             showProfileStatus(loadingProfileMessage); // Show loading message
 
-            const backendUrl = `${backendBaseUrl}/profile/${loggedInUserId}`; // Endpoint to get profile for a specific user
+            const backendUrl = `${backendBaseUrl}/profile`; // Endpoint to get the logged-in user's profile
 
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: {
+                    headers: authHeaders({
                         'Accept': 'application/json'
-                    }
+                    })
                 });
 
                 const result = await response.json();
@@ -1225,7 +1224,6 @@
 
             // Collect updated data
             const updatedProfileData = {
-                user_id: loggedInUserId,
                 name: editNameInput.value,
                 email: editEmailInput.value,
                 phone: editPhoneInput.value,
@@ -1239,9 +1237,9 @@
             try {
                 const response = await fetch(backendUrl, {
                     method: 'POST',
-                    headers: {
+                    headers: authHeaders({
                         'Content-Type': 'application/json'
-                    },
+                    }),
                     body: JSON.stringify(updatedProfileData)
                 });
 
@@ -1296,9 +1294,9 @@
             }
 
             try {
-                const response = await fetch(`${backendBaseUrl}/profile/${loggedInUserId}`, {
+                const response = await fetch(`${backendBaseUrl}/profile`, {
                     method: 'GET',
-                    headers: {'Accept': 'application/json'}
+                    headers: authHeaders({'Accept': 'application/json'})
                 });
 
                 const result = await response.json();
@@ -1402,9 +1400,8 @@
             try {
                 const response = await fetch(`${backendBaseUrl}/profile/address/delete`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: authHeaders({'Content-Type': 'application/json'}),
                     body: JSON.stringify({
-                        user_id: loggedInUserId,
                         address_id: addressId
                     })
                 });
@@ -1428,9 +1425,8 @@
             try {
                 const response = await fetch(`${backendBaseUrl}/profile/address/set-default`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: authHeaders({'Content-Type': 'application/json'}),
                     body: JSON.stringify({
-                        user_id: loggedInUserId,
                         address_id: addressId
                     })
                 });
@@ -1454,7 +1450,6 @@
             event.preventDefault();
 
             const addressData = {
-                user_id: loggedInUserId,
                 label: document.getElementById('address-label').value,
                 full_address: document.getElementById('address-full').value,
                 city: document.getElementById('address-city').value,
@@ -1473,7 +1468,7 @@
             try {
                 const response = await fetch(`${backendBaseUrl}${endpoint}`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: authHeaders({'Content-Type': 'application/json'}),
                     body: JSON.stringify(addressData)
                 });
 

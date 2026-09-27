@@ -595,11 +595,11 @@
                 loadCartFromLocalStorage(); // Load count from local storage if available
                 return;
             }
-            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            const backendUrl = `${backendBaseUrl}/cart`;
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: authHeaders({ 'Accept': 'application/json' })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {
@@ -751,7 +751,8 @@
                     if (result.success) {
                         showMessage(loginMessageDiv, result.message, "success");
 
-                        // Store the user ID and role in local storage
+                        // Store the auth token plus user ID and role in local storage
+                        localStorage.setItem('authToken', result.token);
                         localStorage.setItem('loggedInUserId', result.user_id);
                         localStorage.setItem('userRole', result.role);
                         localStorage.setItem('userName', result.name);

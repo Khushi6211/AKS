@@ -377,14 +377,14 @@
             console.log("Attempting to fetch order details for ID:", orderId); // Add this log
             showStatus(loadingMessage); // Show loading message
 
-            const backendUrl = `${backendBaseUrl}/order/${orderId}`; // Assuming this endpoint exists
+            const backendUrl = `${backendBaseUrl}/order/${orderId}`;
 
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: {
+                    headers: authHeaders({
                         'Accept': 'application/json'
-                    }
+                    })
                 });
 
                 console.log("Fetch response received:", response); // Add this log
@@ -503,11 +503,11 @@
                 loadCartFromLocalStorage(); // Load count from local storage if available
                 return;
             }
-            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            const backendUrl = `${backendBaseUrl}/cart`;
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: authHeaders({ 'Accept': 'application/json' })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {

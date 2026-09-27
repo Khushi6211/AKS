@@ -25,3 +25,45 @@ const CONFIG = {
 
 // Make config available globally
 window.APP_CONFIG = CONFIG;
+
+// --- Auth token helpers (JWT issued by /login) ---
+const AUTH_STORAGE_KEYS = ['authToken', 'loggedInUserId', 'userRole', 'userName'];
+
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+// Merge an Authorization header into the given headers when a token is stored
+function authHeaders(headers = {}) {
+    const token = getAuthToken();
+    return token ? { ...headers, 'Authorization': `Bearer ${token}` } : { ...headers };
+}
+
+// Remove the token and the display keys that go with it (used on logout / expiry)
+function clearAuth() {
+    AUTH_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
+}
+
+// Seconds-since-epoch expiry from the token payload, or null if unreadable
+function getAuthTokenExpiry(token) {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return typeof payload.exp === 'number' ? payload.exp : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Sessions from before tokens existed, or with an expired token, can no longer
+// call protected endpoints - log them out so pages show the Login link instead.
+(function expireStaleSession() {
+    const token = getAuthToken();
+    const expiry = token ? getAuthTokenExpiry(token) : null;
+    if (localStorage.getItem('loggedInUserId') && (!expiry || expiry * 1000 <= Date.now())) {
+        clearAuth();
+    }
+})();
+
+window.getAuthToken = getAuthToken;
+window.authHeaders = authHeaders;
+window.clearAuth = clearAuth;

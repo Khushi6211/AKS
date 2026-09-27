@@ -4,7 +4,7 @@ Production-ready Flask application with security improvements,
 Cloudinary image hosting, SendGrid emails, and Sentry monitoring
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -87,7 +87,13 @@ app = Flask(__name__)
 
 # Configuration from environment variables
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'change-this-jwt-secret-in-production')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+if not JWT_SECRET_KEY:
+    # Never fall back to a well-known secret: anyone could forge tokens with it.
+    # A per-process random key keeps auth secure but logs everyone out on restart.
+    JWT_SECRET_KEY = secrets.token_urlsafe(64)
+    logger.warning("⚠️ JWT_SECRET_KEY not set - using a random key; tokens will not survive a restart")
+JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '*')
 
@@ -96,7 +102,7 @@ cors_origins = [FRONTEND_URL] if FRONTEND_URL != '*' else '*'
 CORS(app, resources={r"/*": {
     "origins": cors_origins,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "allow_headers": ["Content-Type", "Authorization", "User-ID"],
+    "allow_headers": ["Content-Type", "Authorization"],
     "supports_credentials": True
 }})
 
@@ -621,24 +627,75 @@ def send_password_reset_email(user, reset_url):
     
     return send_email(user['email'], subject, html_content, plain_content)
 
+# --- JWT authentication helpers ---
+def create_access_token(user):
+    """Issue a signed JWT carrying the user's id and role"""
+    now = datetime.datetime.utcnow()
+    payload = {
+        "sub": str(user['_id']),
+        "role": user.get('role', 'customer'),
+        "iat": now,
+        "exp": now + datetime.timedelta(hours=JWT_EXPIRATION_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+def get_token_payload():
+    """Return the verified payload of the request's Bearer token, or None"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    token = auth_header[len('Bearer '):].strip()
+    if not token:
+        return None
+    try:
+        return jwt.decode(
+            token,
+            JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["exp", "sub"]}
+        )
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"Rejected invalid token: {e}")
+        return None
+
+# Security decorator for user routes - sets g.user_id from the verified token
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        payload = get_token_payload()
+        if not payload:
+            return jsonify({"success": False, "message": "Authentication required."}), 401
+        g.user_id = payload['sub']
+        g.user_role = payload.get('role', 'customer')
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Security decorator for admin routes
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        user_id = request.headers.get('User-ID')
-        if not user_id:
-            logger.warning("Admin access attempted without User-ID")
+        payload = get_token_payload()
+        if not payload:
+            logger.warning("Admin access attempted without a valid token")
             return jsonify({"success": False, "message": "Authentication required."}), 401
         
+        user_id = payload['sub']
+        if payload.get('role') != 'admin':
+            logger.warning(f"Unauthorized admin access attempt by user: {user_id}")
+            return jsonify({"success": False, "message": "Admin access required."}), 403
+        
+        # Re-check the database so a demoted admin loses access before the token expires
         try:
-            user = users_collection.find_one({"_id": ObjectId(user_id)})
+            user = users_collection.find_one({"_id": ObjectId(user_id)}, {"role": 1})
             if not user or user.get('role') != 'admin':
                 logger.warning(f"Unauthorized admin access attempt by user: {user_id}")
                 return jsonify({"success": False, "message": "Admin access required."}), 403
         except Exception as e:
             logger.error(f"Error verifying admin access: {e}")
-            return jsonify({"success": False, "message": "Invalid User ID or server error."}), 401
+            return jsonify({"success": False, "message": "Authentication failed."}), 401
         
+        g.user_id = user_id
+        g.user_role = 'admin'
         return f(*args, **kwargs)
     return decorated_function
 
@@ -796,7 +853,9 @@ def login_user():
                 "message": "Login successful!",
                 "user_id": user_id,
                 "name": user.get('name'),
-                "role": user.get('role', 'customer')
+                "role": user.get('role', 'customer'),
+                "token": create_access_token(user),
+                "expires_in": JWT_EXPIRATION_HOURS * 3600
             }), 200
         else:
             logger.warning(f"⚠️ Failed login attempt for: {email_phone}")
@@ -979,6 +1038,10 @@ def submit_order():
         if customer.get('email'):
             sanitized_customer['email'] = customer['email'].strip().lower()
         
+        # Link the order to an account only via a verified token - a client-supplied
+        # user_id is ignored so guests can't attach orders to someone else's history
+        token_payload = get_token_payload()
+        
         # Create order
         new_order = {
             "customer_info": sanitized_customer,
@@ -988,7 +1051,7 @@ def submit_order():
             "total_amount": data['total'],
             "order_date": datetime.datetime.utcnow(),
             "status": "Pending",
-            "user_id": data.get('user_id')
+            "user_id": token_payload['sub'] if token_payload else None
         }
         
         inserted_order = orders_collection.insert_one(new_order)
@@ -1022,9 +1085,15 @@ def submit_order():
         return jsonify({"success": False, "message": "An error occurred while placing the order."}), 500
 
 # Get Cart
+@app.route('/cart', methods=['GET'])
 @app.route('/cart/<user_id>', methods=['GET'])
-def get_cart(user_id):
-    """Get user's cart"""
+@login_required
+def get_cart(user_id=None):
+    """Get the authenticated user's cart"""
+    # The URL id is kept for backwards compatibility but must match the token
+    if user_id is not None and user_id != g.user_id:
+        return jsonify({"success": False, "message": "Access denied."}), 403
+    user_id = g.user_id
     try:
         if carts_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
@@ -1041,6 +1110,7 @@ def get_cart(user_id):
 # Update Cart
 @app.route('/cart/update', methods=['POST'])
 @limiter.limit("30 per minute")
+@login_required
 def update_cart():
     """Update user's cart"""
     try:
@@ -1048,10 +1118,10 @@ def update_cart():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'items' not in data:
+        if not data or 'items' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         cart_items = data['items']
         
         carts_collection.update_one(
@@ -1067,9 +1137,15 @@ def update_cart():
         return jsonify({"success": False, "message": "An error occurred while updating the cart."}), 500
 
 # Get User Orders
+@app.route('/orders', methods=['GET'])
 @app.route('/orders/<user_id>', methods=['GET'])
-def get_user_orders(user_id):
-    """Get all orders for a user"""
+@login_required
+def get_user_orders(user_id=None):
+    """Get all orders for the authenticated user"""
+    # The URL id is kept for backwards compatibility but must match the token
+    if user_id is not None and user_id != g.user_id:
+        return jsonify({"success": False, "message": "Access denied."}), 403
+    user_id = g.user_id
     try:
         if orders_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
@@ -1090,9 +1166,15 @@ def get_user_orders(user_id):
         return jsonify({"success": False, "message": "An error occurred while fetching orders."}), 500
 
 # Get User Profile
+@app.route('/profile', methods=['GET'])
 @app.route('/profile/<user_id>', methods=['GET'])
-def get_user_profile(user_id):
-    """Get user profile"""
+@login_required
+def get_user_profile(user_id=None):
+    """Get the authenticated user's profile"""
+    # The URL id is kept for backwards compatibility but must match the token
+    if user_id is not None and user_id != g.user_id:
+        return jsonify({"success": False, "message": "Access denied."}), 403
+    user_id = g.user_id
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
@@ -1126,6 +1208,7 @@ def get_user_profile(user_id):
 # Update User Profile
 @app.route('/profile/update', methods=['POST'])
 @limiter.limit("10 per minute")
+@login_required
 def update_user_profile():
     """Update user profile"""
     try:
@@ -1133,10 +1216,10 @@ def update_user_profile():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data:
-            return jsonify({"success": False, "message": "Missing user ID."}), 400
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         update_fields = {}
         
         if 'name' in data and data['name']:
@@ -1187,6 +1270,7 @@ def update_user_profile():
 # Upload and Update Profile Picture (Old endpoint - kept for compatibility)
 @app.route('/profile/upload-picture', methods=['POST'])
 @limiter.limit("10 per minute")
+@login_required
 def upload_profile_picture():
     """Upload profile picture to Cloudinary and update user profile"""
     try:
@@ -1194,10 +1278,10 @@ def upload_profile_picture():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'image_data' not in data:
+        if not data or 'image_data' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         image_data = data['image_data']
         
         # Upload to Cloudinary
@@ -1235,6 +1319,7 @@ def upload_profile_picture():
 # Update Profile Picture (New endpoint - used by frontend)
 @app.route('/profile/update-picture', methods=['POST'])
 @limiter.limit("10 per minute")
+@login_required
 def update_profile_picture():
     """Update user profile picture with Cloudinary URL"""
     try:
@@ -1242,10 +1327,10 @@ def update_profile_picture():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'profile_picture' not in data:
+        if not data or 'profile_picture' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         profile_picture = data['profile_picture']
         cloudinary_public_id = data.get('cloudinary_public_id')
         
@@ -1273,6 +1358,7 @@ def update_profile_picture():
 # Add Address to Profile
 @app.route('/profile/address/add', methods=['POST'])
 @limiter.limit("20 per minute")
+@login_required
 def add_address():
     """Add a new address to user profile"""
     try:
@@ -1280,10 +1366,10 @@ def add_address():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data:
-            return jsonify({"success": False, "message": "Missing user ID."}), 400
+        if not data:
+            return jsonify({"success": False, "message": "No data provided."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         
         # Validate required address fields
         required_fields = ['label', 'full_address', 'city', 'state', 'pincode']
@@ -1331,6 +1417,7 @@ def add_address():
 # Update Address
 @app.route('/profile/address/update', methods=['POST'])
 @limiter.limit("20 per minute")
+@login_required
 def update_address():
     """Update an existing address"""
     try:
@@ -1338,10 +1425,10 @@ def update_address():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'address_id' not in data:
-            return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
+        if not data or 'address_id' not in data:
+            return jsonify({"success": False, "message": "Missing address ID."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         address_id = data['address_id']
         
         # Build update fields
@@ -1381,6 +1468,7 @@ def update_address():
 # Delete Address
 @app.route('/profile/address/delete', methods=['POST'])
 @limiter.limit("20 per minute")
+@login_required
 def delete_address():
     """Delete an address from user profile"""
     try:
@@ -1388,10 +1476,10 @@ def delete_address():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'address_id' not in data:
-            return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
+        if not data or 'address_id' not in data:
+            return jsonify({"success": False, "message": "Missing address ID."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         address_id = data['address_id']
         
         # Remove the address from the array
@@ -1427,6 +1515,7 @@ def delete_address():
 # Set Default Address
 @app.route('/profile/address/set-default', methods=['POST'])
 @limiter.limit("20 per minute")
+@login_required
 def set_default_address():
     """Set an address as default"""
     try:
@@ -1434,10 +1523,10 @@ def set_default_address():
             return jsonify({"success": False, "message": "Database connection not available."}), 500
         
         data = request.get_json()
-        if not data or 'user_id' not in data or 'address_id' not in data:
-            return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
+        if not data or 'address_id' not in data:
+            return jsonify({"success": False, "message": "Missing address ID."}), 400
         
-        user_id = data['user_id']
+        user_id = g.user_id
         address_id = data['address_id']
         
         # Update default address
@@ -1459,6 +1548,7 @@ def set_default_address():
 # Submit Order Review
 @app.route('/order/review/submit', methods=['POST'])
 @limiter.limit("10 per minute")
+@login_required
 def submit_order_review():
     """Submit a review for a delivered order"""
     try:
@@ -1470,13 +1560,13 @@ def submit_order_review():
             return jsonify({"success": False, "message": "No data provided."}), 400
         
         # Validate required fields
-        required_fields = ['order_id', 'user_id', 'rating', 'review_text']
+        required_fields = ['order_id', 'rating', 'review_text']
         for field in required_fields:
             if field not in data:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
         
         order_id = data['order_id']
-        user_id = data['user_id']
+        user_id = g.user_id
         rating = int(data['rating'])
         review_text = sanitize_string(data['review_text'])
         
@@ -1486,7 +1576,7 @@ def submit_order_review():
         
         # Check if order exists and belongs to user
         order = orders_collection.find_one({"_id": ObjectId(order_id)})
-        if not order:
+        if not order or order.get('user_id') != user_id:
             return jsonify({"success": False, "message": "Order not found."}), 404
         
         # Check if order is delivered
@@ -1657,6 +1747,14 @@ def get_order_details(order_id):
         
         if not order_document:
             return jsonify({"success": False, "message": "Order not found."}), 404
+        
+        # Guest orders stay viewable by order id (thank-you page); account orders
+        # are only shown to their owner or an admin
+        owner_id = order_document.get('user_id')
+        if owner_id:
+            payload = get_token_payload()
+            if not payload or (payload['sub'] != owner_id and payload.get('role') != 'admin'):
+                return jsonify({"success": False, "message": "Order not found."}), 404
         
         order_document['_id'] = str(order_document['_id'])
         if 'order_date' in order_document and isinstance(order_document['order_date'], datetime.datetime):
@@ -2542,7 +2640,7 @@ def update_order_status():
         status_history_entry = {
             "status": new_status,
             "timestamp": datetime.datetime.utcnow(),
-            "updated_by": request.headers.get('User-ID')
+            "updated_by": g.user_id
         }
         
         result = orders_collection.update_one(

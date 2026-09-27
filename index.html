@@ -1254,10 +1254,8 @@
         // Handle Logout Link Click
         function handleLogoutLinkClick(event) {
             event.preventDefault(); // Prevent default link behavior
-            // Clear user ID and role from local storage
-            localStorage.removeItem('loggedInUserId');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userName');
+            // Clear auth token, user ID and role from local storage
+            clearAuth();
             loggedInUserId = null; // Update the variable
             cart = []; // Clear the local cart on logout (optional, but common)
             saveCartToLocalStorage(); // Clear local storage cart
@@ -2093,10 +2091,10 @@
             try {
                 const response = await fetch(backendUrl, {
                     method: 'POST',
-                    headers: {
+                    headers: authHeaders({
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ user_id: loggedInUserId, items: cart })
+                    }),
+                    body: JSON.stringify({ items: cart })
                 });
 
                 const result = await response.json();
@@ -2124,14 +2122,14 @@
 
             console.log("Attempting to load cart from backend for user:", loggedInUserId);
 
-            const backendUrl = `${backendBaseUrl}/cart/${loggedInUserId}`;
+            const backendUrl = `${backendBaseUrl}/cart`;
 
             try {
                 const response = await fetch(backendUrl, {
                     method: 'GET',
-                    headers: {
+                    headers: authHeaders({
                         'Accept': 'application/json'
-                    }
+                    })
                 });
 
                 const result = await response.json();
@@ -2187,7 +2185,9 @@
             }
 
             try {
-                const response = await fetch(`${backendBaseUrl}/profile/${loggedInUserId}`);
+                const response = await fetch(`${backendBaseUrl}/profile`, {
+                    headers: authHeaders()
+                });
                 const data = await response.json();
 
                 if (data.success && data.user) {
@@ -2599,8 +2599,7 @@
                     } : null,
                     deliveryFee: currentDeliveryFee,
                     total: total,
-                    // Add user_id to order data if logged in
-                    user_id: loggedInUserId || null // Include user ID if available
+                    // The backend links the order to the account from the auth token (guests send none)
                 };
 
                 console.log("Order data prepared for backend:", orderData);
@@ -2612,9 +2611,9 @@
                 try {
                     const response = await fetch(backendUrl, {
                         method: 'POST',
-                        headers: {
+                        headers: authHeaders({
                             'Content-Type': 'application/json'
-                        },
+                        }),
                         body: JSON.stringify(orderData)
                     });
 
