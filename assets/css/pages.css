@@ -1,0 +1,131 @@
+/* ==========================================================================
+   Glass theme layer for the account & info pages (login, profile, orders,
+   thank-you, FAQ, policies, password reset). Loaded after tailwind.css and
+   app.css so existing Tailwind markup picks up the new look.
+   ========================================================================== */
+
+body.theme-glass {
+    font-family: var(--font);
+    background: var(--bg) !important;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+body.theme-glass > main,
+body.theme-glass > .page-main { flex: 1; }
+.theme-glass .font-heading { font-family: var(--font); font-weight: 750; letter-spacing: -0.03em; }
+.theme-glass h1, .theme-glass h2, .theme-glass h3 { letter-spacing: -0.025em; }
+
+/* surfaces */
+.theme-glass .bg-white:not(input):not(textarea):not(select),
+.theme-glass .form-container,
+.theme-glass .glass-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.5)) !important;
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), var(--shadow) !important;
+}
+.theme-glass .bg-light,
+.theme-glass .bg-gray-50,
+.theme-glass .bg-gray-100 { background-color: rgba(255, 255, 255, 0.5) !important; }
+.theme-glass .rounded-lg { border-radius: 22px; }
+.theme-glass .rounded-xl { border-radius: 26px; }
+.theme-glass .rounded { border-radius: 12px; }
+.theme-glass .shadow-md { box-shadow: var(--shadow-sm) !important; }
+.theme-glass .shadow-lg, .theme-glass .shadow-xl, .theme-glass .shadow-2xl { box-shadow: var(--shadow-lg) !important; }
+.theme-glass .border-gray-200 { border-color: rgba(29, 29, 31, 0.08); }
+
+/* the old underline bars under headings */
+.theme-glass .w-20.h-1.bg-primary { width: 56px; height: 5px; border-radius: 5px; background: linear-gradient(90deg, var(--gold), var(--brand)) !important; }
+
+/* form fields */
+.theme-glass input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]),
+.theme-glass textarea,
+.theme-glass select {
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(29, 29, 31, 0.12);
+    background-color: rgba(255, 255, 255, 0.75);
+    min-height: 46px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.theme-glass textarea { min-height: 90px; }
+.theme-glass input:focus,
+.theme-glass textarea:focus,
+.theme-glass select:focus {
+    outline: none;
+    border-color: rgba(217, 130, 43, 0.7) !important;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(217, 130, 43, 0.16) !important;
+}
+
+/* buttons */
+.theme-glass button.bg-primary,
+.theme-glass a.bg-primary,
+.theme-glass .btn-primary-legacy,
+.theme-glass button[type=submit].bg-secondary {
+    background: linear-gradient(180deg, #d27a35 0%, var(--brand) 55%, #9c4f1b 100%) !important;
+    color: #fff !important;
+    border-radius: 999px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px -10px rgba(180, 95, 36, 0.8);
+    font-weight: 600;
+    transition: transform 0.35s var(--spring), box-shadow 0.3s;
+}
+.theme-glass button.bg-primary:hover,
+.theme-glass a.bg-primary:hover { transform: translateY(-1px); }
+.theme-glass button.rounded-md,
+.theme-glass a.rounded-md { border-radius: 999px; }
+.theme-glass button.bg-accent { background: linear-gradient(180deg, #3a3a3c, #1d1d1f) !important; color: #fff !important; }
+.theme-glass .text-primary { color: var(--brand) !important; }
+
+/* modals & overlays */
+.theme-glass .fixed.inset-0.bg-black,
+.theme-glass .fixed.inset-0[class*="bg-opacity"] {
+    background-color: rgba(20, 14, 8, 0.3) !important;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+.theme-glass .fixed.inset-0 > .bg-white,
+.theme-glass .fixed.inset-0 .bg-white.rounded-lg,
+.theme-glass .modal-glass {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.8)) !important;
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* status pills used in order history */
+.theme-glass .rounded-full.px-3.py-1 { font-weight: 600; }
+
+/* header on sub pages */
+.page-header .nav-links { display: none; }
+@media (min-width: 900px) { .page-header .nav-links { display: flex; } }
+.page-header .header-actions { margin-left: auto; }
+.page-header #auth-link { display: inline-flex; }
+.page-main { padding-top: 32px; padding-bottom: 32px; }
+
+/* simple content pages (FAQ, policies) */
+.prose-glass { padding: 28px; border-radius: var(--radius-xl); }
+@media (min-width: 768px) { .prose-glass { padding: 44px; } }
+.theme-glass main h1.text-4xl, .theme-glass main h1.text-3xl { font-size: clamp(32px, 5vw, 52px); font-weight: 780; letter-spacing: -0.04em; }
+.theme-glass details { border-radius: 18px; }
+
+/* spacing between the floating header and page content */
+.page-header + * { margin-top: 28px; }
+@media (max-width: 560px) {
+    .page-header .btn-sm { width: 40px; padding: 0; font-size: 0; gap: 0; }
+    .page-header .btn-sm i { font-size: 14px; }
+    .page-header #auth-link { width: auto; padding: 0 14px; font-size: 13px; }
+    .page-header .brand-sub { display: none; }
+}
+
+/* login / register toggle */
+#show-login-btn, #show-register-btn { border-radius: 999px !important; padding: 10px 22px !important; font-weight: 600; }
+
+/* legacy accent colours → brand palette */
+.theme-glass .bg-purple-600, .theme-glass .bg-purple-500 { background-color: var(--ink) !important; border-radius: 999px; }
+.theme-glass .text-purple-600 { color: var(--brand) !important; }

@@ -19,8 +19,11 @@ const CONFIG = {
     FREE_DELIVERY_THRESHOLD: 500,
     STORE_NAME: 'Arun Karyana Store',
     STORE_LOCATION: 'Railway Road, Barara, Ambala, Haryana 133201',
-    SUPPORT_PHONE: '+91-XXXXXXXXXX',
-    SUPPORT_EMAIL: 'support@arunkaryana.com'
+    SUPPORT_PHONE: '+91-94168-91710',
+    SUPPORT_EMAIL: 'contact@arunkaryanastore.com',
+
+    // Set to true to let customers order items whose stock is 0 in Admin → Products
+    ALLOW_OUT_OF_STOCK_ORDERS: false
 };
 
 // Make config available globally

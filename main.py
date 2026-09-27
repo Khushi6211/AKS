@@ -104,14 +104,16 @@ CORS(app, resources={r"/*": {
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["5000 per day", "600 per hour"],
     storage_uri="memory://"
 )
 
 # MongoDB Connection Setup
-MONGO_USERNAME = os.environ.get('MONGO_USERNAME', 'arunflaskuser')
-MONGO_PASSWORD = os.environ.get('MONGO_PASSWORD', 'Ash6211@')
-MONGO_CLUSTER_URI = os.environ.get('MONGO_CLUSTER_URI', 'mystorecluster.d17bljx.mongodb.net')
+MONGO_USERNAME = os.environ.get('MONGO_USERNAME', '')
+MONGO_PASSWORD = os.environ.get('MONGO_PASSWORD', '')
+MONGO_CLUSTER_URI = os.environ.get('MONGO_CLUSTER_URI', '')
+if not (MONGO_USERNAME and MONGO_PASSWORD and MONGO_CLUSTER_URI):
+    logger.error("❌ MONGO_USERNAME, MONGO_PASSWORD and MONGO_CLUSTER_URI must be set as environment variables.")
 MONGO_PARAMS = os.environ.get('MONGO_PARAMS', '/?retryWrites=true&w=majority&appName=MyStoreCluster')
 
 encoded_username = urllib.parse.quote_plus(MONGO_USERNAME)
@@ -502,6 +504,11 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
     subject = f"Order Status Update - #{order_data['order_id']}"
     status_message = status_messages.get(new_status, f"Order status updated to: {new_status}")
     
+    cancellation_html = (
+        '<div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">'
+        '<h3 style="color: #856404; margin-top: 0; font-family: Georgia, serif;">Cancellation Reason</h3>'
+        '<p style="color: #856404; margin: 0;">' + str(cancellation_reason) + '</p></div>'
+    ) if cancellation_reason else ''
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -532,7 +539,7 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
                 <p><strong>Current Status:</strong> <span style="color: #9C6F44; font-weight: bold;">{new_status}</span></p>
             </div>
             
-            {'<div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;"><h3 style="color: #856404; margin-top: 0; font-family: \'Playfair Display\', serif;"><i class="fas fa-info-circle"></i> Cancellation Reason</h3><p style="color: #856404; margin: 0;">' + str(cancellation_reason) + '</p></div>' if cancellation_reason else ''}
+            {cancellation_html}
             
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
@@ -940,6 +947,81 @@ def reset_password():
         return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
 
 # Submit Order
+DELIVERY_FEE = float(os.environ.get('DELIVERY_FEE', 40))
+FREE_DELIVERY_THRESHOLD = float(os.environ.get('FREE_DELIVERY_THRESHOLD', 500))
+MAX_QTY_PER_ITEM = 100
+
+def calculate_offer_discount(offer, subtotal):
+    """Discount an active offer gives on a subtotal (0 if it doesn't apply)."""
+    if not offer or not offer.get('active'):
+        return 0
+    end_date = offer.get('end_date')
+    if isinstance(end_date, datetime.datetime) and end_date < datetime.datetime.utcnow():
+        return 0
+    if subtotal < float(offer.get('min_purchase', 0) or 0):
+        return 0
+    value = float(offer.get('discount_value', 0) or 0)
+    if offer.get('discount_type') == 'percentage':
+        amount = subtotal * value / 100
+        max_discount = offer.get('max_discount')
+        if max_discount:
+            amount = min(amount, float(max_discount))
+    else:
+        amount = value
+    return round(max(0, min(amount, subtotal)), 2)
+
+def price_order(items, discount_source):
+    """Rebuild order lines, discount, delivery fee and total from the database.
+    Returns (priced_order, error_message)."""
+    if products_collection is None:
+        return None, "Database connection not available."
+    lines = []
+    for item in items:
+        if not isinstance(item, dict):
+            return None, "Invalid item in order."
+        try:
+            product = products_collection.find_one({"_id": ObjectId(str(item.get('id')))})
+        except Exception:
+            product = None
+        if not product:
+            return None, f"'{item.get('name', 'An item')}' is no longer available. Please remove it from your bag."
+        try:
+            quantity = int(item.get('quantity', 0))
+        except (TypeError, ValueError):
+            quantity = 0
+        if quantity < 1 or quantity > MAX_QTY_PER_ITEM:
+            return None, f"Invalid quantity for '{product.get('name')}'."
+        stock = product.get('stock')
+        if isinstance(stock, (int, float)) and quantity > stock:
+            if stock <= 0:
+                return None, f"Sorry, '{product.get('name')}' is out of stock."
+            return None, f"Only {int(stock)} of '{product.get('name')}' left in stock."
+        price = float(product.get('price', 0))
+        lines.append({"id": str(product['_id']), "name": product.get('name'), "price": price, "quantity": quantity})
+    if not lines:
+        return None, "Order must contain items."
+
+    subtotal = round(sum(l['price'] * l['quantity'] for l in lines), 2)
+    discount, source = 0, None
+    if isinstance(discount_source, dict) and discount_source.get('offer_id') and offers_collection is not None:
+        try:
+            offer = offers_collection.find_one({"_id": ObjectId(str(discount_source['offer_id']))})
+        except Exception:
+            offer = None
+        discount = calculate_offer_discount(offer, subtotal)
+        if discount > 0:
+            source = {"type": offer.get('offer_type'), "title": offer.get('title'), "code": offer.get('code'), "offer_id": str(offer['_id'])}
+    after_discount = subtotal - discount
+    delivery_fee = 0 if after_discount >= FREE_DELIVERY_THRESHOLD else DELIVERY_FEE
+    return {
+        "items": lines,
+        "subtotal": subtotal,
+        "discount": discount,
+        "discount_source": source,
+        "delivery_fee": delivery_fee,
+        "total": round(after_discount + delivery_fee, 2),
+    }, None
+
 @app.route('/submit-order', methods=['POST'])
 @limiter.limit("10 per minute")
 def submit_order():
@@ -979,13 +1061,20 @@ def submit_order():
         if customer.get('email'):
             sanitized_customer['email'] = customer['email'].strip().lower()
         
+        # Re-price the order from the database so totals can't be tampered with in the browser
+        priced, error = price_order(data['items'], data.get('discount_source'))
+        if error:
+            return jsonify({"success": False, "message": error}), 400
+        
         # Create order
         new_order = {
             "customer_info": sanitized_customer,
-            "items": data['items'],
-            "subtotal": data.get('subtotal'),
-            "delivery_fee": data.get('deliveryFee', 0),
-            "total_amount": data['total'],
+            "items": priced['items'],
+            "subtotal": priced['subtotal'],
+            "discount": priced['discount'],
+            "discount_source": priced['discount_source'],
+            "delivery_fee": priced['delivery_fee'],
+            "total_amount": priced['total'],
             "order_date": datetime.datetime.utcnow(),
             "status": "Pending",
             "user_id": data.get('user_id')
@@ -1001,10 +1090,10 @@ def submit_order():
                 "customer_name": sanitized_customer['name'],
                 "customer_phone": sanitized_customer['phone'],
                 "customer_address": sanitized_customer['address'],
-                "items": data['items'],
-                "subtotal": data.get('subtotal', 0),
-                "delivery_fee": data.get('deliveryFee', 0),
-                "total_amount": data['total'],
+                "items": priced['items'],
+                "subtotal": priced['subtotal'],
+                "delivery_fee": priced['delivery_fee'],
+                "total_amount": priced['total'],
                 "order_date": datetime.datetime.utcnow().strftime('%B %d, %Y at %I:%M %p')
             }
             send_order_confirmation_email(order_email_data, sanitized_customer['email'])

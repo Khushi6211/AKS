@@ -2,6 +2,47 @@
 
 **Est. 1977 | Barara, Haryana**
 
+## 2026 revamp: "Liquid Glass" storefront
+
+The frontend was redesigned as a modern e-commerce site with an Apple-style frosted-glass look
+and a real-time 3D hero (three.js, modelled in code, no model files to download).
+
+| What | Where |
+| --- | --- |
+| Storefront (home, catalogue, search, cart drawer, checkout, offers, reviews, contact) | `index.html`, `assets/js/store.js` |
+| 3D hero scene | `assets/js/hero3d.js` (three.js vendored in `assets/vendor/three`) |
+| Design system (glass surfaces, buttons, drawer, modals) | `assets/css/app.css` |
+| Glass theme for account/info pages | `assets/css/pages.css` |
+| Tailwind for account & admin pages (pre-compiled) | `assets/css/tailwind.css` (source: `tailwind.config.js`) |
+| Icons, favicon, PWA manifest, SEO | `assets/img/`, `manifest.webmanifest`, `robots.txt`, `sitemap.xml`, `404.html` |
+| Netlify config (headers, caching) | `netlify.toml` |
+
+Everything runs without a build step and without third-party CDNs (only Google Fonts and the
+Google Maps embed are loaded from outside). If you edit the Tailwind classes in any page other
+than `index.html`, rebuild the CSS: `npm install && npm run build:css`.
+
+### Going live checklist
+
+1. **Backend (Render)**: make sure these environment variables are set on the service:
+   `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_CLUSTER_URI`, `SECRET_KEY`, `JWT_SECRET_KEY`,
+   `FRONTEND_URL` (your live site URL, e.g. `https://arun-karyana-store.netlify.app`).
+   The database password is no longer hard-coded in `main.py`, and it was previously committed
+   to git, so **rotate it in MongoDB Atlas** and put the new one in Render.
+2. **Frontend (Netlify)**: deploy the repository root (publish directory `.`, no build command).
+3. `config.js`: `BACKEND_URL` must point at the Render service.
+4. If you use a custom domain, update the domain in `index.html` (canonical/OG tags),
+   `robots.txt`, `sitemap.xml` and `FRONTEND_URL` on Render.
+
+### Backend changes in this revamp
+
+- Orders are re-priced on the server from the product database (prices, stock, discount,
+  delivery fee), so totals can't be edited in the browser. Discount details are now saved on the order.
+- Default rate limit raised from 50/hour to 600/hour per visitor: one page view makes ~8 API calls,
+  so the old limit blocked normal shoppers after a few pages.
+- `main.py` now parses on Python 3.11 (the version pinned in `render.yaml`).
+
+---
+
 A modern e-commerce platform for Arun Karyana Store - Your trusted neighborhood store since 1977.
 
 ---

@@ -1,0 +1,44 @@
+# Netlify static hosting for the storefront. No build step needed —
+# assets/css/tailwind.css is committed (regenerate with `npm run build:css`).
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/assets/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Friendly short links
+[[redirects]]
+  from = "/shop"
+  to = "/index.html#shop"
+  status = 301
+
+[[redirects]]
+  from = "/login"
+  to = "/login.html"
+  status = 301
+
+[[redirects]]
+  from = "/orders"
+  to = "/order-history.html"
+  status = 301

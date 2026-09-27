@@ -47,3 +47,4 @@ Thumbs.db
 .coverage
 htmlcov/
 main_original_backup.py
+node_modules/
