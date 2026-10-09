@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#fff8ee">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=90f1aedf82">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=c971053ff6">
     <link rel="stylesheet" href="assets/css/app.css?v=c4d7c9ed04">
     <link rel="stylesheet" href="assets/css/pages.css?v=fbfdcfdbf7">
     <style>
@@ -685,7 +685,13 @@
                     window.location.href = result.role === 'admin' ? 'admin.html' : (safeNext || 'index.html');
                     return;
                 }
-                showMessage(loginMessageDiv, result.message || `Sign-in failed (error ${response.status}). Please try again.`, 'error');
+                let note = '';
+                try {
+                    // A server that hasn't picked up the latest update can't know the newest logins yet.
+                    const health = await (await fetch(`${backendBaseUrl}/health`)).json();
+                    if (!health.api_version || health.api_version < 3) note = ' (The store server is still updating — please try again in a few minutes.)';
+                } catch (e) { /* ignore */ }
+                showMessage(loginMessageDiv, (result.message || `Sign-in failed (error ${response.status}). Please try again.`) + note, 'error');
             } catch (error) {
                 console.error('Error during login fetch:', error);
                 showMessage(loginMessageDiv, "We couldn't reach the store just now. Please check your internet connection and try again in a minute.", 'error');

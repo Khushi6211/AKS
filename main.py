@@ -87,10 +87,12 @@ app = Flask(__name__)
 
 # Configuration from environment variables
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or secrets.token_urlsafe(48)
-if not os.environ.get('JWT_SECRET_KEY'):
-    logging.getLogger(__name__).warning("JWT_SECRET_KEY not set; using a random key (users are logged out on every restart).")
-JWT_EXPIRATION_HOURS = 24
+# Login tokens are signed with JWT_SECRET_KEY. When it isn't set on the server, a key is created
+# once and kept in the database (see load_jwt_secret), so logins survive restarts and all workers agree.
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or None
+JWT_SECRET_SOURCE = 'environment' if JWT_SECRET_KEY else None
+JWT_EXPIRATION_HOURS = 24 * 7
+API_VERSION = 3
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '*')
 
 # CORS: the API authenticates with bearer tokens (never cookies), so any site origin may call it.
@@ -150,11 +152,12 @@ messages_collection = None
 categories_collection = None
 banners_collection = None
 popups_collection = None
+settings_collection = None
 
 def initialize_database():
     """Initialize database connection and collections"""
-    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection, popups_collection, DB_STARTUP_ERROR
-    
+    global client, db, users_collection, products_collection, orders_collection, offers_collection, carts_collection, reviews_collection, messages_collection, categories_collection, banners_collection, popups_collection, settings_collection, DB_STARTUP_ERROR
+
     try:
         # Optimized MongoDB connection for Render free tier
         client = MongoClient(
@@ -181,11 +184,12 @@ def initialize_database():
         categories_collection = db.categories
         banners_collection = db.banners
         popups_collection = db.popups
-        
+        settings_collection = db.settings
+
         # Test connection
         client.admin.command('ping')
         logger.info("✅ Successfully connected to MongoDB!")
-        
+
         # Create indexes for better performance
         users_collection.create_index([("email", ASCENDING)], unique=True, sparse=True)
         users_collection.create_index([("phone", ASCENDING)], unique=True, sparse=True)
@@ -193,7 +197,7 @@ def initialize_database():
         orders_collection.create_index([("order_date", ASCENDING)])
         carts_collection.create_index([("user_id", ASCENDING)], unique=True)
         logger.info("✅ Database indexes created/verified")
-        
+
         # Initialize products if empty
         if products_collection.count_documents({}) == 0:
             products = [
@@ -212,7 +216,7 @@ def initialize_database():
             ]
             products_collection.insert_many(products)
             logger.info("✅ Initial products added to database")
-        
+
         # Initialize categories if empty
         if categories_collection.count_documents({}) == 0:
             default_categories = [
@@ -225,7 +229,7 @@ def initialize_database():
             categories_collection.insert_many(default_categories)
             categories_collection.create_index([("id", ASCENDING)], unique=True)
             logger.info("✅ Initial categories added to database")
-            
+
     except Exception as e:
         # Keep the web server up so /health can explain the problem instead of the service crash-looping.
         DB_STARTUP_ERROR = str(e)
@@ -303,7 +307,79 @@ def ensure_admin_account():
     except Exception as e:
         logger.error(f"❌ Could not set up the admin account: {e}")
 
+# The store owner's dashboard login. Only a bcrypt hash of the starting password is kept here; the
+# password itself was handed to the owner privately. It is applied once per OWNER_BOOTSTRAP_VERSION,
+# so a password the owner later changes from the dashboard is never overwritten.
+OWNER_LOGIN_EMAIL = 'owner@arunkaryanastore.com'
+OWNER_PASSWORD_HASH = '$2b$12$RZb9NPL1qdGIbRMKw/FGt.Xjl0TzTcg6nJSn9chPAhTQBceUoW6Ka'
+OWNER_BOOTSTRAP_VERSION = 1
+OWNER_READY = False
+
+def load_jwt_secret():
+    """Signing key for login tokens: JWT_SECRET_KEY if set, else one stored in the database."""
+    global JWT_SECRET_KEY, JWT_SECRET_SOURCE
+    if JWT_SECRET_KEY:
+        return
+    if settings_collection is not None and not DB_STARTUP_ERROR:
+        try:
+            try:
+                settings_collection.update_one(
+                    {"_id": "jwt_secret"},
+                    {"$setOnInsert": {"value": secrets.token_urlsafe(48), "created_at": datetime.datetime.utcnow()}},
+                    upsert=True)
+            except pymongo.errors.DuplicateKeyError:
+                pass  # another worker created it at the same moment
+            doc = settings_collection.find_one({"_id": "jwt_secret"})
+            if doc and doc.get('value'):
+                JWT_SECRET_KEY, JWT_SECRET_SOURCE = doc['value'], 'database'
+                return
+        except Exception as e:
+            logger.error(f"❌ Could not load the login signing key from the database: {e}")
+    JWT_SECRET_KEY, JWT_SECRET_SOURCE = secrets.token_urlsafe(48), 'ephemeral'
+    logger.warning("JWT_SECRET_KEY not set and database unavailable; logins reset when the server restarts.")
+
+def ensure_owner_account():
+    """Make sure the owner's admin login exists (see OWNER_LOGIN_EMAIL)."""
+    global OWNER_READY
+    if users_collection is None or settings_collection is None or DB_STARTUP_ERROR:
+        return
+    try:
+        marker = settings_collection.find_one({"_id": "owner_bootstrap"}) or {}
+        owner = users_collection.find_one({"email": {"$regex": f"^{re.escape(OWNER_LOGIN_EMAIL)}$", "$options": "i"}})
+        if marker.get('version', 0) >= OWNER_BOOTSTRAP_VERSION:
+            if owner and owner.get('role') != 'admin':
+                users_collection.update_one({"_id": owner['_id']}, {"$set": {"role": "admin"}})
+            OWNER_READY = owner is not None
+            return
+        password = OWNER_PASSWORD_HASH.encode('utf-8')
+        if owner:
+            users_collection.update_one({"_id": owner['_id']}, {"$set": {"password": password, "role": "admin"}})
+        else:
+            users_collection.insert_one({
+                "name": "Store Owner",
+                "email": OWNER_LOGIN_EMAIL,
+                "password": password,
+                "role": "admin",
+                "created_at": datetime.datetime.utcnow(),
+                "addresses": [],
+            })
+        settings_collection.update_one(
+            {"_id": "owner_bootstrap"},
+            {"$set": {"version": OWNER_BOOTSTRAP_VERSION, "applied_at": datetime.datetime.utcnow()}},
+            upsert=True)
+        OWNER_READY = True
+        logger.info(f"✅ Owner dashboard login ready: {OWNER_LOGIN_EMAIL}")
+    except Exception as e:
+        logger.error(f"❌ Could not set up the owner login: {e}")
+
+load_jwt_secret()
 ensure_admin_account()
+ensure_owner_account()
+
+def generate_temporary_password():
+    """Easy-to-read temporary password for the owner to pass on by phone or WhatsApp."""
+    alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    return 'AK-' + ''.join(secrets.choice(alphabet) for _ in range(4)) + '-' + ''.join(secrets.choice(alphabet) for _ in range(4))
 
 # Input validation helpers
 def validate_email(email):
@@ -329,7 +405,7 @@ def upload_image_to_cloudinary(image_data, folder="products"):
     try:
         if not CLOUDINARY_CLOUD_NAME:
             return {"success": False, "message": "Cloudinary not configured"}
-        
+
         # Upload image
         upload_result = cloudinary.uploader.upload(
             image_data,
@@ -341,7 +417,7 @@ def upload_image_to_cloudinary(image_data, folder="products"):
                 {'fetch_format': 'auto'}
             ]
         )
-        
+
         return {
             "success": True,
             "url": upload_result['secure_url'],
@@ -356,7 +432,7 @@ def delete_image_from_cloudinary(public_id):
     try:
         if not CLOUDINARY_CLOUD_NAME:
             return {"success": False, "message": "Cloudinary not configured"}
-        
+
         result = cloudinary.uploader.destroy(public_id)
         return {"success": True, "result": result}
     except Exception as e:
@@ -364,29 +440,38 @@ def delete_image_from_cloudinary(public_id):
         return {"success": False, "message": str(e)}
 
 # SendGrid email helper functions
+EMAIL_LAST_ERROR = None
+
+def email_enabled():
+    """True when emails can actually be sent (SendGrid key set and the last send didn't fail)."""
+    return bool(SENDGRID_API_KEY) and EMAIL_LAST_ERROR is None
+
 def send_email(to_email, subject, html_content, plain_content=None):
     """Send email via SendGrid"""
+    global EMAIL_LAST_ERROR
     try:
         if not SENDGRID_API_KEY:
             logger.warning("SendGrid not configured - email not sent")
             return {"success": False, "message": "Email service not configured"}
-        
+
         message = Mail(
             from_email=Email(SENDGRID_FROM_EMAIL, "Arun Karyana Store"),
             to_emails=To(to_email),
             subject=subject,
             html_content=Content("text/html", html_content)
         )
-        
+
         if plain_content:
             message.plain_text_content = Content("text/plain", plain_content)
-        
+
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
-        
+        EMAIL_LAST_ERROR = None
+
         logger.info(f"✅ Email sent to {to_email}: {subject}")
         return {"success": True, "status_code": response.status_code}
     except Exception as e:
+        EMAIL_LAST_ERROR = str(e)
         logger.error(f"❌ SendGrid email error: {e}")
         return {"success": False, "message": str(e)}
 
@@ -397,17 +482,17 @@ def send_whatsapp_message(to_phone, message_body):
         if not twilio_client:
             logger.warning("Twilio not configured - WhatsApp message not sent")
             return {"success": False, "message": "WhatsApp service not configured"}
-        
+
         # Ensure phone number has whatsapp: prefix
         if not to_phone.startswith('whatsapp:'):
             to_phone = f"whatsapp:{to_phone}"
-        
+
         message = twilio_client.messages.create(
             from_=TWILIO_WHATSAPP_FROM,
             body=message_body,
             to=to_phone
         )
-        
+
         logger.info(f"✅ WhatsApp message sent to {to_phone}")
         return {"success": True, "message_sid": message.sid}
     except Exception as e:
@@ -434,12 +519,12 @@ Thank you for shopping with us! 🛒
 *Arun Karyana Store*
 Railway Road, Barara, Ambala
 📞 +91-94168-91710"""
-    
+
     return send_whatsapp_message(customer_phone, message)
 
 def send_order_status_update_whatsapp(order_data, customer_phone, new_status, cancellation_reason=None):
     """Send order status update via WhatsApp"""
-    
+
     # Status emojis and messages
     status_config = {
         'Pending': {'emoji': '⏳', 'message': 'Your order is pending confirmation.'},
@@ -448,9 +533,9 @@ def send_order_status_update_whatsapp(order_data, customer_phone, new_status, ca
         'Delivered': {'emoji': '✅', 'message': 'Your order has been delivered successfully!'},
         'Cancelled': {'emoji': '❌', 'message': 'Your order has been cancelled.'}
     }
-    
+
     config = status_config.get(new_status, {'emoji': '📋', 'message': f'Order status: {new_status}'})
-    
+
     message = f"""{config['emoji']} *Order Status Update - Arun Karyana Store*
 
 Dear {order_data['customer_name']},
@@ -461,10 +546,10 @@ Dear {order_data['customer_name']},
 📝 Order ID: #{order_data['order_id']}
 💰 Amount: ₹{order_data['total_amount']:.2f}
 📦 Status: *{new_status}*"""
-    
+
     if cancellation_reason:
         message += f"\n\n*Cancellation Reason:*\n{cancellation_reason}"
-    
+
     message += f"""
 
 Thank you for choosing Arun Karyana Store! 🛒
@@ -472,13 +557,13 @@ Thank you for choosing Arun Karyana Store! 🛒
 *Arun Karyana Store*
 Railway Road, Barara, Ambala
 📞 +91-94168-91710"""
-    
+
     return send_whatsapp_message(customer_phone, message)
 
 def send_order_confirmation_email(order_data, customer_email):
     """Send order confirmation email"""
     subject = f"Order Confirmation - #{order_data['order_id']}"
-    
+
     # Build items HTML
     items_html = ""
     for item in order_data['items']:
@@ -490,7 +575,7 @@ def send_order_confirmation_email(order_data, customer_email):
             <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₹{item['price'] * item['quantity']}</td>
         </tr>
         """
-    
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -506,19 +591,19 @@ def send_order_confirmation_email(order_data, customer_email):
             <p style="margin: 10px 0 0; font-size: 16px;">Arun Karyana Store</p>
             <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Railway Road, Barara, Ambala, Haryana</p>
         </div>
-        
+
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
             <p style="font-size: 16px;">Dear {order_data['customer_name']},</p>
-            
+
             <p>Your order has been successfully placed and will be processed shortly.</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9C6F44;">
                 <h2 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Order Details</h2>
                 <p><strong>Order ID:</strong> #{order_data['order_id']}</p>
                 <p><strong>Order Date:</strong> {order_data['order_date']}</p>
                 <p><strong>Status:</strong> <span style="color: #f59e0b;">Pending</span></p>
             </div>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Items Ordered</h3>
                 <table style="width: 100%; border-collapse: collapse;">
@@ -549,23 +634,23 @@ def send_order_confirmation_email(order_data, customer_email):
                     </tfoot>
                 </table>
             </div>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Delivery Address</h3>
                 <p style="margin: 5px 0;"><strong>{order_data['customer_name']}</strong></p>
                 <p style="margin: 5px 0;">{order_data['customer_phone']}</p>
                 <p style="margin: 5px 0;">{order_data['customer_address']}</p>
             </div>
-            
+
             <div style="background: #F8F5F0; border-left: 4px solid #9C6F44; padding: 15px; margin: 20px 0; border-radius: 4px;">
                 <p style="margin: 0; color: #9C6F44;"><strong>📦 What's Next?</strong></p>
                 <p style="margin: 10px 0 0; color: #2D2D2D;">Our team will process your order and contact you shortly for delivery confirmation.</p>
             </div>
-            
+
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
             <p style="margin: 5px 0;">📍 Railway Road, Barara, Ambala, Haryana 133201</p>
-            
+
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #E8C07D;">
                 <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 15px; display: block;">
                 <p style="color: #9C6F44; font-size: 14px; font-weight: 600;">Thank you for shopping with Arun Karyana Store!</p>
@@ -576,7 +661,7 @@ def send_order_confirmation_email(order_data, customer_email):
     </body>
     </html>
     """
-    
+
     return send_email(customer_email, subject, html_content)
 
 def send_order_status_update_email(order_data, customer_email, new_status, cancellation_reason=None):
@@ -587,10 +672,10 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
         "Delivered": "Your order has been delivered! ✅",
         "Cancelled": "Your order has been cancelled. 🚫"
     }
-    
+
     subject = f"Order Status Update - #{order_data['order_id']}"
     status_message = status_messages.get(new_status, f"Order status updated to: {new_status}")
-    
+
     cancellation_html = (
         '<div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">'
         '<h3 style="color: #856404; margin-top: 0; font-family: Georgia, serif;">Cancellation Reason</h3>'
@@ -611,27 +696,27 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
             <p style="margin: 10px 0 0; font-size: 16px;">Arun Karyana Store</p>
             <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Railway Road, Barara, Ambala</p>
         </div>
-        
+
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
             <p style="font-size: 16px;">Dear {order_data['customer_name']},</p>
-            
+
             <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center; border-left: 4px solid #9C6F44;">
                 <p style="font-size: 24px; margin: 0; color: #9C6F44; font-weight: bold; font-family: 'Playfair Display', serif;">{status_message}</p>
             </div>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9C6F44;">
                 <h2 style="color: #9C6F44; margin-top: 0; font-family: 'Playfair Display', serif;">Order Details</h2>
                 <p><strong>Order ID:</strong> #{order_data['order_id']}</p>
                 <p><strong>Total Amount:</strong> <span style="color: #9C6F44; font-weight: bold;">₹{order_data['total_amount']}</span></p>
                 <p><strong>Current Status:</strong> <span style="color: #9C6F44; font-weight: bold;">{new_status}</span></p>
             </div>
-            
+
             {cancellation_html}
-            
+
             <p style="margin-top: 30px;">If you have any questions, please contact us:</p>
             <p style="margin: 5px 0;">📞 Phone: +91-XXXXXXXXXX</p>
             <p style="margin: 5px 0;">📍 Railway Road, Barara, Ambala, Haryana 133201</p>
-            
+
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #E8C07D;">
                 <img src="https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png" alt="Arun Karyana Store" style="width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 15px; display: block;">
                 <p style="color: #9C6F44; font-size: 14px; font-weight: 600;">Thank you for shopping with Arun Karyana Store!</p>
@@ -642,13 +727,13 @@ def send_order_status_update_email(order_data, customer_email, new_status, cance
     </body>
     </html>
     """
-    
+
     return send_email(customer_email, subject, html_content)
 
 def send_password_reset_email(user, reset_url):
     """Send password reset email with secure token link"""
     subject = "Reset Your Password - Arun Karyana Store"
-    
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -664,28 +749,28 @@ def send_password_reset_email(user, reset_url):
             <p style="margin: 10px 0 0; font-size: 16px; font-family: 'Poppins', sans-serif;">Arun Karyana Store</p>
             <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Railway Road, Barara, Ambala</p>
         </div>
-        
+
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
             <p style="font-size: 16px;">Dear {user.get('name', 'Customer')},</p>
-            
+
             <p>We received a request to reset your password for your Arun Karyana Store account.</p>
-            
+
             <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="margin-bottom: 20px; color: #6b7280;">Click the button below to reset your password:</p>
                 <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #9C6F44 0%, #B88B4A 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(156, 111, 68, 0.3);">Reset Password</a>
             </div>
-            
+
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
                 <p style="margin: 0; color: #856404; font-size: 14px;">
                     ⚠️ <strong>Security Notice:</strong> This link will expire in 1 hour. If you didn't request this reset, please ignore this email.
                 </p>
             </div>
-            
+
             <p style="font-size: 14px; color: #6b7280; margin-top: 25px;">
                 If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="{reset_url}" style="color: #9C6F44; word-break: break-all;">{reset_url}</a>
             </p>
-            
+
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
                 <p style="color: #6b7280; font-size: 14px;">Need help? Contact us:</p>
                 <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">📞 Phone: +91-XXXXXXXXXX</p>
@@ -695,24 +780,24 @@ def send_password_reset_email(user, reset_url):
     </body>
     </html>
     """
-    
+
     plain_content = f"""
     Password Reset Request - Arun Karyana Store
-    
+
     Dear {user.get('name', 'Customer')},
-    
+
     We received a request to reset your password. Click the link below to reset your password:
-    
+
     {reset_url}
-    
+
     This link will expire in 1 hour.
-    
+
     If you didn't request this reset, please ignore this email.
-    
+
     Thank you,
     Arun Karyana Store Team
     """
-    
+
     return send_email(user['email'], subject, html_content, plain_content)
 
 # ---------- Authentication (signed JWT bearer tokens) ----------
@@ -795,33 +880,38 @@ def health_check():
     health_status = {
         "status": "healthy",
         "service": "Arun Karyana Store Backend",
-        "version": "2.1",
+        "version": "3.0",
+        "api_version": API_VERSION,
+        "build": (os.environ.get('RENDER_GIT_COMMIT') or '')[:7],
+        "owner_login_ready": OWNER_READY,
+        "login_key": JWT_SECRET_SOURCE,
+        "email_enabled": email_enabled(),
         "timestamp": start_time.isoformat()
     }
-    
+
     try:
         # Test database connection with timeout
         db_start = datetime.datetime.utcnow()
         client.admin.command('ping')
         db_latency = (datetime.datetime.utcnow() - db_start).total_seconds() * 1000
-        
+
         health_status["database"] = {
             "status": "connected",
             "latency_ms": round(db_latency, 2)
         }
-        
+
         # Quick collection count check
         health_status["collections"] = {
             "users": users_collection.estimated_document_count(),
             "products": products_collection.estimated_document_count(),
             "orders": orders_collection.estimated_document_count()
         }
-        
+
         total_time = (datetime.datetime.utcnow() - start_time).total_seconds() * 1000
         health_status["response_time_ms"] = round(total_time, 2)
-        
+
         return jsonify(health_status), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Health check failed: {e}")
         health_status["status"] = "unhealthy"
@@ -840,45 +930,45 @@ def register_user():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         # Validate required fields
         required_fields = ['name', 'email', 'phone', 'password', 'confirm_password']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         # Sanitize inputs
         name = sanitize_string(data['name'].strip())
         email = data['email'].strip().lower()
         phone = data['phone'].strip()
         password = data['password']
         confirm_password = data['confirm_password']
-        
+
         # Validate inputs
         if not validate_email(email):
             return jsonify({"success": False, "message": "Invalid email format."}), 400
-        
+
         if not validate_phone(phone):
             return jsonify({"success": False, "message": "Invalid phone number. Please enter a valid 10-digit Indian phone number."}), 400
-        
+
         if password != confirm_password:
             return jsonify({"success": False, "message": "Password and Confirm Password do not match."}), 400
-        
+
         if len(password) < 8:
             return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
-        
+
         # Check for existing user
         existing_user = users_collection.find_one({"$or": [{"email": email}, {"phone": phone}]})
         if existing_user:
             return jsonify({"success": False, "message": "User with this email or phone number already exists."}), 409
-        
+
         # Hash password
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        
+
         # Create new user
         new_user = {
             "name": name,
@@ -888,19 +978,19 @@ def register_user():
             "created_at": datetime.datetime.utcnow(),
             "role": "customer"
         }
-        
+
         inserted_user = users_collection.insert_one(new_user)
-        
+
         # Create empty cart for user
         carts_collection.insert_one({
             "user_id": str(inserted_user.inserted_id),
             "items": [],
             "created_at": datetime.datetime.utcnow()
         })
-        
+
         logger.info(f"✅ New user registered: {email}")
         return jsonify({"success": True, "message": "Registration successful!"}), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Registration error: {e}")
         return jsonify({"success": False, "message": "An error occurred during registration."}), 500
@@ -913,19 +1003,19 @@ def login_user():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         email_phone = data.get('email_phone', '').strip().lower()
         password = data.get('password', '')
-        
+
         if not email_phone or not password:
             return jsonify({"success": False, "message": "Email/Phone and password are required."}), 400
-        
+
         user = find_user_for_login(email_phone)
-        
+
         if user and password_matches(user, password):
             user_id = str(user['_id'])
             logger.info(f"✅ User logged in: {email_phone}")
@@ -940,7 +1030,7 @@ def login_user():
         else:
             logger.warning(f"⚠️ Failed login attempt for: {email_phone}")
             return jsonify({"success": False, "message": "Invalid email/phone or password."}), 401
-            
+
     except Exception as e:
         logger.error(f"❌ Login error: {e}")
         return jsonify({"success": False, "message": "An error occurred during login."}), 500
@@ -953,36 +1043,37 @@ def forgot_password():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         email = data.get('email', '').strip().lower()
-        
+
         if not email:
             return jsonify({"success": False, "message": "Email is required."}), 400
-        
+
         # Validate email format
         if not validate_email(email):
             return jsonify({"success": False, "message": "Invalid email format."}), 400
-        
+
         # Find user by email
         user = users_collection.find_one({"email": email})
-        
+
         # IMPORTANT: Always return success message even if user doesn't exist
         # This prevents email enumeration attacks
         if not user:
             logger.info(f"⚠️ Password reset requested for non-existent email: {email}")
             return jsonify({
                 "success": True,
+                "email_enabled": email_enabled(),
                 "message": "If an account with that email exists, you will receive a password reset link shortly."
             }), 200
-        
+
         # Generate secure random token
         reset_token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(reset_token.encode()).hexdigest()
-        
+
         # Store token with 1-hour expiry
         expiry_time = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
         users_collection.update_one(
@@ -994,25 +1085,26 @@ def forgot_password():
                 }
             }
         )
-        
+
         # Send reset email (use environment variable for frontend URL)
         frontend_url = os.environ.get('FRONTEND_URL', 'https://arun-karyana.netlify.app')
         # Remove trailing slash if present
         frontend_url = frontend_url.rstrip('/')
         reset_url = f"{frontend_url}/reset-password.html?token={reset_token}"
-        
+
         try:
             send_password_reset_email(user, reset_url)
             logger.info(f"✅ Password reset email sent to: {email}")
         except Exception as email_error:
             logger.error(f"❌ Failed to send reset email: {email_error}")
             # Continue even if email fails - user won't know if email exists
-        
+
         return jsonify({
             "success": True,
+            "email_enabled": email_enabled(),
             "message": "If an account with that email exists, you will receive a password reset link shortly."
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Forgot password error: {e}")
         return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
@@ -1025,40 +1117,39 @@ def reset_password():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         token = data.get('token', '').strip()
         new_password = data.get('new_password', '') or data.get('password', '')  # Accept both field names
-        
+
         if not token or not new_password:
             return jsonify({"success": False, "message": "Token and password are required."}), 400
-        
-        # Validate password strength (minimum 6 characters, matching frontend)
-        if len(new_password) < 6:
-            return jsonify({"success": False, "message": "Password must be at least 6 characters long."}), 400
-        
+
+        if len(new_password) < 8:
+            return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
+
         # Hash the token to compare with stored hash
         token_hash = hashlib.sha256(token.encode()).hexdigest()
-        
+
         # Find user with valid token
         user = users_collection.find_one({
             "reset_token": token_hash,
             "reset_token_expiry": {"$gt": datetime.datetime.utcnow()}
         })
-        
+
         if not user:
             logger.warning(f"⚠️ Invalid or expired reset token attempt")
             return jsonify({
                 "success": False,
                 "message": "Invalid or expired reset link. Please request a new one."
             }), 400
-        
+
         # Hash new password
         hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-        
+
         # Update password and clear reset token
         users_collection.update_one(
             {"_id": user['_id']},
@@ -1067,16 +1158,84 @@ def reset_password():
                 "$unset": {"reset_token": "", "reset_token_expiry": ""}
             }
         )
-        
+
         logger.info(f"✅ Password reset successful for user: {user.get('email')}")
         return jsonify({
             "success": True,
             "message": "Password reset successful! You can now login with your new password."
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Reset password error: {e}")
         return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
+
+# Change own password (any logged-in user, including the owner)
+@app.route('/account/change-password', methods=['POST'])
+@limiter.limit("10 per minute")
+def change_password():
+    claims = read_auth_token()
+    if not claims:
+        return auth_error("Please log in to continue.")
+    try:
+        data = request.get_json(silent=True) or {}
+        current = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        if len(new_password) < 8:
+            return jsonify({"success": False, "message": "The new password must be at least 8 characters long."}), 400
+        user = users_collection.find_one({"_id": ObjectId(claims['sub'])})
+        if not user:
+            return auth_error("Please log in again.")
+        if not password_matches(user, current):
+            return jsonify({"success": False, "message": "Your current password is not correct."}), 400
+        users_collection.update_one({"_id": user['_id']}, {
+            "$set": {"password": bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()),
+                     "password_changed_at": datetime.datetime.utcnow()},
+            "$unset": {"reset_token": "", "reset_token_expiry": ""}})
+        logger.info(f"✅ Password changed for user {claims['sub']}")
+        return jsonify({"success": True, "message": "Password updated."}), 200
+    except Exception as e:
+        logger.error(f"❌ Change password error: {e}")
+        return jsonify({"success": False, "message": "Could not update the password. Please try again."}), 500
+
+# Admin: give a customer a temporary password (for customers who can't receive email)
+@app.route('/admin/users/<user_id>/reset-password', methods=['POST'])
+@admin_required
+def admin_reset_user_password(user_id):
+    try:
+        user = users_collection.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+        if not user:
+            return jsonify({"success": False, "message": "Customer not found."}), 404
+        temporary = generate_temporary_password()
+        users_collection.update_one({"_id": user['_id']}, {
+            "$set": {"password": bcrypt.hashpw(temporary.encode('utf-8'), bcrypt.gensalt())},
+            "$unset": {"reset_token": "", "reset_token_expiry": ""}})
+        logger.info(f"✅ Admin {g.user_id} reset the password of user {user_id}")
+        return jsonify({"success": True, "temporary_password": temporary,
+                        "message": f"Temporary password created for {user.get('name', 'the customer')}."}), 200
+    except Exception as e:
+        logger.error(f"❌ Admin password reset error: {e}")
+        return jsonify({"success": False, "message": "Could not reset the password."}), 500
+
+# Admin: give or remove dashboard access (e.g. for family members who help run the store)
+@app.route('/admin/users/<user_id>/role', methods=['POST'])
+@admin_required
+def admin_set_user_role(user_id):
+    try:
+        role = (request.get_json(silent=True) or {}).get('role')
+        if role not in ('admin', 'customer'):
+            return jsonify({"success": False, "message": "Role must be admin or customer."}), 400
+        if user_id == g.user_id and role != 'admin':
+            return jsonify({"success": False, "message": "You can't remove your own dashboard access."}), 400
+        user = users_collection.find_one({"_id": ObjectId(user_id)}, {"email": 1})
+        if not user:
+            return jsonify({"success": False, "message": "Customer not found."}), 404
+        if role != 'admin' and (user.get('email') or '').lower() == OWNER_LOGIN_EMAIL:
+            return jsonify({"success": False, "message": "The owner login always keeps dashboard access."}), 400
+        users_collection.update_one({"_id": user['_id']}, {"$set": {"role": role}})
+        return jsonify({"success": True, "message": "Access updated."}), 200
+    except Exception as e:
+        logger.error(f"❌ Role update error: {e}")
+        return jsonify({"success": False, "message": "Could not update access."}), 500
 
 # Submit Order
 DELIVERY_FEE = float(os.environ.get('DELIVERY_FEE', 40))
@@ -1173,43 +1332,43 @@ def submit_order():
     try:
         if orders_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         # Validate required fields
         required_fields = ['customer', 'items', 'total']
         for field in required_fields:
             if field not in data:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         # Validate customer info
         customer = data['customer']
         customer_fields = ['name', 'phone', 'address']
         if not isinstance(customer, dict) or not all(field in customer and customer[field] for field in customer_fields):
             return jsonify({"success": False, "message": "Missing or incomplete customer details."}), 400
-        
+
         # Validate items
         if not data['items'] or not isinstance(data['items'], list):
             return jsonify({"success": False, "message": "Order must contain items."}), 400
-        
+
         # Sanitize customer info
         sanitized_customer = {
             "name": sanitize_string(customer['name']),
             "phone": customer['phone'],
             "address": sanitize_string(customer['address'])
         }
-        
+
         # Add email if provided
         if customer.get('email'):
             sanitized_customer['email'] = customer['email'].strip().lower()
-        
+
         # Re-price the order from the database so totals can't be tampered with in the browser
         priced, error = price_order(data['items'], data.get('discount_source'))
         if error:
             return jsonify({"success": False, "message": error}), 400
-        
+
         # Create order
         new_order = {
             "customer_info": sanitized_customer,
@@ -1223,10 +1382,10 @@ def submit_order():
             "status": "Pending",
             "user_id": (read_auth_token() or {}).get('sub')
         }
-        
+
         inserted_order = orders_collection.insert_one(new_order)
         order_id = str(inserted_order.inserted_id)
-        
+
         # Send order confirmation email if customer email is provided
         if sanitized_customer.get('email') and validate_email(sanitized_customer.get('email', '')):
             order_email_data = {
@@ -1242,14 +1401,14 @@ def submit_order():
             }
             send_order_confirmation_email(order_email_data, sanitized_customer['email'])
             send_order_confirmation_whatsapp(order_email_data, sanitized_customer['phone'])
-        
+
         logger.info(f"✅ Order placed: {order_id}")
         return jsonify({
             "success": True,
             "message": "Order placed successfully!",
             "order_id": order_id
         }), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Order submission error: {e}")
         return jsonify({"success": False, "message": "An error occurred while placing the order."}), 500
@@ -1262,12 +1421,12 @@ def get_cart(user_id):
     try:
         if carts_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         cart_document = carts_collection.find_one({"user_id": user_id})
         cart_items = cart_document.get('items', []) if cart_document else []
-        
+
         return jsonify({"success": True, "cart": cart_items}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching cart for user {user_id}: {e}")
         return jsonify({"success": False, "message": "An error occurred while fetching the cart."}), 500
@@ -1281,22 +1440,22 @@ def update_cart():
     try:
         if carts_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data or 'items' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
-        
+
         user_id = data['user_id']
         cart_items = data['items']
-        
+
         carts_collection.update_one(
             {"user_id": user_id},
             {"$set": {"items": cart_items, "last_updated": datetime.datetime.utcnow()}},
             upsert=True
         )
-        
+
         return jsonify({"success": True, "message": "Cart updated successfully."}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error updating cart: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the cart."}), 500
@@ -1309,18 +1468,18 @@ def get_user_orders(user_id):
     try:
         if orders_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         orders_cursor = orders_collection.find({"user_id": user_id}).sort("order_date", -1)
         orders_list = []
-        
+
         for order in orders_cursor:
             order['_id'] = str(order['_id'])
             if 'order_date' in order and isinstance(order['order_date'], datetime.datetime):
                 order['order_date'] = order['order_date'].isoformat()
             orders_list.append(order)
-        
+
         return jsonify({"success": True, "orders": orders_list}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching orders for user {user_id}: {e}")
         return jsonify({"success": False, "message": "An error occurred while fetching orders."}), 500
@@ -1333,12 +1492,12 @@ def get_user_profile(user_id):
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         user_document = users_collection.find_one({"_id": ObjectId(user_id)})
-        
+
         if not user_document:
             return jsonify({"success": False, "message": "User not found."}), 404
-        
+
         user_data = {
             "_id": str(user_document['_id']),
             "name": user_document.get('name'),
@@ -1353,9 +1512,9 @@ def get_user_profile(user_id):
             "gender": user_document.get('gender'),
             "alt_phone": user_document.get('alt_phone')
         }
-        
+
         return jsonify({"success": True, "user": user_data}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching profile for user {user_id}: {e}")
         return jsonify({"success": False, "message": "An error occurred while fetching the profile."}), 500
@@ -1369,55 +1528,55 @@ def update_user_profile():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data:
             return jsonify({"success": False, "message": "Missing user ID."}), 400
-        
+
         user_id = data['user_id']
         update_fields = {}
-        
+
         if 'name' in data and data['name']:
             update_fields['name'] = sanitize_string(data['name'])
-        
+
         if 'email' in data and data['email']:
             email = data['email'].strip().lower()
             if validate_email(email):
                 update_fields['email'] = email
             else:
                 return jsonify({"success": False, "message": "Invalid email format."}), 400
-        
+
         if 'phone' in data and data['phone']:
             phone = data['phone'].strip()
             if validate_phone(phone):
                 update_fields['phone'] = phone
             else:
                 return jsonify({"success": False, "message": "Invalid phone number."}), 400
-        
+
         # Add optional fields
         if 'dob' in data:
             update_fields['dob'] = data['dob']
-        
+
         if 'gender' in data:
             update_fields['gender'] = sanitize_string(data['gender']) if data['gender'] else None
-        
+
         if 'alt_phone' in data:
             update_fields['alt_phone'] = data['alt_phone'].strip() if data['alt_phone'] else None
-        
+
         if not update_fields:
             return jsonify({"success": False, "message": "No valid fields provided for update."}), 400
-        
+
         update_result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
             {"$set": update_fields}
         )
-        
+
         if update_result.matched_count > 0:
             logger.info(f"✅ Profile updated for user: {user_id}")
             return jsonify({"success": True, "message": "Profile updated successfully."}), 200
         else:
             return jsonify({"success": False, "message": "User not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error updating profile: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the profile."}), 500
@@ -1431,31 +1590,31 @@ def upload_profile_picture():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data or 'image_data' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
-        
+
         user_id = data['user_id']
         image_data = data['image_data']
-        
+
         # Upload to Cloudinary
         upload_result = upload_image_to_cloudinary(image_data, folder="profiles")
-        
+
         if not upload_result['success']:
             return jsonify({"success": False, "message": upload_result.get('message', 'Failed to upload image')}), 500
-        
+
         # Update user profile with new image URL
         update_fields = {
             "profile_picture": upload_result['url'],
             "cloudinary_profile_pic_id": upload_result.get('public_id')
         }
-        
+
         update_result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
             {"$set": update_fields}
         )
-        
+
         if update_result.matched_count > 0:
             logger.info(f"✅ Profile picture updated for user: {user_id}")
             return jsonify({
@@ -1466,7 +1625,7 @@ def upload_profile_picture():
             }), 200
         else:
             return jsonify({"success": False, "message": "User not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error uploading profile picture: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1480,32 +1639,32 @@ def update_profile_picture():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data or 'profile_picture' not in data:
             return jsonify({"success": False, "message": "Missing required fields."}), 400
-        
+
         user_id = data['user_id']
         profile_picture = data['profile_picture']
         cloudinary_public_id = data.get('cloudinary_public_id')
-        
+
         # Update fields
         update_fields = {
             "profile_picture": profile_picture,
             "cloudinary_profile_pic_id": cloudinary_public_id
         }
-        
+
         update_result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
             {"$set": update_fields}
         )
-        
+
         if update_result.matched_count > 0:
             logger.info(f"✅ Profile picture updated for user: {user_id}")
             return jsonify({"success": True, "message": "Profile picture updated successfully."}), 200
         else:
             return jsonify({"success": False, "message": "User not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error updating profile picture: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the profile picture."}), 500
@@ -1519,19 +1678,19 @@ def add_address():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data:
             return jsonify({"success": False, "message": "Missing user ID."}), 400
-        
+
         user_id = data['user_id']
-        
+
         # Validate required address fields
         required_fields = ['label', 'full_address', 'city', 'state', 'pincode']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         # Create address object
         address = {
             "address_id": str(ObjectId()),  # Generate unique ID for address
@@ -1543,28 +1702,28 @@ def add_address():
             "phone": data.get('phone', '').strip(),
             "created_at": datetime.datetime.utcnow()
         }
-        
+
         # Get user's current addresses
         user = users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
             return jsonify({"success": False, "message": "User not found."}), 404
-        
+
         # Add address to user's addresses array
         result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
             {"$push": {"addresses": address}}
         )
-        
+
         # If this is the first address, set it as default
         if not user.get('addresses'):
             users_collection.update_one(
                 {"_id": ObjectId(user_id)},
                 {"$set": {"default_address_id": address['address_id']}}
             )
-        
+
         logger.info(f"✅ Address added for user: {user_id}")
         return jsonify({"success": True, "message": "Address added successfully!", "address_id": address['address_id']}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error adding address: {e}")
         return jsonify({"success": False, "message": "An error occurred while adding the address."}), 500
@@ -1578,14 +1737,14 @@ def update_address():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data or 'address_id' not in data:
             return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
-        
+
         user_id = data['user_id']
         address_id = data['address_id']
-        
+
         # Build update fields
         update_fields = {}
         if 'label' in data:
@@ -1600,22 +1759,22 @@ def update_address():
             update_fields['addresses.$.pincode'] = data['pincode'].strip()
         if 'phone' in data:
             update_fields['addresses.$.phone'] = data['phone'].strip()
-        
+
         if not update_fields:
             return jsonify({"success": False, "message": "No fields to update."}), 400
-        
+
         # Update the specific address in the array
         result = users_collection.update_one(
             {"_id": ObjectId(user_id), "addresses.address_id": address_id},
             {"$set": update_fields}
         )
-        
+
         if result.matched_count > 0:
             logger.info(f"✅ Address updated for user: {user_id}")
             return jsonify({"success": True, "message": "Address updated successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Address not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error updating address: {e}")
         return jsonify({"success": False, "message": "An error occurred while updating the address."}), 500
@@ -1629,20 +1788,20 @@ def delete_address():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data or 'address_id' not in data:
             return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
-        
+
         user_id = data['user_id']
         address_id = data['address_id']
-        
+
         # Remove the address from the array
         result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
             {"$pull": {"addresses": {"address_id": address_id}}}
         )
-        
+
         if result.modified_count > 0:
             # If deleted address was default, set first remaining address as default
             user = users_collection.find_one({"_id": ObjectId(user_id)})
@@ -1657,12 +1816,12 @@ def delete_address():
                         {"_id": ObjectId(user_id)},
                         {"$unset": {"default_address_id": ""}}
                     )
-            
+
             logger.info(f"✅ Address deleted for user: {user_id}")
             return jsonify({"success": True, "message": "Address deleted successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Address not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error deleting address: {e}")
         return jsonify({"success": False, "message": "An error occurred while deleting the address."}), 500
@@ -1676,26 +1835,26 @@ def set_default_address():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'user_id' not in data or 'address_id' not in data:
             return jsonify({"success": False, "message": "Missing user ID or address ID."}), 400
-        
+
         user_id = data['user_id']
         address_id = data['address_id']
-        
+
         # Update default address
         result = users_collection.update_one(
             {"_id": ObjectId(user_id), "addresses.address_id": address_id},
             {"$set": {"default_address_id": address_id}}
         )
-        
+
         if result.matched_count > 0:
             logger.info(f"✅ Default address set for user: {user_id}")
             return jsonify({"success": True, "message": "Default address updated!"}), 200
         else:
             return jsonify({"success": False, "message": "Address not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error setting default address: {e}")
         return jsonify({"success": False, "message": "An error occurred."}), 500
@@ -1709,43 +1868,43 @@ def submit_order_review():
     try:
         if reviews_collection is None or orders_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         # Validate required fields
         required_fields = ['order_id', 'user_id', 'rating', 'review_text']
         for field in required_fields:
             if field not in data:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         order_id = data['order_id']
         user_id = data['user_id']
         rating = int(data['rating'])
         review_text = sanitize_string(data['review_text'])
-        
+
         # Validate rating (1-5)
         if rating < 1 or rating > 5:
             return jsonify({"success": False, "message": "Rating must be between 1 and 5."}), 400
-        
+
         # Check if order exists and belongs to user
         order = orders_collection.find_one({"_id": ObjectId(order_id)})
         if not order:
             return jsonify({"success": False, "message": "Order not found."}), 404
-        
+
         # Check if order is delivered
         if order.get('status') != 'Delivered':
             return jsonify({"success": False, "message": "You can only review delivered orders."}), 400
-        
+
         # Check if already reviewed
         existing_review = reviews_collection.find_one({"order_id": order_id, "user_id": user_id})
         if existing_review:
             return jsonify({"success": False, "message": "You have already reviewed this order."}), 400
-        
+
         # Get user info
         user = users_collection.find_one({"_id": ObjectId(user_id)})
-        
+
         # Create review
         review = {
             "order_id": order_id,
@@ -1756,19 +1915,19 @@ def submit_order_review():
             "featured": False,  # Admin can feature this later
             "created_at": datetime.datetime.utcnow()
         }
-        
+
         # Insert review
         result = reviews_collection.insert_one(review)
-        
+
         # Update order with review info
         orders_collection.update_one(
             {"_id": ObjectId(order_id)},
             {"$set": {"reviewed": True, "review_id": str(result.inserted_id)}}
         )
-        
+
         logger.info(f"✅ Review submitted for order: {order_id}")
         return jsonify({"success": True, "message": "Thank you for your review!"}), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Error submitting review: {e}")
         return jsonify({"success": False, "message": "An error occurred while submitting the review."}), 500
@@ -1781,16 +1940,16 @@ def get_all_reviews():
     try:
         if reviews_collection is None or users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         # Get all reviews sorted by date (newest first)
         reviews = list(reviews_collection.find({}).sort("created_at", -1))
-        
+
         # Enrich reviews with user profile pictures
         for review in reviews:
             review['_id'] = str(review['_id'])
             if isinstance(review.get('created_at'), datetime.datetime):
                 review['created_at'] = review['created_at'].isoformat()
-            
+
             # Fetch user profile picture if user_id exists
             if review.get('user_id'):
                 try:
@@ -1805,9 +1964,9 @@ def get_all_reviews():
                     review['user_profile_picture'] = ''
             else:
                 review['user_profile_picture'] = ''
-        
+
         return jsonify({"success": True, "reviews": reviews}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching reviews: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1821,27 +1980,27 @@ def feature_review():
     try:
         if reviews_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'review_id' not in data or 'featured' not in data:
             return jsonify({"success": False, "message": "Missing review_id or featured status."}), 400
-        
+
         review_id = data['review_id']
         featured = bool(data['featured'])
-        
+
         # Update review
         result = reviews_collection.update_one(
             {"_id": ObjectId(review_id)},
             {"$set": {"featured": featured}}
         )
-        
+
         if result.matched_count > 0:
             action = "featured" if featured else "unfeatured"
             logger.info(f"✅ Review {action}: {review_id}")
             return jsonify({"success": True, "message": f"Review {action} successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Review not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error featuring review: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1853,19 +2012,19 @@ def get_featured_reviews():
     try:
         if reviews_collection is None or users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         # Get featured reviews with rating 4 or 5, limit to 10
         reviews = list(reviews_collection.find({
             "featured": True,
             "rating": {"$gte": 4}
         }).sort("created_at", -1).limit(10))
-        
+
         # Enrich reviews with user profile pictures
         for review in reviews:
             review['_id'] = str(review['_id'])
             if isinstance(review.get('created_at'), datetime.datetime):
                 review['created_at'] = review['created_at'].isoformat()
-            
+
             # Fetch user profile picture if user_id exists
             if review.get('user_id'):
                 try:
@@ -1883,9 +2042,9 @@ def get_featured_reviews():
                     review['user_profile_picture'] = ''
             else:
                 review['user_profile_picture'] = ''
-        
+
         return jsonify({"success": True, "reviews": reviews}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching featured reviews: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1897,22 +2056,22 @@ def get_order_details(order_id):
     try:
         if orders_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         order_document = orders_collection.find_one({"_id": ObjectId(order_id)})
-        
+
         if not order_document:
             return jsonify({"success": False, "message": "Order not found."}), 404
-        
+
         order_document['_id'] = str(order_document['_id'])
         if 'order_date' in order_document and isinstance(order_document['order_date'], datetime.datetime):
             order_document['order_date'] = order_document['order_date'].isoformat()
-        
+
         return jsonify({
             "success": True,
             "message": "Order found",
             "order": order_document
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching order {order_id}: {e}")
         return jsonify({"success": False, "message": "An error occurred while fetching order details."}), 500
@@ -1924,14 +2083,14 @@ def get_user_role(user_id):
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         user = users_collection.find_one({"_id": ObjectId(user_id)}, {"role": 1})
-        
+
         if user:
             return jsonify({"success": True, "role": user.get('role', 'customer')}), 200
         else:
             return jsonify({"success": False, "message": "User not found!"}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error fetching user role: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1944,17 +2103,17 @@ def get_all_users():
     try:
         if users_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
-        users = list(users_collection.find({}, {'password': 0}))
-        
+
+        users = list(users_collection.find({}, {'password': 0, 'reset_token': 0, 'reset_token_expiry': 0}))
+
         for user in users:
             user['_id'] = str(user['_id'])
             if 'created_at' in user and isinstance(user['created_at'], datetime.datetime):
                 user['created_at'] = user['created_at'].isoformat()
             user['role'] = user.get('role', 'customer')
-        
+
         return jsonify({"success": True, "users": users}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching all users: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1967,16 +2126,16 @@ def get_all_orders():
     try:
         if orders_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         orders = list(orders_collection.find({}).sort("order_date", -1))
-        
+
         for order in orders:
             order['_id'] = str(order['_id'])
             if 'order_date' in order and isinstance(order['order_date'], datetime.datetime):
                 order['order_date'] = order['order_date'].isoformat()
-        
+
         return jsonify({"success": True, "orders": orders}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching all orders: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1990,18 +2149,18 @@ def get_dashboard_stats():
         # Get today's date range
         today_start = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         today_end = today_start + datetime.timedelta(days=1)
-        
+
         # Count today's orders (all orders placed today)
         todays_orders = orders_collection.count_documents({
             "order_date": {"$gte": today_start, "$lt": today_end}
         })
-        
+
         # Count today's delivered orders
         todays_delivered = orders_collection.count_documents({
             "status": "Delivered",
             "delivered_date": {"$gte": today_start, "$lt": today_end}
         })
-        
+
         # Calculate today's sales (only count DELIVERED orders from today)
         today_pipeline = [
             {"$match": {
@@ -2012,26 +2171,26 @@ def get_dashboard_stats():
         ]
         todays_sales_result = list(orders_collection.aggregate(today_pipeline))
         todays_sales = todays_sales_result[0]['total'] if todays_sales_result else 0
-        
+
         # Count pending orders
         pending_orders = orders_collection.count_documents({"status": "Pending"})
-        
+
         # Count total products
         total_products = products_collection.count_documents({})
-        
+
         # Count low stock products (if stock field exists)
         low_stock_products = products_collection.count_documents({"stock": {"$lt": 10, "$exists": True}})
-        
+
         # Count total customers
         total_customers = users_collection.count_documents({"role": "customer"})
-        
+
         # Get recent orders (last 5)
         recent_orders = list(orders_collection.find({}).sort("order_date", -1).limit(5))
         for order in recent_orders:
             order['_id'] = str(order['_id'])
             if 'order_date' in order and isinstance(order['order_date'], datetime.datetime):
                 order['order_date'] = order['order_date'].isoformat()
-        
+
         stats = {
             "todays_orders": todays_orders,
             "todays_delivered": todays_delivered,
@@ -2042,9 +2201,9 @@ def get_dashboard_stats():
             "total_customers": total_customers,
             "recent_orders": recent_orders
         }
-        
+
         return jsonify({"success": True, "stats": stats}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching dashboard stats: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2056,12 +2215,12 @@ def get_all_products():
     """Get all products (admin only)"""
     try:
         products = list(products_collection.find({}))
-        
+
         for product in products:
             product['_id'] = str(product['_id'])
-        
+
         return jsonify({"success": True, "products": products}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching products: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2074,13 +2233,13 @@ def add_product():
     """Add new product (admin only)"""
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         required_fields = ['name', 'price', 'category']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         # Sanitize inputs
         new_product = {
             "name": sanitize_string(data['name']),
@@ -2095,16 +2254,16 @@ def add_product():
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
         }
-        
+
         result = products_collection.insert_one(new_product)
-        
+
         logger.info(f"✅ Product added: {new_product['name']}")
         return jsonify({
             "success": True,
             "message": "Product added successfully!",
             "product_id": str(result.inserted_id)
         }), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Error adding product: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2117,22 +2276,22 @@ def bulk_upload_products():
     """Bulk upload products from Excel/CSV (admin only)"""
     try:
         data = request.get_json()
-        
+
         if 'products' not in data or not isinstance(data['products'], list):
             return jsonify({"success": False, "message": "Invalid data format. Expected 'products' array."}), 400
-        
+
         products_to_insert = data['products']
-        
+
         if len(products_to_insert) == 0:
             return jsonify({"success": False, "message": "No products to upload."}), 400
-        
+
         if len(products_to_insert) > 500:
             return jsonify({"success": False, "message": "Maximum 500 products can be uploaded at once."}), 400
-        
+
         created_count = 0
         failed_count = 0
         failed_items = []
-        
+
         for idx, product in enumerate(products_to_insert):
             try:
                 # Validate required fields
@@ -2140,7 +2299,7 @@ def bulk_upload_products():
                     failed_count += 1
                     failed_items.append(f"Row {idx+1}: Missing name or price")
                     continue
-                
+
                 # Sanitize and prepare product
                 new_product = {
                     "name": sanitize_string(product['name']),
@@ -2153,19 +2312,19 @@ def bulk_upload_products():
                     "created_at": datetime.datetime.utcnow(),
                     "updated_at": datetime.datetime.utcnow()
                 }
-                
+
                 # Insert product
                 products_collection.insert_one(new_product)
                 created_count += 1
                 logger.info(f"✅ Bulk upload - Product added: {new_product['name']}")
-                
+
             except Exception as e:
                 failed_count += 1
                 failed_items.append(f"Row {idx+1}: {str(e)}")
                 logger.error(f"❌ Bulk upload - Failed to add product at row {idx+1}: {e}")
-        
+
         logger.info(f"📦 Bulk upload completed: {created_count} created, {failed_count} failed")
-        
+
         return jsonify({
             "success": True,
             "message": f"Bulk upload completed: {created_count} products created, {failed_count} failed",
@@ -2173,7 +2332,7 @@ def bulk_upload_products():
             "failed_count": failed_count,
             "failed_items": failed_items[:10]  # Return first 10 failed items
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error in bulk upload: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2186,10 +2345,10 @@ def update_product(product_id):
     """Update product (admin only)"""
     try:
         data = request.get_json()
-        
+
         # Build update fields
         update_fields = {"updated_at": datetime.datetime.utcnow()}
-        
+
         if 'name' in data:
             update_fields['name'] = sanitize_string(data['name'])
         if 'price' in data:
@@ -2208,21 +2367,21 @@ def update_product(product_id):
             update_fields['cloudinary_public_id'] = data['cloudinary_public_id']
         if 'cloudinary_public_ids' in data:
             update_fields['cloudinary_public_ids'] = data['cloudinary_public_ids']
-        
+
         # Check if product_id is numeric (old format) or ObjectId
         try:
             query = {"_id": int(product_id)}
         except ValueError:
             query = {"_id": ObjectId(product_id)}
-        
+
         result = products_collection.update_one(query, {"$set": update_fields})
-        
+
         if result.matched_count > 0:
             logger.info(f"✅ Product updated: {product_id}")
             return jsonify({"success": True, "message": "Product updated successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Product not found."}), 404
-        
+
     except Exception as e:
         logger.error(f"❌ Error updating product: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2239,25 +2398,25 @@ def delete_product(product_id):
             query = {"_id": int(product_id)}
         except ValueError:
             query = {"_id": ObjectId(product_id)}
-        
+
         product = products_collection.find_one(query)
-        
+
         if not product:
             return jsonify({"success": False, "message": "Product not found."}), 404
-        
+
         # Delete from Cloudinary if public_id exists
         if product.get('cloudinary_public_id'):
             delete_image_from_cloudinary(product['cloudinary_public_id'])
-        
+
         # Delete from database
         result = products_collection.delete_one(query)
-        
+
         if result.deleted_count > 0:
             logger.info(f"✅ Product deleted: {product_id}")
             return jsonify({"success": True, "message": "Product deleted successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Failed to delete product."}), 500
-        
+
     except Exception as e:
         logger.error(f"❌ Error deleting product: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2270,19 +2429,19 @@ def upload_product_image():
     """Upload image to Cloudinary (admin only)"""
     try:
         data = request.get_json()
-        
+
         if 'image_data' not in data:
             return jsonify({"success": False, "message": "No image data provided."}), 400
-        
+
         # Upload to Cloudinary
         result = upload_image_to_cloudinary(data['image_data'], folder="products")
-        
+
         if result['success']:
             logger.info(f"✅ Image uploaded to Cloudinary")
             return jsonify(result), 200
         else:
             return jsonify(result), 500
-        
+
     except Exception as e:
         logger.error(f"❌ Error uploading image: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2296,10 +2455,10 @@ def get_offers():
     try:
         if offers_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         # Only return active offers
         offers = list(offers_collection.find({"active": True}))
-        
+
         for offer in offers:
             offer['_id'] = str(offer['_id'])
             # Convert dates to ISO format
@@ -2307,9 +2466,9 @@ def get_offers():
                 offer['start_date'] = offer['start_date'].isoformat() if isinstance(offer['start_date'], datetime.datetime) else offer['start_date']
             if 'end_date' in offer:
                 offer['end_date'] = offer['end_date'].isoformat() if isinstance(offer['end_date'], datetime.datetime) else offer['end_date']
-        
+
         return jsonify({"success": True, "offers": offers}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching offers: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2322,9 +2481,9 @@ def get_all_offers_admin():
     try:
         if offers_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         offers = list(offers_collection.find({}))
-        
+
         for offer in offers:
             offer['_id'] = str(offer['_id'])
             # Convert dates to ISO format
@@ -2334,9 +2493,9 @@ def get_all_offers_admin():
                 offer['end_date'] = offer['end_date'].isoformat() if isinstance(offer['end_date'], datetime.datetime) else offer['end_date']
             if 'created_at' in offer:
                 offer['created_at'] = offer['created_at'].isoformat() if isinstance(offer['created_at'], datetime.datetime) else offer['created_at']
-        
+
         return jsonify({"success": True, "offers": offers}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching offers: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2350,19 +2509,19 @@ def add_offer():
     try:
         if offers_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
-        
+
         # Validate required fields
         required_fields = ['title', 'description', 'discount_type', 'discount_value']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         # Validate discount type
         if data['discount_type'] not in ['percentage', 'fixed']:
             return jsonify({"success": False, "message": "Invalid discount_type. Must be 'percentage' or 'fixed'."}), 400
-        
+
         # Parse dates if provided
         start_date = None
         end_date = None
@@ -2371,13 +2530,13 @@ def add_offer():
                 start_date = datetime.datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
             except:
                 start_date = datetime.datetime.utcnow()
-        
+
         if data.get('end_date'):
             try:
                 end_date = datetime.datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
             except:
                 pass
-        
+
         # Create offer
         new_offer = {
             "title": sanitize_string(data['title']),
@@ -2395,16 +2554,16 @@ def add_offer():
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
         }
-        
+
         result = offers_collection.insert_one(new_offer)
-        
+
         logger.info(f"✅ Offer added: {new_offer['title']}")
         return jsonify({
             "success": True,
             "message": "Offer added successfully!",
             "offer_id": str(result.inserted_id)
         }), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Error adding offer: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2417,16 +2576,16 @@ def update_offer(offer_id):
     """Update offer (admin only)"""
     try:
         data = request.get_json()
-        
+
         # Validate offer exists
         try:
             query = {"_id": ObjectId(offer_id)}
         except:
             return jsonify({"success": False, "message": "Invalid offer ID."}), 400
-        
+
         # Build update fields
         update_fields = {"updated_at": datetime.datetime.utcnow()}
-        
+
         if 'title' in data:
             update_fields['title'] = sanitize_string(data['title'])
         if 'description' in data:
@@ -2447,28 +2606,28 @@ def update_offer(offer_id):
             update_fields['active'] = data['active']
         if 'image' in data:
             update_fields['image'] = data['image']
-        
+
         # Handle dates
         if 'start_date' in data and data['start_date']:
             try:
                 update_fields['start_date'] = datetime.datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
             except:
                 pass
-        
+
         if 'end_date' in data and data['end_date']:
             try:
                 update_fields['end_date'] = datetime.datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
             except:
                 pass
-        
+
         result = offers_collection.update_one(query, {"$set": update_fields})
-        
+
         if result.matched_count > 0:
             logger.info(f"✅ Offer updated: {offer_id}")
             return jsonify({"success": True, "message": "Offer updated successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Offer not found."}), 404
-        
+
     except Exception as e:
         logger.error(f"❌ Error updating offer: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2484,15 +2643,15 @@ def delete_offer(offer_id):
             query = {"_id": ObjectId(offer_id)}
         except:
             return jsonify({"success": False, "message": "Invalid offer ID."}), 400
-        
+
         result = offers_collection.delete_one(query)
-        
+
         if result.deleted_count > 0:
             logger.info(f"✅ Offer deleted: {offer_id}")
             return jsonify({"success": True, "message": "Offer deleted successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Offer not found."}), 404
-        
+
     except Exception as e:
         logger.error(f"❌ Error deleting offer: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2508,23 +2667,23 @@ def toggle_offer_status(offer_id):
             query = {"_id": ObjectId(offer_id)}
         except:
             return jsonify({"success": False, "message": "Invalid offer ID."}), 400
-        
+
         # Get current offer
         offer = offers_collection.find_one(query)
         if not offer:
             return jsonify({"success": False, "message": "Offer not found."}), 404
-        
+
         # Toggle status
         new_status = not offer.get('active', True)
         result = offers_collection.update_one(query, {"$set": {"active": new_status, "updated_at": datetime.datetime.utcnow()}})
-        
+
         if result.matched_count > 0:
             status_text = "activated" if new_status else "deactivated"
             logger.info(f"✅ Offer {status_text}: {offer_id}")
             return jsonify({"success": True, "message": f"Offer {status_text} successfully!", "active": new_status}), 200
         else:
             return jsonify({"success": False, "message": "Failed to update offer status."}), 500
-        
+
     except Exception as e:
         logger.error(f"❌ Error toggling offer status: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2539,20 +2698,20 @@ def validate_promo_code():
     try:
         if offers_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         promo_code = data.get('code', '').upper().strip()
         cart_total = float(data.get('cart_total', 0))
-        
+
         if not promo_code:
             return jsonify({"success": False, "message": "Please enter a promo code."}), 400
-        
+
         if cart_total <= 0:
             return jsonify({"success": False, "message": "Cart is empty."}), 400
-        
+
         # Find active offer with this promo code
         offer = offers_collection.find_one({
             "code": promo_code,
@@ -2563,13 +2722,13 @@ def validate_promo_code():
                 {"end_date": {"$gte": datetime.datetime.utcnow()}}
             ]
         })
-        
+
         if not offer:
             return jsonify({
                 "success": False,
                 "message": f"Invalid promo code '{promo_code}'. Please check and try again."
             }), 404
-        
+
         # Check minimum purchase requirement
         min_purchase = offer.get('min_purchase', 0)
         if cart_total < min_purchase:
@@ -2577,26 +2736,26 @@ def validate_promo_code():
                 "success": False,
                 "message": f"Minimum purchase of ₹{min_purchase} required to use this promo code. Add ₹{min_purchase - cart_total} more to your cart."
             }), 400
-        
+
         # Calculate discount
         discount_type = offer['discount_type']
         discount_value = offer['discount_value']
         max_discount = offer.get('max_discount', None)
-        
+
         if discount_type == 'percentage':
             discount_amount = (cart_total * discount_value) / 100
             if max_discount and discount_amount > max_discount:
                 discount_amount = max_discount
         else:  # fixed
             discount_amount = discount_value
-        
+
         # Ensure discount doesn't exceed cart total
         discount_amount = min(discount_amount, cart_total)
-        
+
         final_total = cart_total - discount_amount
-        
+
         logger.info(f"✅ Promo code '{promo_code}' validated. Discount: ₹{discount_amount}")
-        
+
         return jsonify({
             "success": True,
             "message": f"Promo code '{promo_code}' applied successfully!",
@@ -2615,7 +2774,7 @@ def validate_promo_code():
             "discount_amount": round(discount_amount, 2),
             "final_total": round(final_total, 2)
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error validating promo code: {e}")
         return jsonify({"success": False, "message": "An error occurred. Please try again."}), 500
@@ -2628,13 +2787,13 @@ def get_applicable_offers():
     try:
         if offers_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         cart_total = float(data.get('cart_total', 0))
-        
+
         if cart_total <= 0:
             return jsonify({"success": True, "offers": []}), 200
-        
+
         # Find all active automatic offers
         offers = list(offers_collection.find({
             "active": True,
@@ -2644,31 +2803,31 @@ def get_applicable_offers():
                 {"end_date": {"$gte": datetime.datetime.utcnow()}}
             ]
         }))
-        
+
         applicable_offers = []
         best_discount = 0
         best_offer = None
-        
+
         for offer in offers:
             min_purchase = offer.get('min_purchase', 0)
-            
+
             # Check if cart meets minimum purchase
             if cart_total >= min_purchase:
                 # Calculate discount
                 discount_type = offer['discount_type']
                 discount_value = offer['discount_value']
                 max_discount = offer.get('max_discount', None)
-                
+
                 if discount_type == 'percentage':
                     discount_amount = (cart_total * discount_value) / 100
                     if max_discount and discount_amount > max_discount:
                         discount_amount = max_discount
                 else:  # fixed
                     discount_amount = discount_value
-                
+
                 # Ensure discount doesn't exceed cart total
                 discount_amount = min(discount_amount, cart_total)
-                
+
                 offer_data = {
                     "_id": str(offer['_id']),
                     "title": offer['title'],
@@ -2678,21 +2837,21 @@ def get_applicable_offers():
                     "discount_amount": round(discount_amount, 2),
                     "min_purchase": min_purchase
                 }
-                
+
                 applicable_offers.append(offer_data)
-                
+
                 # Track best discount
                 if discount_amount > best_discount:
                     best_discount = discount_amount
                     best_offer = offer_data
-        
+
         return jsonify({
             "success": True,
             "offers": applicable_offers,
             "best_offer": best_offer,
             "best_discount": round(best_discount, 2) if best_discount > 0 else 0
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error getting applicable offers: {e}")
         return jsonify({"success": False, "message": "An error occurred."}), 500
@@ -2705,50 +2864,50 @@ def update_order_status():
     """Update order status (admin only)"""
     try:
         data = request.get_json()
-        
+
         if 'order_id' not in data or 'status' not in data:
             return jsonify({"success": False, "message": "Missing order_id or status."}), 400
-        
+
         order_id = data['order_id']
         new_status = data['status']
         cancellation_reason = data.get('cancellation_reason', None)  # Optional cancellation reason
-        
+
         # Validate status
         valid_statuses = ['Pending', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled']
         if new_status not in valid_statuses:
             return jsonify({"success": False, "message": "Invalid status."}), 400
-        
+
         # Validate cancellation reason if status is Cancelled
         if new_status == 'Cancelled' and not cancellation_reason:
             return jsonify({"success": False, "message": "Cancellation reason is required when cancelling an order."}), 400
-        
+
         # Get order
         order = orders_collection.find_one({"_id": ObjectId(order_id)})
-        
+
         if not order:
             return jsonify({"success": False, "message": "Order not found."}), 404
-        
+
         # Update order status
         update_data = {
             "status": new_status,
             "updated_at": datetime.datetime.utcnow()
         }
-        
+
         # If status is Delivered, add delivered_date for sales tracking AND deduct stock
         if new_status == "Delivered":
             update_data["delivered_date"] = datetime.datetime.utcnow()
-            
+
             # Deduct stock for each item in the order
             if 'items' in order:
                 for item in order['items']:
                     product_id = item.get('id')
                     quantity = item.get('quantity', 0)
-                    
+
                     if product_id and quantity > 0:
                         try:
                             # Convert string ID to ObjectId
                             prod_obj_id = ObjectId(product_id)
-                            
+
                             # Deduct stock from product
                             products_collection.update_one(
                                 {"_id": prod_obj_id},
@@ -2757,23 +2916,23 @@ def update_order_status():
                             logger.info(f"📦 Deducted {quantity} units from product {product_id}")
                         except Exception as e:
                             logger.error(f"❌ Error deducting stock for product {product_id}: {e}")
-        
+
         # If status is Cancelled, add cancellation reason and restore stock
         if new_status == "Cancelled":
             if cancellation_reason:
                 update_data["cancellation_reason"] = cancellation_reason
-            
+
             # Restore stock if order was already marked as delivered
             if order.get('status') == 'Delivered' and 'items' in order:
                 for item in order['items']:
                     product_id = item.get('id')
                     quantity = item.get('quantity', 0)
-                    
+
                     if product_id and quantity > 0:
                         try:
                             # Convert string ID to ObjectId
                             prod_obj_id = ObjectId(product_id)
-                            
+
                             # Restore stock to product
                             products_collection.update_one(
                                 {"_id": prod_obj_id},
@@ -2782,14 +2941,14 @@ def update_order_status():
                             logger.info(f"♻️ Restored {quantity} units to product {product_id}")
                         except Exception as e:
                             logger.error(f"❌ Error restoring stock for product {product_id}: {e}")
-        
+
         # Add status history
         status_history_entry = {
             "status": new_status,
             "timestamp": datetime.datetime.utcnow(),
             "updated_by": g.user_id
         }
-        
+
         result = orders_collection.update_one(
             {"_id": ObjectId(order_id)},
             {
@@ -2797,14 +2956,14 @@ def update_order_status():
                 "$push": {"status_history": status_history_entry}
             }
         )
-        
+
         if result.modified_count > 0:
             order_data = {
                 "order_id": str(order['_id']),
                 "customer_name": order['customer_info'].get('name', 'Customer'),
                 "total_amount": order.get('total_amount', 0)
             }
-            
+
             # Send email notification if customer has email
             if order.get('customer_info', {}).get('email'):
                 send_order_status_update_email(
@@ -2813,7 +2972,7 @@ def update_order_status():
                     new_status,
                     cancellation_reason
                 )
-            
+
             # Send WhatsApp notification if customer has phone
             if order.get('customer_info', {}).get('phone'):
                 send_order_status_update_whatsapp(
@@ -2822,12 +2981,12 @@ def update_order_status():
                     new_status,
                     cancellation_reason
                 )
-            
+
             logger.info(f"✅ Order status updated: {order_id} -> {new_status}")
             return jsonify({"success": True, "message": "Order status updated successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Failed to update order status."}), 500
-        
+
     except Exception as e:
         logger.error(f"❌ Error updating order status: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2861,33 +3020,33 @@ def get_customer_stats():
             },
             {"$sort": {"total_spent": -1}}
         ]
-        
+
         # Note: This pipeline assumes user_id in orders is string format
         # We'll need to handle the conversion differently
-        
+
         # Alternative approach: Get all users and calculate stats separately
         users = list(users_collection.find({"role": "customer"}, {"password": 0}))
-        
+
         for user in users:
             user_id = str(user['_id'])
             user['_id'] = user_id
-            
+
             # Count orders
             user['order_count'] = orders_collection.count_documents({"user_id": user_id})
-            
+
             # Calculate total spent
             orders = list(orders_collection.find({"user_id": user_id}))
             user['total_spent'] = sum(order.get('total_amount', 0) for order in orders)
-            
+
             # Format created_at
             if 'created_at' in user and isinstance(user['created_at'], datetime.datetime):
                 user['created_at'] = user['created_at'].isoformat()
-        
+
         # Sort by total spent
         users.sort(key=lambda x: x.get('total_spent', 0), reverse=True)
-        
+
         return jsonify({"success": True, "customers": users}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching customer stats: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2898,12 +3057,12 @@ def get_products():
     """Get all products (public endpoint)"""
     try:
         products = list(products_collection.find({}))
-        
+
         for product in products:
             product['_id'] = str(product['_id'])
-        
+
         return jsonify({"success": True, "products": products}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching products: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2917,17 +3076,17 @@ def get_categories():
     try:
         # Get all categories from categories_collection
         categories = list(categories_collection.find({}, {'_id': 0}))
-        
+
         # Get product count for each category
         for cat in categories:
             count = products_collection.count_documents({'category': cat['name']})
             cat['product_count'] = count
-        
+
         # Sort by name
         categories.sort(key=lambda x: x['name'])
-        
+
         return jsonify({"success": True, "categories": categories}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching categories: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2939,30 +3098,30 @@ def add_category():
     """Add a new category"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         data = request.get_json()
         category_name = data.get('category_name', '').strip()
-        
+
         if not category_name:
             return jsonify({"success": False, "message": "Category name is required."}), 400
-        
+
         # Check if category already exists in categories collection (by name)
         existing = categories_collection.find_one({'name': category_name})
         if existing:
             return jsonify({"success": False, "message": "Category already exists."}), 400
-        
+
         # Add category to categories_collection
         # Generate a unique id from the category name (lowercase, hyphenated)
         import re as re_module
         # Clean the ID - remove special characters, keep only alphanumeric and hyphens
         category_id = re_module.sub(r'[^a-z0-9-]', '', category_name.lower().replace(' ', '-').replace('&', 'and'))
-        
+
         # Check if a category with this ID already exists
         existing_id = categories_collection.find_one({'id': category_id})
         if existing_id:
             # Append a timestamp to make it unique
             category_id = f"{category_id}-{int(datetime.datetime.utcnow().timestamp())}"
-        
+
         new_category = {
             "id": category_id,  # Required for unique index
             "name": category_name,
@@ -2970,14 +3129,14 @@ def add_category():
             "created_at": datetime.datetime.utcnow()
         }
         categories_collection.insert_one(new_category)
-        
+
         logger.info(f"✅ Category '{category_name}' added to categories collection")
         return jsonify({
             "success": True, 
             "message": f"Category '{category_name}' added successfully!",
             "category": category_name
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error adding category: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2989,38 +3148,38 @@ def update_category():
     """Update category name in categories collection and all products"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         data = request.get_json()
         old_category = data.get('old_category', '').strip()
         new_category = data.get('new_category', '').strip()
-        
+
         if not old_category or not new_category:
             return jsonify({"success": False, "message": "Both old and new category names are required."}), 400
-        
+
         # Check if new category name already exists
         existing = categories_collection.find_one({'name': new_category})
         if existing:
             return jsonify({"success": False, "message": "A category with this name already exists."}), 400
-        
+
         # Update category name in categories_collection
         categories_collection.update_one(
             {'name': old_category},
             {'$set': {'name': new_category, 'display_name': new_category, 'updated_at': datetime.datetime.utcnow()}}
         )
-        
+
         # Update all products with this category
         result = products_collection.update_many(
             {'category': old_category},
             {'$set': {'category': new_category}}
         )
-        
+
         logger.info(f"✅ Category renamed: '{old_category}' → '{new_category}' ({result.modified_count} products updated)")
         return jsonify({
             "success": True, 
             "message": f"Category renamed successfully. {result.modified_count} products updated.",
             "products_updated": result.modified_count
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error updating category: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3032,29 +3191,29 @@ def delete_category():
     """Delete a category (moves products to 'Uncategorized')"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         data = request.get_json()
         category_name = data.get('category_name', '').strip()
-        
+
         if not category_name:
             return jsonify({"success": False, "message": "Category name is required."}), 400
-        
+
         # Delete category from categories_collection
         categories_collection.delete_one({'name': category_name})
-        
+
         # Move products to 'Uncategorized'
         result = products_collection.update_many(
             {'category': category_name},
             {'$set': {'category': 'Uncategorized'}}
         )
-        
+
         logger.info(f"✅ Category '{category_name}' deleted. {result.modified_count} products moved to 'Uncategorized'")
         return jsonify({
             "success": True, 
             "message": f"Category deleted. {result.modified_count} products moved to 'Uncategorized'.",
             "products_updated": result.modified_count
         }), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error deleting category: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3067,13 +3226,13 @@ def get_active_banner():
     """Get currently active banner for display"""
     try:
         banner = banners_collection.find_one({'is_active': True})
-        
+
         if not banner:
             return jsonify({"success": True, "banner": None}), 200
-        
+
         banner['_id'] = str(banner['_id'])
         return jsonify({"success": True, "banner": banner}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching active banner: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3085,14 +3244,14 @@ def get_all_banners():
     """Get all banners (admin only)"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         banners = list(banners_collection.find().sort('created_at', -1))
-        
+
         for banner in banners:
             banner['_id'] = str(banner['_id'])
-        
+
         return jsonify({"success": True, "banners": banners}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching banners: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3104,19 +3263,19 @@ def add_banner():
     """Add a new banner"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         data = request.get_json()
-        
+
         if not data.get('text'):
             return jsonify({"success": False, "message": "Banner text is required."}), 400
-        
+
         # Handle multiple announcement texts
         texts = data.get('texts', [data.get('text')])
         if isinstance(texts, list) and len(texts) > 0:
             texts = [sanitize_string(t) for t in texts if t]
         else:
             texts = [sanitize_string(data['text'])]
-        
+
         # Handle announcements array (each with text and individual link)
         announcements_raw = data.get('announcements', [])
         announcements = []
@@ -3129,7 +3288,7 @@ def add_banner():
                     'link_product': ann.get('link_product', ''),
                     'link_category': ann.get('link_category', '')
                 })
-        
+
         new_banner = {
             "text": texts[0],  # Main text (backward compatibility)
             "texts": texts,  # Array of all announcement texts (backward compat)
@@ -3160,20 +3319,20 @@ def add_banner():
             "created_at": datetime.datetime.utcnow(),
             "updated_at": datetime.datetime.utcnow()
         }
-        
+
         # If setting as active, deactivate all other banners
         if new_banner['is_active']:
             banners_collection.update_many({}, {'$set': {'is_active': False}})
-        
+
         result = banners_collection.insert_one(new_banner)
-        
+
         logger.info(f"✅ Banner added: {new_banner['text'][:50]}")
         return jsonify({
             "success": True,
             "message": "Banner added successfully!",
             "banner_id": str(result.inserted_id)
         }), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Error adding banner: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3185,11 +3344,11 @@ def update_banner(banner_id):
     """Update banner"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         data = request.get_json()
-        
+
         update_fields = {"updated_at": datetime.datetime.utcnow()}
-        
+
         # Handle multiple texts update
         if 'texts' in data:
             texts = data.get('texts', [])
@@ -3200,7 +3359,7 @@ def update_banner(banner_id):
         elif 'text' in data:
             update_fields['text'] = sanitize_string(data['text'])
             update_fields['texts'] = [sanitize_string(data['text'])]
-        
+
         # Handle announcements array (each with text and individual link)
         if 'announcements' in data:
             announcements_raw = data.get('announcements', [])
@@ -3263,18 +3422,18 @@ def update_banner(banner_id):
             if data['is_active']:
                 banners_collection.update_many({}, {'$set': {'is_active': False}})
             update_fields['is_active'] = data['is_active']
-        
+
         result = banners_collection.update_one(
             {'_id': ObjectId(banner_id)},
             {'$set': update_fields}
         )
-        
+
         if result.matched_count > 0:
             logger.info(f"✅ Banner updated: {banner_id}")
             return jsonify({"success": True, "message": "Banner updated successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Banner not found."}), 404
-        
+
     except Exception as e:
         logger.error(f"❌ Error updating banner: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3286,25 +3445,25 @@ def toggle_banner_status(banner_id):
     """Toggle banner active status"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         banner = banners_collection.find_one({'_id': ObjectId(banner_id)})
         if not banner:
             return jsonify({"success": False, "message": "Banner not found."}), 404
-        
+
         new_status = not banner.get('is_active', False)
-        
+
         # If activating, deactivate all other banners
         if new_status:
             banners_collection.update_many({}, {'$set': {'is_active': False}})
-        
+
         banners_collection.update_one(
             {'_id': ObjectId(banner_id)},
             {'$set': {'is_active': new_status, 'updated_at': datetime.datetime.utcnow()}}
         )
-        
+
         logger.info(f"✅ Banner status toggled: {banner_id} -> {new_status}")
         return jsonify({"success": True, "message": "Banner status updated!", "is_active": new_status}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error toggling banner: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3316,15 +3475,15 @@ def delete_banner(banner_id):
     """Delete a banner"""
     try:
         # Admin access already verified by @admin_required decorator
-        
+
         result = banners_collection.delete_one({'_id': ObjectId(banner_id)})
-        
+
         if result.deleted_count > 0:
             logger.info(f"✅ Banner deleted: {banner_id}")
             return jsonify({"success": True, "message": "Banner deleted successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Banner not found."}), 404
-        
+
     except Exception as e:
         logger.error(f"❌ Error deleting banner: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3339,31 +3498,31 @@ def submit_contact_form():
     try:
         if messages_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "message": "No data provided."}), 400
-        
+
         # Validate required fields
         required_fields = ['name', 'email', 'phone', 'message']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({"success": False, "message": f"Missing required field: {field}"}), 400
-        
+
         # Sanitize inputs
         name = sanitize_string(data['name'].strip())
         email = data['email'].strip().lower()
         phone = data['phone'].strip()
         message = sanitize_string(data['message'].strip())
-        
+
         # Validate email
         if not validate_email(email):
             return jsonify({"success": False, "message": "Invalid email format."}), 400
-        
+
         # Validate phone
         if not validate_phone(phone):
             return jsonify({"success": False, "message": "Invalid phone number."}), 400
-        
+
         # Create message document
         new_message = {
             "name": name,
@@ -3374,9 +3533,9 @@ def submit_contact_form():
             "read": False,  # Mark as unread by default
             "ip_address": request.remote_addr
         }
-        
+
         result = messages_collection.insert_one(new_message)
-        
+
         # Send email notification to admin (optional)
         admin_email = os.environ.get('ADMIN_EMAIL', 'admin@arunkaryana.com')
         if SENDGRID_API_KEY:
@@ -3393,14 +3552,14 @@ def submit_contact_form():
                 send_email(admin_email, "New Contact Form Submission - Arun Karyana Store", admin_notification_html)
             except Exception as e:
                 logger.error(f"Failed to send admin notification email: {e}")
-        
+
         logger.info(f"✅ Contact form message received from: {email}")
         return jsonify({
             "success": True,
             "message": "Thank you for contacting us! We'll get back to you soon.",
             "message_id": str(result.inserted_id)
         }), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Error submitting contact form: {e}")
         return jsonify({"success": False, "message": "An error occurred. Please try again later."}), 500
@@ -3413,18 +3572,18 @@ def get_all_messages():
     try:
         if messages_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         # Get all messages sorted by date (newest first)
         messages = list(messages_collection.find({}).sort("created_at", -1))
-        
+
         # Convert ObjectId to string and format dates
         for message in messages:
             message['_id'] = str(message['_id'])
             if isinstance(message.get('created_at'), datetime.datetime):
                 message['created_at'] = message['created_at'].isoformat()
-        
+
         return jsonify({"success": True, "messages": messages}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching messages: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3438,26 +3597,26 @@ def mark_message_read():
     try:
         if messages_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'message_id' not in data or 'read' not in data:
             return jsonify({"success": False, "message": "Missing message_id or read status."}), 400
-        
+
         message_id = data['message_id']
         read_status = bool(data['read'])
-        
+
         # Update message
         result = messages_collection.update_one(
             {"_id": ObjectId(message_id)},
             {"$set": {"read": read_status}}
         )
-        
+
         if result.matched_count > 0:
             logger.info(f"✅ Message marked as {'read' if read_status else 'unread'}: {message_id}")
             return jsonify({"success": True, "message": f"Message marked as {'read' if read_status else 'unread'} successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Message not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error marking message: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3471,22 +3630,22 @@ def delete_message():
     try:
         if messages_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
-        
+
         data = request.get_json()
         if not data or 'message_id' not in data:
             return jsonify({"success": False, "message": "Missing message_id."}), 400
-        
+
         message_id = data['message_id']
-        
+
         # Delete message
         result = messages_collection.delete_one({"_id": ObjectId(message_id)})
-        
+
         if result.deleted_count > 0:
             logger.info(f"✅ Message deleted: {message_id}")
             return jsonify({"success": True, "message": "Message deleted successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Message not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error deleting message: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3499,13 +3658,13 @@ def get_active_popup():
     """Get currently active welcome popup/poster for display"""
     try:
         popup = popups_collection.find_one({'is_active': True})
-        
+
         if not popup:
             return jsonify({"success": True, "popup": None}), 200
-        
+
         popup['_id'] = str(popup['_id'])
         return jsonify({"success": True, "popup": popup}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching active popup: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3517,12 +3676,12 @@ def get_all_popups():
     """Get all welcome popups (admin only)"""
     try:
         popups = list(popups_collection.find({}).sort('created_at', -1))
-        
+
         for popup in popups:
             popup['_id'] = str(popup['_id'])
-        
+
         return jsonify({"success": True, "popups": popups}), 200
-        
+
     except Exception as e:
         logger.error(f"❌ Error fetching popups: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3535,15 +3694,15 @@ def add_popup():
     """Add new welcome popup/poster (admin only)"""
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         if 'title' not in data or not data['title']:
             return jsonify({"success": False, "message": "Title is required"}), 400
-        
+
         # If setting as active, deactivate all others
         if data.get('is_active', False):
             popups_collection.update_many({}, {'$set': {'is_active': False}})
-        
+
         new_popup = {
             'title': sanitize_string(data['title']),
             'description': sanitize_string(data.get('description', '')),
@@ -3562,16 +3721,16 @@ def add_popup():
             'created_at': datetime.datetime.utcnow(),
             'updated_at': datetime.datetime.utcnow()
         }
-        
+
         result = popups_collection.insert_one(new_popup)
-        
+
         logger.info(f"✅ Popup created: {new_popup['title']}")
         return jsonify({
             "success": True, 
             "message": "Popup created successfully!",
             "popup_id": str(result.inserted_id)
         }), 201
-        
+
     except Exception as e:
         logger.error(f"❌ Error creating popup: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3585,11 +3744,11 @@ def update_popup(popup_id):
     try:
         from bson import ObjectId
         data = request.get_json()
-        
+
         # If setting as active, deactivate all others
         if data.get('is_active', False):
             popups_collection.update_many({}, {'$set': {'is_active': False}})
-        
+
         update_data = {
             'title': sanitize_string(data['title']),
             'description': sanitize_string(data.get('description', '')),
@@ -3607,18 +3766,18 @@ def update_popup(popup_id):
             'is_active': data.get('is_active', False),
             'updated_at': datetime.datetime.utcnow()
         }
-        
+
         result = popups_collection.update_one(
             {'_id': ObjectId(popup_id)},
             {'$set': update_data}
         )
-        
+
         if result.modified_count > 0:
             logger.info(f"✅ Popup updated: {popup_id}")
             return jsonify({"success": True, "message": "Popup updated successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Popup not found or no changes made."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error updating popup: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -3631,13 +3790,13 @@ def delete_popup(popup_id):
     try:
         from bson import ObjectId
         result = popups_collection.delete_one({'_id': ObjectId(popup_id)})
-        
+
         if result.deleted_count > 0:
             logger.info(f"✅ Popup deleted: {popup_id}")
             return jsonify({"success": True, "message": "Popup deleted successfully!"}), 200
         else:
             return jsonify({"success": False, "message": "Popup not found."}), 404
-            
+
     except Exception as e:
         logger.error(f"❌ Error deleting popup: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
