@@ -64,3 +64,13 @@
   from = "/orders"
   to = "/order-history.html"
   status = 301
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/admin.html"
+  status = 301
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 301

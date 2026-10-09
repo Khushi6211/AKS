@@ -2066,6 +2066,22 @@ def get_order_details(order_id):
         if not order_document:
             return jsonify({"success": False, "message": "Order not found."}), 404
 
+        # Customer details are private: the customer (signed in), an admin, or the
+        # thank-you page right after a guest checkout (orders placed in the last 6 hours).
+        claims = read_auth_token() or {}
+        is_owner = claims.get('sub') and claims.get('sub') == str(order_document.get('user_id') or '')
+        is_admin = False
+        if claims.get('sub') and not is_owner:
+            try:
+                viewer = users_collection.find_one({"_id": ObjectId(claims['sub'])}, {"role": 1})
+                is_admin = bool(viewer and viewer.get('role') == 'admin')
+            except Exception:
+                is_admin = False
+        placed = order_document.get('order_date')
+        fresh = isinstance(placed, datetime.datetime) and placed > datetime.datetime.utcnow() - datetime.timedelta(hours=6)
+        if not (is_owner or is_admin or fresh):
+            return jsonify({"success": False, "message": "Please sign in to see this order."}), 403
+
         order_document['_id'] = str(order_document['_id'])
         if 'order_date' in order_document and isinstance(order_document['order_date'], datetime.datetime):
             order_document['order_date'] = order_document['order_date'].isoformat()
@@ -2211,6 +2227,61 @@ def get_dashboard_stats():
     except Exception as e:
         logger.error(f"❌ Error fetching dashboard stats: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+# Admin: one-call summary for the store dashboard ("today" means today in India)
+IST = datetime.timedelta(hours=5, minutes=30)
+
+@app.route('/admin/summary', methods=['GET'])
+@admin_required
+def get_admin_summary():
+    try:
+        now_utc = datetime.datetime.utcnow()
+        today_ist = (now_utc + IST).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_today = today_ist - IST
+        start_series = start_today - datetime.timedelta(days=13)
+        orders = list(orders_collection.find({"order_date": {"$gte": start_today - datetime.timedelta(days=29)}},
+                                             {"items": 1, "total_amount": 1, "status": 1, "order_date": 1}))
+        live = [o for o in orders if o.get('status') != 'Cancelled' and isinstance(o.get('order_date'), datetime.datetime)]
+        today = [o for o in live if o['order_date'] >= start_today]
+        days = []
+        for i in range(14):
+            d0 = start_series + datetime.timedelta(days=i)
+            d1 = d0 + datetime.timedelta(days=1)
+            day_orders = [o for o in live if d0 <= o['order_date'] < d1]
+            days.append({"date": (d0 + IST).date().isoformat(), "orders": len(day_orders),
+                         "revenue": round(sum(float(o.get('total_amount', 0) or 0) for o in day_orders), 2)})
+        top = {}
+        for o in live:
+            for item in o.get('items') or []:
+                key = str(item.get('id'))
+                entry = top.setdefault(key, {"id": key, "name": item.get('name'), "quantity": 0, "revenue": 0.0})
+                qty = int(item.get('quantity', 0) or 0)
+                entry["quantity"] += qty
+                entry["revenue"] += qty * float(item.get('price', 0) or 0)
+        status_counts = {}
+        for o in orders_collection.find({}, {"status": 1}):
+            st = o.get('status') or 'Pending'
+            status_counts[st] = status_counts.get(st, 0) + 1
+        low_stock = []
+        for p in products_collection.find({"stock": {"$lte": 5}}, {"name": 1, "stock": 1, "image": 1}).sort("stock", 1).limit(12):
+            low_stock.append({"id": str(p['_id']), "name": p.get('name'), "stock": p.get('stock'), "image": p.get('image', '')})
+        unread = messages_collection.count_documents({"read": {"$ne": True}}) if messages_collection is not None else 0
+        return jsonify({"success": True, "summary": {
+            "today": {"orders": len(today), "revenue": round(sum(float(o.get('total_amount', 0) or 0) for o in today), 2)},
+            "week": {"orders": sum(d['orders'] for d in days[-7:]), "revenue": round(sum(d['revenue'] for d in days[-7:]), 2)},
+            "series": days,
+            "top_products": sorted(top.values(), key=lambda x: -x['quantity'])[:6],
+            "status_counts": status_counts,
+            "pending": status_counts.get('Pending', 0),
+            "low_stock": low_stock,
+            "products": products_collection.count_documents({}),
+            "customers": users_collection.count_documents({"role": {"$ne": "admin"}}),
+            "unread_messages": unread,
+            "server": {"build": (os.environ.get('RENDER_GIT_COMMIT') or '')[:7], "email_enabled": email_enabled(), "login_key": JWT_SECRET_SOURCE},
+        }}), 200
+    except Exception as e:
+        logger.error(f"❌ Error building admin summary: {e}")
+        return jsonify({"success": False, "message": "Could not load the summary."}), 500
 
 # Admin: Get All Products
 @app.route('/admin/products', methods=['GET'])
@@ -2865,6 +2936,19 @@ def get_applicable_offers():
         return jsonify({"success": False, "message": "An error occurred."}), 500
 
 # Admin: Update Order Status
+def adjust_stock_for_order(order, direction):
+    """Move stock for every line of an order: direction -1 when delivered, +1 when a delivery is undone."""
+    for item in order.get('items') or []:
+        try:
+            quantity = int(item.get('quantity', 0) or 0)
+            product = find_product(item.get('id')) if quantity > 0 else None
+            if product is None or not isinstance(product.get('stock'), (int, float)):
+                continue
+            products_collection.update_one({"_id": product['_id']}, {"$inc": {"stock": direction * quantity}})
+            logger.info(f"📦 Stock {'-' if direction < 0 else '+'}{quantity} for product {product['_id']}")
+        except Exception as e:
+            logger.error(f"❌ Error adjusting stock for item {item.get('id')}: {e}")
+
 @app.route('/admin/orders/update-status', methods=['PUT'])
 @admin_required
 @limiter.limit("30 per minute")
@@ -2901,29 +2985,10 @@ def update_order_status():
             "updated_at": datetime.datetime.utcnow()
         }
 
-        # If status is Delivered, add delivered_date for sales tracking AND deduct stock
-        if new_status == "Delivered":
+        # If status is Delivered, add delivered_date for sales tracking AND deduct stock (once)
+        if new_status == "Delivered" and order.get('status') != "Delivered":
             update_data["delivered_date"] = datetime.datetime.utcnow()
-
-            # Deduct stock for each item in the order
-            if 'items' in order:
-                for item in order['items']:
-                    product_id = item.get('id')
-                    quantity = item.get('quantity', 0)
-
-                    if product_id and quantity > 0:
-                        try:
-                            # Convert string ID to ObjectId
-                            prod_obj_id = ObjectId(product_id)
-
-                            # Deduct stock from product
-                            products_collection.update_one(
-                                {"_id": prod_obj_id},
-                                {"$inc": {"stock": -quantity}}  # Decrement stock
-                            )
-                            logger.info(f"📦 Deducted {quantity} units from product {product_id}")
-                        except Exception as e:
-                            logger.error(f"❌ Error deducting stock for product {product_id}: {e}")
+            adjust_stock_for_order(order, -1)
 
         # If status is Cancelled, add cancellation reason and restore stock
         if new_status == "Cancelled":
@@ -2931,24 +2996,8 @@ def update_order_status():
                 update_data["cancellation_reason"] = cancellation_reason
 
             # Restore stock if order was already marked as delivered
-            if order.get('status') == 'Delivered' and 'items' in order:
-                for item in order['items']:
-                    product_id = item.get('id')
-                    quantity = item.get('quantity', 0)
-
-                    if product_id and quantity > 0:
-                        try:
-                            # Convert string ID to ObjectId
-                            prod_obj_id = ObjectId(product_id)
-
-                            # Restore stock to product
-                            products_collection.update_one(
-                                {"_id": prod_obj_id},
-                                {"$inc": {"stock": quantity}}  # Increment stock back
-                            )
-                            logger.info(f"♻️ Restored {quantity} units to product {product_id}")
-                        except Exception as e:
-                            logger.error(f"❌ Error restoring stock for product {product_id}: {e}")
+            if order.get('status') == 'Delivered':
+                adjust_stock_for_order(order, +1)
 
         # Add status history
         status_history_entry = {
@@ -3033,7 +3082,7 @@ def get_customer_stats():
         # We'll need to handle the conversion differently
 
         # Alternative approach: Get all users and calculate stats separately
-        users = list(users_collection.find({"role": "customer"}, {"password": 0}))
+        users = list(users_collection.find({"role": "customer"}, {"password": 0, "reset_token": 0, "reset_token_expiry": 0}))
 
         for user in users:
             user_id = str(user['_id'])

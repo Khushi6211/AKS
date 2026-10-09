@@ -157,3 +157,42 @@ def test_expired_offers_are_hidden(client, app_module):
     ])
     titles = {o['title'] for o in client.get('/offers').get_json()['offers']}
     assert titles == {'Live', 'Open-ended'}
+
+
+def place_order(client, app_module, quantity=2):
+    app_module.products_collection.insert_one({'_id': 777, 'name': 'Moong Dal 1kg', 'price': 150, 'category': 'dal', 'stock': 10})
+    response = client.post('/submit-order', json={
+        'customer': {'name': 'Asha', 'phone': '9876543210', 'address': 'Railway Road, Barara'},
+        'items': [{'id': 777, 'name': 'Moong Dal 1kg', 'price': 150, 'quantity': quantity}], 'total': 300,
+    })
+    return response.get_json()['order_id']
+
+
+def test_delivering_twice_deducts_stock_once(client, app_module):
+    order_id = place_order(client, app_module)
+    headers = owner_headers(client, app_module)
+    for _ in range(2):
+        assert client.put('/admin/orders/update-status', headers=headers, json={'order_id': order_id, 'status': 'Delivered'}).status_code == 200
+    assert app_module.products_collection.find_one({'_id': 777})['stock'] == 8
+    client.put('/admin/orders/update-status', headers=headers, json={'order_id': order_id, 'status': 'Cancelled', 'cancellation_reason': 'test'})
+    assert app_module.products_collection.find_one({'_id': 777})['stock'] == 10
+
+
+def test_order_details_are_private_after_checkout_window(client, app_module):
+    import datetime
+    order_id = place_order(client, app_module)
+    assert client.get(f'/order/{order_id}').status_code == 200  # the thank-you page right after checkout
+    from bson import ObjectId
+    app_module.orders_collection.update_one({'_id': ObjectId(order_id)}, {'$set': {'order_date': datetime.datetime.utcnow() - datetime.timedelta(days=2)}})
+    assert client.get(f'/order/{order_id}').status_code == 403
+    assert client.get(f'/order/{order_id}', headers=owner_headers(client, app_module)).status_code == 200
+
+
+def test_admin_summary_counts_today_in_india(client, app_module):
+    place_order(client, app_module, quantity=3)
+    body = client.get('/admin/summary', headers=owner_headers(client, app_module)).get_json()
+    assert body['success'] is True
+    summary = body['summary']
+    assert summary['today']['orders'] == 1
+    assert summary['today']['revenue'] == 450 + 40  # ₹40 delivery below the ₹500 free-delivery threshold
+    assert summary['series'][-1]['orders'] == 1

@@ -2,25 +2,34 @@
 
 **Est. 1977 | Barara, Haryana**
 
-## 2026 redesign: "Your friendly corner store, since 1977"
+## 2026 redesign: "Barara's pantry, since 1977"
 
-A warm, light and homely storefront: cream paper, leaf green, marigold and terracotta, with
-soft rounded type (Fraunces + DM Sans) and a hand-built 3D model of the shop front in the hero.
+An editorial, scroll-driven storefront. Warm bone paper, ink black, saffron (kesar) and turmeric
+(haldi) accents, set in Inter Tight with Instrument Serif italics. The hero is a live 3D scene:
+thousands of grains of rice, dal, chana, pepper and whole spices drift on scroll, gather into
+the number **1977**, and burst apart as you reach the shop.
 
 | What | Where |
 | --- | --- |
-| Home page (hero, aisles, shop, offers, story, reviews, visit, contact) | `index.html`, `assets/css/home.css` |
-| Storefront logic (catalogue, search, bag, checkout, offers, banner ribbon, popup) | `assets/js/shop.js` |
-| 3D hero: the store front with awning, marigold toran, sacks and tarazu (three.js, modelled in code) | `assets/js/shopfront-scene.js` |
-| Design system (type, buttons, nav, announcement ribbon, drawer, modals, footer) | `assets/css/app.css` |
-| Theme for login, profile, orders, thank-you, FAQ, policies | `assets/css/pages.css` (+ pre-built `assets/css/tailwind.css`) |
-| Self-hosted fonts: Fraunces, DM Sans, Inter, Tiro Devanagari Hindi | `assets/fonts/`, `assets/css/fonts.css` |
-| Share image (WhatsApp/Facebook preview), hero poster, story picture | `assets/img/og.jpg`, `assets/img/shopfront.png`, `assets/img/story-counter.jpg` |
+| Home page (grain hero, manifesto, aisles walk, shop, offers, story, reviews, visit, contact) | `index.html`, `assets/css/home.css` |
+| Storefront logic (catalogue, curated aisles, search, bag, checkout, offers, banner, pop-up) | `assets/js/store.js` |
+| Scroll choreography (smooth scroll, pinned sections, text reveals, odometer, cursor) | `assets/js/motion.js` (GSAP + ScrollTrigger + SplitText, Lenis) |
+| 3D grain hero (three.js, instanced grains modelled in code) | `assets/js/grain-scene.js`, `assets/js/hero.js` |
+| Design system (type, buttons, nav, drawer, modals, toasts, footer) | `assets/css/app.css` |
+| Login, register, forgot/reset password, profile, orders, thank-you, FAQ, policies | `assets/css/pages.css`, `assets/js/account.js` |
+| **Store dashboard** (phone-first: today, orders, stock, products, offers, banner, pop-up, customers, reviews, messages) | `admin.html`, `assets/css/admin.css`, `assets/js/admin.js` |
+| Classic dashboard (the previous one, kept as a backup) | `admin-classic.html` |
+| Self-hosted fonts: Inter Tight, Inter, Instrument Serif, Geist Mono, Tiro Devanagari Hindi | `assets/fonts/`, `assets/css/fonts.css` |
+| Share image, hero posters (shown while the 3D scene loads, or without WebGL) | `assets/img/og.jpg`, `assets/img/hero-grains*.jpg`, `assets/img/grains-1977.jpg` |
 | Login token helper used by every page | `assets/js/auth.js` |
 
 No build step and no third-party CDNs are needed (only the Google Maps embed loads from outside).
-If you edit Tailwind classes in a page other than `index.html`, run `npm install && npm run build:css`.
-After editing any CSS/JS, run `npm run stamp` so visitors get the new files straight away.
+Visitors who prefer reduced motion get a calm version without the scroll effects.
+After editing any CSS/JS, run `python3 scripts/stamp-assets.py` so visitors get the new files straight away.
+
+Photo-less products get a designed label card instead of a grey placeholder, and the shop front
+groups the dashboard's categories into tidy aisles automatically (by product name), so a typo in
+a category never shows up as a separate aisle.
 
 ### Store dashboard (admin) access
 
@@ -28,8 +37,10 @@ The store owner signs in at `/login.html` with the owner login **owner@arunkarya
 (the starting password was given to the owner privately; change it from the dashboard).
 The account is created automatically when the server starts, and is always an admin.
 
-Customers who can't receive password emails can be given a temporary password from
-Dashboard → Customers → Reset password. Logins are signed with a key stored in the database
+The dashboard opens at `/admin.html` (or `/dashboard`). Customers who can't receive password
+emails can be given a temporary password from Dashboard → Customers → Create temporary password,
+and sent it on WhatsApp in one tap. When email isn't set up, the "Forgot password" page offers
+WhatsApp and a phone call instead of promising an email that will never come. Logins are signed with a key stored in the database
 (or `JWT_SECRET_KEY` if set), so they survive server restarts.
 
 Optional, if you prefer your own email as an admin login:
