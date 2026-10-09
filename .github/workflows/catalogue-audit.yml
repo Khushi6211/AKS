@@ -27,7 +27,7 @@ jobs:
           for p in products:
               url = p.get("image") or ""
               if "res.cloudinary.com" in url and "/upload/" in url:
-                  url = url.replace("/upload/", "/upload/w_400,c_limit,f_png/", 1)
+                  url = url.replace("/upload/", "/upload/e_trim:12/w_600,h_600,c_limit,f_png/", 1)
               try:
                   img = Image.open(io.BytesIO(requests.get(url, timeout=30).content)).convert("RGB")
               except Exception as e:
