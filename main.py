@@ -886,6 +886,7 @@ def health_check():
         "owner_login_ready": OWNER_READY,
         "login_key": JWT_SECRET_SOURCE,
         "email_enabled": email_enabled(),
+        "email_error": (EMAIL_LAST_ERROR or '')[:160],
         "timestamp": start_time.isoformat()
     }
 
@@ -1057,8 +1058,11 @@ def forgot_password():
         if not validate_email(email):
             return jsonify({"success": False, "message": "Invalid email format."}), 400
 
-        # Find user by email
+        # Find user by email. The owner login never gets reset links by email: its address is
+        # not a real mailbox, and the owner changes that password from the dashboard instead.
         user = users_collection.find_one({"email": email})
+        if user and email == OWNER_LOGIN_EMAIL:
+            user = None
 
         # IMPORTANT: Always return success message even if user doesn't exist
         # This prevents email enumeration attacks
@@ -2456,8 +2460,12 @@ def get_offers():
         if offers_collection is None:
             return jsonify({"success": False, "message": "Database connection not available."}), 500
 
-        # Only return active offers
-        offers = list(offers_collection.find({"active": True}))
+        # Only offers that are switched on and running today (expired ones stay hidden)
+        now = datetime.datetime.utcnow()
+        offers = list(offers_collection.find({"active": True, "$and": [
+            {"$or": [{"end_date": None}, {"end_date": {"$gte": now}}]},
+            {"$or": [{"start_date": None}, {"start_date": {"$lte": now}}]},
+        ]}))
 
         for offer in offers:
             offer['_id'] = str(offer['_id'])

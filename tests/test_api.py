@@ -136,3 +136,24 @@ def test_protected_routes_need_a_token(client, app_module):
     register(client)
     customer = app_module.users_collection.find_one({'email': 'asha@example.com'})
     assert client.get(f"/profile/{customer['_id']}").status_code == 401
+
+
+def test_owner_login_never_gets_email_reset(client, app_module, monkeypatch):
+    sent = []
+    monkeypatch.setattr(app_module, 'send_password_reset_email', lambda user, url: sent.append(user))
+    assert client.post('/forgot-password', json={'email': app_module.OWNER_LOGIN_EMAIL}).status_code == 200
+    assert sent == []
+    owner = app_module.users_collection.find_one({'email': app_module.OWNER_LOGIN_EMAIL})
+    assert 'reset_token' not in owner
+
+
+def test_expired_offers_are_hidden(client, app_module):
+    import datetime
+    now = datetime.datetime.utcnow()
+    app_module.offers_collection.insert_many([
+        {'title': 'Old', 'active': True, 'end_date': now - datetime.timedelta(days=3), 'offer_type': 'automatic', 'discount_type': 'fixed', 'discount_value': 50},
+        {'title': 'Live', 'active': True, 'end_date': now + datetime.timedelta(days=3), 'offer_type': 'automatic', 'discount_type': 'fixed', 'discount_value': 20},
+        {'title': 'Open-ended', 'active': True, 'offer_type': 'automatic', 'discount_type': 'fixed', 'discount_value': 10},
+    ])
+    titles = {o['title'] for o in client.get('/offers').get_json()['offers']}
+    assert titles == {'Live', 'Open-ended'}
