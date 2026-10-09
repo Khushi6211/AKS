@@ -24,6 +24,16 @@ After editing any CSS/JS, run `npm run stamp` so visitors get the new files stra
 
 ### Store dashboard (admin) access
 
+The store owner signs in at `/login.html` with the owner login **owner@arunkaryanastore.com**
+(the starting password was given to the owner privately; change it from the dashboard).
+The account is created automatically when the server starts, and is always an admin.
+
+Customers who can't receive password emails can be given a temporary password from
+Dashboard → Customers → Reset password. Logins are signed with a key stored in the database
+(or `JWT_SECRET_KEY` if set), so they survive server restarts.
+
+Optional, if you prefer your own email as an admin login:
+
 Set these on the Render backend service (Environment tab), then redeploy:
 
 | Variable | Example | Meaning |
