@@ -48,3 +48,4 @@ Thumbs.db
 htmlcov/
 main_original_backup.py
 node_modules/
+_dev/
