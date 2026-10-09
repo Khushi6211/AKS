@@ -3,7 +3,7 @@
    Bone paper, ink type, one saffron accent. Editorial grotesk + serif italics,
    mono labels. Shared by the storefront and the account pages.
    ========================================================================== */
-@import url('fonts.css');
+@import url('fonts.css?v=3cc925acc5');
 
 :root {
     --bone: #f2eee6;
@@ -74,7 +74,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 input, select, textarea { font: inherit; color: inherit; }
 ::selection { background: var(--kesar); color: #fff; }
 :focus-visible { outline: 2px solid var(--kesar); outline-offset: 3px; border-radius: 4px; }
-.hidden { display: none !important; }
+.hidden, [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
 body.locked { overflow: hidden; }
@@ -390,7 +390,7 @@ input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; app
 .toast.out { animation: toastOut 0.4s var(--ease) forwards; }
 body.bag-open .toast:not(:last-child) { display: none; }
 @media (min-width: 700px) { body.bag-open .toasts { left: calc((100% - 500px) / 2); } }
-@media (max-width: 699px) { body.bag-open .toasts { top: 14px; bottom: auto; } }
+@media (max-width: 699px) { body.bag-open .toasts { top: 66px; bottom: auto; } }
 @keyframes toastIn { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
 @keyframes toastOut { to { opacity: 0; transform: translateY(10px); } }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }

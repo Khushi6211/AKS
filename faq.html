@@ -2,199 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAQ - Arun Karyana Store</title>
-    <meta name="theme-color" content="#fff8ee">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FAQs · Arun Karyana Store</title>
+    <meta name="description" content="Answers to common questions about ordering, delivery, payment and returns.">
+    <meta name="theme-color" content="#f2eee6">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+    <link rel="preload" href="assets/fonts/inter-tight-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=c971053ff6">
-    <link rel="stylesheet" href="assets/css/app.css?v=c4d7c9ed04">
-    <link rel="stylesheet" href="assets/css/pages.css?v=fbfdcfdbf7">
-    <style>
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: #f4efe8;
-            color: #1d1d1f;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/app.css?v=79a45731fd">
+    <link rel="stylesheet" href="assets/css/pages.css?v=c675bdf3e1">
 </head>
-<body class="theme-glass">
-
-    <!-- Header -->
-    <header class="nav page-nav" id="nav">
-        <a href="index.html" class="wordmark" aria-label="Arun Karyana Store — home"><span><b>Arun Karyana</b><small>Barara · since 1977</small></span></a>
-        <nav class="nav-links" aria-label="Primary">
-            <a href="index.html#shop">Shop</a>
-            <a href="index.html#offers">Offers</a>
-            <a href="faq.html">FAQs</a>
-            <a href="index.html#visit">Visit us</a>
-        </nav>
-        <div class="nav-actions">
-            <a href="index.html" class="btn btn-line btn-sm no-arrow"><i class="fas fa-arrow-left"></i>Shop</a>
-            <a href="index.html?cart=open" class="bag-btn" aria-label="Open bag"><i class="fas fa-basket-shopping"></i><span class="t">Bag</span></a>
+<body class="page" data-page="info">
+    <div class="grain-overlay" aria-hidden="true"></div>
+    <header class="nav page-nav solid" id="nav">
+        <div class="nav-in">
+            <a href="index.html" class="brand" aria-label="Arun Karyana Store — home"><b>Arun Karyana</b><span class="deva-mark" aria-hidden="true">अ</span><small>EST. 1977</small></a>
+            <nav class="nav-links" aria-label="Primary">
+                <a href="index.html#shop">Shop</a>
+                <a href="index.html#aisles">Aisles</a>
+                <a href="index.html#story">Story</a>
+                <a href="index.html#visit">Visit</a>
+            </nav>
+            <div class="nav-actions">
+                <a href="login.html" class="icon-btn" id="acct-link" aria-label="Sign in"><i class="far fa-user"></i></a>
+                <a href="index.html?cart=open" class="bag-btn" aria-label="Open bag"><i class="fas fa-bag-shopping bag-ic" aria-hidden="true"></i><span class="t">Bag</span><span class="bag-count" id="cart-count">0</span></a>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12">
-        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
-            <h1 class="font-heading text-4xl font-bold text-primary mb-6">Frequently Asked Questions (FAQ)</h1>
-            
-            <div class="space-y-6">
-                <!-- General Questions -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4">General Questions</h2>
-                    
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>What is Arun Karyana Store?</h3>
-                        <p class="text-gray-700 ml-8">Arun Karyana Store is your trusted neighborhood grocery store in Barara, Ambala, serving the community since 1977. We offer a wide range of quality household essentials, food items, beverages, soaps, detergents, and personal care products at competitive prices.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Where are you located?</h3>
-                        <p class="text-gray-700 ml-8">We are located at Railway Road, Barara, Ambala, Haryana 133201. Visit us in person to experience our warm hospitality and browse our extensive product range.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>What are your opening hours?</h3>
-                        <p class="text-gray-700 ml-8">We are open 7 days a week:<br>
-                        • Monday - Friday: 8:00 AM - 9:00 PM<br>
-                        • Saturday: 8:00 AM - 10:00 PM<br>
-                        • Sunday: 9:00 AM - 8:00 PM</p>
-                    </div>
-                </section>
-
-                <!-- Ordering & Delivery -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4">Ordering & Delivery</h2>
-                    
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>How do I place an order?</h3>
-                        <p class="text-gray-700 ml-8">You can place an order through our website by browsing our products, adding items to your cart, and proceeding to checkout. Fill in your delivery details, and we'll take care of the rest!</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Is there a minimum order value?</h3>
-                        <p class="text-gray-700 ml-8">There is no minimum order value. However, orders above ₹500 qualify for free delivery.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>What are the delivery charges?</h3>
-                        <p class="text-gray-700 ml-8">Delivery charges are ₹40 for orders below ₹500. Orders of ₹500 and above enjoy free delivery!</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>How long does delivery take?</h3>
-                        <p class="text-gray-700 ml-8">We strive to deliver orders within 24-48 hours of placement, depending on your location in Barara and surrounding areas. You'll receive updates on your order status via email and WhatsApp.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Can I track my order?</h3>
-                        <p class="text-gray-700 ml-8">Yes! Once you place an order, you can track its status by logging into your account and visiting the "Order History" page. You'll also receive email and WhatsApp notifications when your order status changes.</p>
-                    </div>
-                </section>
-
-                <!-- Payment & Pricing -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4">Payment & Pricing</h2>
-                    
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>What payment methods do you accept?</h3>
-                        <p class="text-gray-700 ml-8">Currently, we accept Cash on Delivery (COD). Digital payment options will be available soon.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Do you offer any discounts or promotions?</h3>
-                        <p class="text-gray-700 ml-8">Yes! We regularly run special offers and promotions. Check our "Offers" section on the homepage for current deals. We also have promo codes that you can apply during checkout for additional discounts.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Are prices on the website the same as in-store?</h3>
-                        <p class="text-gray-700 ml-8">Yes, we maintain consistent pricing across both our online store and physical location to ensure fairness and transparency for all customers.</p>
-                    </div>
-                </section>
-
-                <!-- Account & Registration -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4">Account & Registration</h2>
-                    
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Do I need to create an account to place an order?</h3>
-                        <p class="text-gray-700 ml-8">No, you can place orders as a guest. However, creating an account allows you to track orders, save addresses, view order history, and enjoy faster checkout in the future.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>How do I create an account?</h3>
-                        <p class="text-gray-700 ml-8">Click on "Login" in the top right corner, then select "Sign Up". Fill in your details (name, email, phone, and password) and you're all set!</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>I forgot my password. What should I do?</h3>
-                        <p class="text-gray-700 ml-8">On the login page, click "Forgot Password?". Enter your registered email address, and we'll send you a link to reset your password.</p>
-                    </div>
-                </section>
-
-                <!-- Returns & Cancellations -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4">Returns & Cancellations</h2>
-                    
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Can I cancel my order?</h3>
-                        <p class="text-gray-700 ml-8">Yes, you can cancel your order before it's marked as "Out for Delivery". Please contact us immediately at +91 94168 91710 to request cancellation.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>What is your return policy?</h3>
-                        <p class="text-gray-700 ml-8">We accept returns for damaged or incorrect items within 24 hours of delivery. Please refer to our <a href="/return-policy.html" class="text-primary hover:text-accent underline">Return Policy</a> page for detailed information.</p>
-                    </div>
-                </section>
-
-                <!-- Contact & Support -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4">Contact & Support</h2>
-                    
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>How can I contact customer support?</h3>
-                        <p class="text-gray-700 ml-8">You can reach us through:<br>
-                        • Phone: <a href="tel:+919416891710" class="text-primary hover:text-accent">+91 94168 91710</a><br>
-                        • Email: <a href="mailto:contact@arunkaryanastore.com" class="text-primary hover:text-accent">contact@arunkaryanastore.com</a><br>
-                        • Contact Form: Visit our <a href="/#contact" class="text-primary hover:text-accent underline">Contact Us</a> section</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Do you have social media accounts?</h3>
-                        <p class="text-gray-700 ml-8">Yes! Follow us on Facebook, Instagram, Twitter, and WhatsApp for updates on new products, special offers, and store news.</p>
-                    </div>
-                </section>
-
-                <!-- Still have questions? -->
-                <div class="mt-8 p-6 bg-light rounded-lg border-l-4 border-primary">
-                    <h3 class="font-semibold text-lg text-dark mb-2"><i class="fas fa-question-circle text-primary mr-2"></i>Still have questions?</h3>
-                    <p class="text-gray-700">If you couldn't find the answer you're looking for, please don't hesitate to <a href="/#contact" class="text-primary hover:text-accent underline font-semibold">contact us</a>. Our friendly team is here to help!</p>
-                </div>
+    <main class="page-main">
+        <div class="wrap">
+            <div class="page-head"><a class="back" href="index.html"><i class="fas fa-arrow-left"></i> Back to the store</a><h1 class="h1">Questions, <em>answered.</em></h1><p class="lede">Everything you might want to know about ordering from the counter on Railway Road.</p></div>
+            <div class="info">
+                <nav class="info-toc" aria-label="On this page"><a href="#general">About the store</a><a href="#ordering">Ordering &amp; delivery</a><a href="#payment">Payment &amp; prices</a><a href="#account">Your account</a><a href="#returns">Returns &amp; cancellations</a></nav>
+                <article class="prose"><section class="faq-group" id="general"><h2>About the store</h2><div class="faq"><details><summary>What is Arun Karyana Store?</summary><p>A family-run kirana on Railway Road, Barara, serving the town since 1977 — atta, rice, dal, masale, chai, snacks, dairy, household and personal care, now available to order online.</p></details><details><summary>Where are you?</summary><p>Railway Road, Barara, Ambala, Haryana 133201. Drop by any time we’re open — the counter is still the heart of the shop.</p></details><details><summary>When are you open?</summary><p>Every day. Monday–Friday 8 AM – 9 PM, Saturday 8 AM – 10 PM, Sunday 9 AM – 8 PM. You can order online at any hour.</p></details></div></section><section class="faq-group" id="ordering"><h2>Ordering &amp; delivery</h2><div class="faq"><details><summary>How do I order?</summary><p>Add what you need to your bag, tap Checkout, enter your name, phone and address, and place the order. We’ll call to confirm. You can also simply WhatsApp us your list.</p></details><details><summary>Is there a minimum order?</summary><p>No. Orders of ₹500 or more get free delivery; below that there’s a ₹40 delivery charge.</p></details><details><summary>How quickly will it arrive?</summary><p>Usually within 24–48 hours, and often the same day for orders placed before noon (subject to availability).</p></details><details><summary>Can I track my order?</summary><p>Yes — sign in and open My orders to see where each order is. Or call or WhatsApp us for a quick update.</p></details></div></section><section class="faq-group" id="payment"><h2>Payment &amp; prices</h2><div class="faq"><details><summary>How do I pay?</summary><p>You pay when your order arrives — cash or UPI.</p></details><details><summary>Do you have offers?</summary><p>Yes. Current offers appear on the homepage; promo codes go in your bag, and automatic offers apply themselves.</p></details><details><summary>Are online prices the same as in the shop?</summary><p>Yes — the same fair price whether you shop online or at the counter.</p></details></div></section><section class="faq-group" id="account"><h2>Your account</h2><div class="faq"><details><summary>Do I need an account to order?</summary><p>No — you can order as a guest. An account lets you save addresses, check out faster and follow your orders.</p></details><details><summary>How do I create one?</summary><p>Tap the person icon at the top, choose Create account, and enter your name, email, mobile and a password.</p></details><details><summary>I forgot my password.</summary><p>Use Forgot password on the sign-in page. If the email doesn’t arrive, WhatsApp us and we’ll set a new password for you within minutes.</p></details></div></section><section class="faq-group" id="returns"><h2>Returns &amp; cancellations</h2><div class="faq"><details><summary>Can I cancel an order?</summary><p>Yes, until it leaves the store. Call +91 94168 91710 or WhatsApp us as soon as you can.</p></details><details><summary>What if something is damaged or wrong?</summary><p>Tell us within 24 hours of delivery and we’ll replace it or refund you. See our return policy for details.</p></details></div></section>
+                    <div class="contact-box"><strong>Still have a question?</strong> Call <a href="tel:+919416891710">+91 94168 91710</a> or <a href="https://wa.me/919416891710" target="_blank" rel="noopener">WhatsApp us</a> — a real person at the counter will answer.</div>
+                </article>
             </div>
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="footer dark">
+    <footer class="footer footer-mini">
         <div class="wrap">
-            <div class="footer-top">
-                <div>
-                    <p class="promise">Weighed <em>fairly,</em><br>since 1977.</p>
-                    <div class="socials">
-                        <a href="https://wa.me/919416891710" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        <a href="tel:+919416891710" aria-label="Call"><i class="fas fa-phone"></i></a>
-                        <a href="mailto:contact@arunkaryanastore.com" aria-label="Email"><i class="far fa-envelope"></i></a>
-                    </div>
-                </div>
-                <div><h4>Shop</h4><ul><li><a href="index.html#shop">All products</a></li><li><a href="index.html#offers">Offers</a></li></ul></div>
-                <div><h4>Help</h4><ul><li><a href="faq.html">FAQs</a></li><li><a href="shipping-policy.html">Shipping</a></li><li><a href="return-policy.html">Returns</a></li><li><a href="privacy-policy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li></ul></div>
-                <div><h4>Visit</h4><ul><li><a href="index.html#visit">Railway Road, Barara<br>Ambala, Haryana 133201</a></li><li><a href="tel:+919416891710">+91 94168 91710</a></li></ul></div>
+            <div class="fm">
+                <p class="h2" style="margin:0">Weighed fairly, <em>since 1977.</em></p>
+                <ul>
+                    <li><a href="index.html#shop">Shop</a></li>
+                    <li><a href="faq.html">FAQs</a></li>
+                    <li><a href="shipping-policy.html">Delivery</a></li>
+                    <li><a href="return-policy.html">Returns</a></li>
+                    <li><a href="privacy-policy.html">Privacy</a></li>
+                    <li><a href="terms.html">Terms</a></li>
+                    <li><a href="tel:+919416891710">+91 94168 91710</a></li>
+                </ul>
             </div>
-            <div class="footer-bottom"><span>© <span data-year>2026</span> Arun Karyana Store, Barara.</span><span>Serving the neighbourhood since 1977.</span></div>
+            <div class="footer-bottom"><span>© <span data-year>2026</span> Arun Karyana Store · Railway Road, Barara</span><span>अरुण करियाना</span></div>
         </div>
     </footer>
-    <script>document.querySelectorAll('[data-year]').forEach(function (el) { el.textContent = new Date().getFullYear(); });</script>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <script src="config.js?v=7474b03af7"></script>
+    <script src="assets/js/auth.js?v=829609dc60"></script>
+    <script src="assets/js/account.js?v=0998126611"></script>
 </body>
 </html>

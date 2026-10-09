@@ -534,8 +534,9 @@
     function flyToBag(fromEl) {
         const g = window.gsap;
         const bag = $('#cart-btn');
+        document.dispatchEvent(new CustomEvent('ak:reveal-nav'));
         if (!g || !fromEl || reduceMotion()) return;
-        const a = fromEl.getBoundingClientRect(), b = bag.getBoundingClientRect();
+        const a = fromEl.getBoundingClientRect();
         if (!a.width) return;
         const fly = document.createElement('div');
         fly.className = 'fly';
@@ -544,10 +545,20 @@
         if (!img) fly.style.background = getComputedStyle(fromEl.querySelector('.p-label') || fromEl).backgroundColor;
         document.body.appendChild(fly);
         const size = Math.min(a.width, 120);
-        g.set(fly, { left: a.left + a.width / 2 - size / 2, top: a.top + a.height / 2 - size / 2, width: size, height: size });
+        const x0 = a.left + a.width / 2 - size / 2, y0 = a.top + a.height / 2 - size / 2;
+        g.set(fly, { left: x0, top: y0, width: size, height: size });
+        // the bag may still be sliding into view with the nav, so aim at where it is on every frame
+        const ex = g.parseEase('power2.inOut'), ey = g.parseEase('back.in(1.4)');
+        const t = { p: 0 };
         g.timeline({ onComplete: () => fly.remove() })
-            .to(fly, { duration: 0.75, left: b.left + b.width / 2 - 14, ease: 'power2.inOut' }, 0)
-            .to(fly, { duration: 0.75, top: b.top + b.height / 2 - 14, ease: 'back.in(1.4)' }, 0)
+            .to(t, {
+                duration: 0.75, p: 1, ease: 'none',
+                onUpdate: () => {
+                    const b = bag.getBoundingClientRect();
+                    fly.style.left = `${x0 + (b.left + b.width / 2 - 14 - x0) * ex(t.p)}px`;
+                    fly.style.top = `${y0 + (b.top + b.height / 2 - 14 - y0) * ey(t.p)}px`;
+                },
+            }, 0)
             .to(fly, { duration: 0.75, width: 28, height: 28, borderRadius: 14, ease: 'power2.in' }, 0)
             .to(fly, { duration: 0.2, opacity: 0 }, 0.62);
     }

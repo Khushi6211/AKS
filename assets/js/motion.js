@@ -71,6 +71,8 @@
         if (goingUp || y < 80) { nav.classList.remove('tucked'); document.body.classList.remove('nav-tucked'); }
         lastY = y;
     }
+    // something landed in the bag: bring the nav (and the bag button) back into view
+    document.addEventListener('ak:reveal-nav', () => { nav.classList.remove('tucked'); document.body.classList.remove('nav-tucked'); });
     if (lenis) lenis.on('scroll', ({ scroll }) => onScrollNav(scroll));
     else window.addEventListener('scroll', () => onScrollNav(window.scrollY), { passive: true });
     onScrollNav(window.scrollY);

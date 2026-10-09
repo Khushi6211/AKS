@@ -2,209 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shipping Policy - Arun Karyana Store</title>
-    <meta name="theme-color" content="#fff8ee">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Delivery · Arun Karyana Store</title>
+    <meta name="description" content="Where we deliver, what it costs and how quickly your order reaches you.">
+    <meta name="theme-color" content="#f2eee6">
     <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+    <link rel="preload" href="assets/fonts/inter-tight-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=c971053ff6">
-    <link rel="stylesheet" href="assets/css/app.css?v=c4d7c9ed04">
-    <link rel="stylesheet" href="assets/css/pages.css?v=fbfdcfdbf7">
-    <style>
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: #f4efe8;
-            color: #1d1d1f;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/app.css?v=79a45731fd">
+    <link rel="stylesheet" href="assets/css/pages.css?v=c675bdf3e1">
 </head>
-<body class="theme-glass">
-
-    <!-- Header -->
-    <header class="nav page-nav" id="nav">
-        <a href="index.html" class="wordmark" aria-label="Arun Karyana Store — home"><span><b>Arun Karyana</b><small>Barara · since 1977</small></span></a>
-        <nav class="nav-links" aria-label="Primary">
-            <a href="index.html#shop">Shop</a>
-            <a href="index.html#offers">Offers</a>
-            <a href="faq.html">FAQs</a>
-            <a href="index.html#visit">Visit us</a>
-        </nav>
-        <div class="nav-actions">
-            <a href="index.html" class="btn btn-line btn-sm no-arrow"><i class="fas fa-arrow-left"></i>Shop</a>
-            <a href="index.html?cart=open" class="bag-btn" aria-label="Open bag"><i class="fas fa-basket-shopping"></i><span class="t">Bag</span></a>
+<body class="page" data-page="info">
+    <div class="grain-overlay" aria-hidden="true"></div>
+    <header class="nav page-nav solid" id="nav">
+        <div class="nav-in">
+            <a href="index.html" class="brand" aria-label="Arun Karyana Store — home"><b>Arun Karyana</b><span class="deva-mark" aria-hidden="true">अ</span><small>EST. 1977</small></a>
+            <nav class="nav-links" aria-label="Primary">
+                <a href="index.html#shop">Shop</a>
+                <a href="index.html#aisles">Aisles</a>
+                <a href="index.html#story">Story</a>
+                <a href="index.html#visit">Visit</a>
+            </nav>
+            <div class="nav-actions">
+                <a href="login.html" class="icon-btn" id="acct-link" aria-label="Sign in"><i class="far fa-user"></i></a>
+                <a href="index.html?cart=open" class="bag-btn" aria-label="Open bag"><i class="fas fa-bag-shopping bag-ic" aria-hidden="true"></i><span class="t">Bag</span><span class="bag-count" id="cart-count">0</span></a>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12">
-        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
-            <h1 class="font-heading text-4xl font-bold text-primary mb-6">Shipping & Delivery Policy</h1>
-            <p class="text-gray-600 mb-8">Last updated: January 2025</p>
-            
-            <div class="space-y-8">
-                <!-- Delivery Areas -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">1. Delivery Areas</h2>
-                    <p class="text-gray-700 mb-4">We currently deliver to the following areas:</p>
-                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                        <li>Barara, Ambala, Haryana</li>
-                        <li>Surrounding localities within a 10 km radius of our store</li>
-                    </ul>
-                    <p class="text-gray-700 mt-4">If you're unsure whether we deliver to your area, please contact us at <a href="tel:+919416891710" class="text-primary hover:text-accent font-semibold">+91 94168 91710</a> before placing your order.</p>
-                </section>
-
-                <!-- Delivery Charges -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">2. Delivery Charges</h2>
-                    <div class="bg-light p-6 rounded-lg border-l-4 border-primary mb-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-lg font-semibold">Orders below ₹500:</span>
-                            <span class="text-2xl font-bold text-primary">₹40</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-lg font-semibold">Orders ₹500 and above:</span>
-                            <span class="text-2xl font-bold text-green-600">FREE</span>
-                        </div>
-                    </div>
-                    <p class="text-gray-700">Our delivery charges are transparent and will be clearly displayed in your cart before checkout.</p>
-                </section>
-
-                <!-- Delivery Time -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">3. Delivery Time</h2>
-                    <p class="text-gray-700 mb-4">We strive to deliver your orders as quickly as possible:</p>
-                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                        <li><strong>Standard Delivery:</strong> 24-48 hours from order placement</li>
-                        <li><strong>Same-Day Delivery:</strong> Available for orders placed before 12:00 PM (subject to availability)</li>
-                        <li><strong>Express Delivery:</strong> Contact us for urgent requirements</li>
-                    </ul>
-                    <p class="text-gray-700 mt-4"><em>Note: Delivery times may vary during peak seasons, festivals, or adverse weather conditions. We'll keep you informed of any delays.</em></p>
-                </section>
-
-                <!-- Order Processing -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">4. Order Processing</h2>
-                    <div class="space-y-4">
-                        <div class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0 mt-1">1</div>
-                            <div>
-                                <h3 class="font-semibold text-lg mb-1">Order Placed</h3>
-                                <p class="text-gray-700">You'll receive a confirmation email and WhatsApp message with your order details.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0 mt-1">2</div>
-                            <div>
-                                <h3 class="font-semibold text-lg mb-1">Processing</h3>
-                                <p class="text-gray-700">Our team carefully picks and packs your items, ensuring quality and freshness.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0 mt-1">3</div>
-                            <div>
-                                <h3 class="font-semibold text-lg mb-1">Out for Delivery</h3>
-                                <p class="text-gray-700">Your order is on its way! You'll receive a notification when it's dispatched.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0 mt-1">4</div>
-                            <div>
-                                <h3 class="font-semibold text-lg mb-1">Delivered</h3>
-                                <p class="text-gray-700">Your order has been successfully delivered to your doorstep!</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Tracking Orders -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">5. Tracking Your Order</h2>
-                    <p class="text-gray-700 mb-4">Stay updated on your order status:</p>
-                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                        <li><strong>Email Notifications:</strong> Receive updates at every stage of your order</li>
-                        <li><strong>WhatsApp Updates:</strong> Get real-time status updates on WhatsApp</li>
-                        <li><strong>Order History:</strong> Login to your account and visit "Order History" to track your order</li>
-                        <li><strong>Call Us:</strong> Contact us at <a href="tel:+919416891710" class="text-primary hover:text-accent font-semibold">+91 94168 91710</a> for immediate assistance</li>
-                    </ul>
-                </section>
-
-                <!-- Delivery Issues -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">6. Delivery Issues</h2>
-                    <p class="text-gray-700 mb-4">If you face any issues with your delivery, please contact us immediately:</p>
-                    
-                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
-                        <h3 class="font-semibold text-lg mb-2">Common Issues & Solutions:</h3>
-                        <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                            <li><strong>Damaged Items:</strong> Take photos and contact us within 24 hours for replacement</li>
-                            <li><strong>Incorrect Items:</strong> We'll arrange pickup and deliver the correct item at no extra cost</li>
-                            <li><strong>Missing Items:</strong> Report within 24 hours for immediate resolution</li>
-                            <li><strong>Delivery Delays:</strong> We'll keep you informed and prioritize your order</li>
-                        </ul>
-                    </div>
-                </section>
-
-                <!-- Undeliverable Orders -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">7. Undeliverable Orders</h2>
-                    <p class="text-gray-700 mb-4">Orders may be undeliverable if:</p>
-                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                        <li>The delivery address is incorrect or incomplete</li>
-                        <li>No one is available to receive the order after multiple delivery attempts</li>
-                        <li>Customer is unreachable via phone or WhatsApp</li>
-                        <li>Delivery location is inaccessible or outside our delivery zone</li>
-                    </ul>
-                    <p class="text-gray-700 mt-4">In such cases, we'll contact you to arrange redelivery or order cancellation as per your preference.</p>
-                </section>
-
-                <!-- Contact -->
-                <section>
-                    <h2 class="font-heading text-2xl font-bold text-dark mb-4 border-b-2 border-secondary pb-2">8. Contact Us</h2>
-                    <p class="text-gray-700 mb-4">For any shipping-related queries, please reach out to us:</p>
-                    <div class="bg-light p-6 rounded-lg">
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <p class="flex items-center mb-3">
-                                    <i class="fas fa-phone text-primary mr-3"></i>
-                                    <a href="tel:+919416891710" class="text-primary hover:text-accent font-semibold">+91 94168 91710</a>
-                                </p>
-                                <p class="flex items-center mb-3">
-                                    <i class="fas fa-envelope text-primary mr-3"></i>
-                                    <a href="mailto:contact@arunkaryanastore.com" class="text-primary hover:text-accent font-semibold">contact@arunkaryanastore.com</a>
-                                </p>
-                            </div>
-                            <div>
-                                <p class="flex items-start">
-                                    <i class="fas fa-map-marker-alt text-primary mr-3 mt-1"></i>
-                                    <span>Railway Road, Barara<br>Ambala, Haryana 133201</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+    <main class="page-main">
+        <div class="wrap">
+            <div class="page-head"><a class="back" href="index.html"><i class="fas fa-arrow-left"></i> Back to the store</a><h1 class="h1">Delivery, <em>simply.</em></h1><p class="lede">Where we deliver, what it costs and how quickly your order reaches you.</p></div>
+            <div class="info">
+                <nav class="info-toc" aria-label="On this page"><a href="#areas">Delivery areas</a><a href="#charges">Delivery charges</a><a href="#time">Delivery time</a><a href="#process">How your order moves</a><a href="#tracking">Tracking your order</a><a href="#issues">Delivery problems</a><a href="#undeliverable">Orders we can’t deliver</a></nav>
+                <article class="prose"><p class="updated">Last updated: January 2025</p><h2 id="areas">Delivery areas</h2><p>We currently deliver to:</p><ul><li>Barara, Ambala, Haryana</li><li>Surrounding localities within a 10 km radius of the store</li></ul><p>Not sure whether we reach you? Call us on <a href="tel:+919416891710">+91 94168 91710</a> before you order.</p><h2 id="charges">Delivery charges</h2><p>Delivery is <strong>free on orders of ₹500 and above</strong>. Orders below ₹500 have a ₹40 delivery charge. The exact charge is always shown in your bag before you place the order.</p><h2 id="time">Delivery time</h2><ul><li><strong>Standard delivery:</strong> within 24–48 hours of your order</li><li><strong>Same-day delivery:</strong> for orders placed before 12:00 PM, subject to availability</li><li><strong>Urgent requirements:</strong> call us and we’ll do our best</li></ul><p>Deliveries can take a little longer during festivals, peak seasons or bad weather — we’ll keep you posted.</p><h2 id="process">How your order moves</h2><h3>Placed</h3><p>We receive your order and call you to confirm it.</p><h3>Packed</h3><p>We pick and pack your items at the counter, checking quality and weight.</p><h3>On the way</h3><p>Your order leaves the store for your door.</p><h3>Delivered</h3><p>Pay on delivery — cash or UPI.</p><h2 id="tracking">Tracking your order</h2><p>Signed-in customers can follow every order under <a href="order-history.html">My orders</a>. You can also call or WhatsApp us any time for an update.</p><h2 id="issues">Delivery problems</h2><ul><li><strong>Damaged items:</strong> take a photo and tell us within 24 hours — we’ll replace them</li><li><strong>Wrong items:</strong> we’ll collect them and bring the right ones at no extra cost</li><li><strong>Missing items:</strong> tell us within 24 hours and we’ll sort it out</li><li><strong>Delays:</strong> we’ll keep you informed and prioritise your order</li></ul><h2 id="undeliverable">Orders we can’t deliver</h2><p>An order may not reach you if the address is incomplete, no one is available after repeated attempts, we can’t reach you by phone, or the location is outside our delivery area. We’ll call you to arrange a new time or cancel, as you prefer.</p>
+                    <div class="contact-box"><strong>Questions?</strong> Call <a href="tel:+919416891710">+91 94168 91710</a>, <a href="https://wa.me/919416891710" target="_blank" rel="noopener">WhatsApp us</a> or write to <a href="mailto:contact@arunkaryanastore.com">contact@arunkaryanastore.com</a>.<br>Arun Karyana Store, Railway Road, Barara, Ambala, Haryana 133201.</div>
+                </article>
             </div>
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="footer dark">
+    <footer class="footer footer-mini">
         <div class="wrap">
-            <div class="footer-top">
-                <div>
-                    <p class="promise">Weighed <em>fairly,</em><br>since 1977.</p>
-                    <div class="socials">
-                        <a href="https://wa.me/919416891710" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        <a href="tel:+919416891710" aria-label="Call"><i class="fas fa-phone"></i></a>
-                        <a href="mailto:contact@arunkaryanastore.com" aria-label="Email"><i class="far fa-envelope"></i></a>
-                    </div>
-                </div>
-                <div><h4>Shop</h4><ul><li><a href="index.html#shop">All products</a></li><li><a href="index.html#offers">Offers</a></li></ul></div>
-                <div><h4>Help</h4><ul><li><a href="faq.html">FAQs</a></li><li><a href="shipping-policy.html">Shipping</a></li><li><a href="return-policy.html">Returns</a></li><li><a href="privacy-policy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li></ul></div>
-                <div><h4>Visit</h4><ul><li><a href="index.html#visit">Railway Road, Barara<br>Ambala, Haryana 133201</a></li><li><a href="tel:+919416891710">+91 94168 91710</a></li></ul></div>
+            <div class="fm">
+                <p class="h2" style="margin:0">Weighed fairly, <em>since 1977.</em></p>
+                <ul>
+                    <li><a href="index.html#shop">Shop</a></li>
+                    <li><a href="faq.html">FAQs</a></li>
+                    <li><a href="shipping-policy.html">Delivery</a></li>
+                    <li><a href="return-policy.html">Returns</a></li>
+                    <li><a href="privacy-policy.html">Privacy</a></li>
+                    <li><a href="terms.html">Terms</a></li>
+                    <li><a href="tel:+919416891710">+91 94168 91710</a></li>
+                </ul>
             </div>
-            <div class="footer-bottom"><span>© <span data-year>2026</span> Arun Karyana Store, Barara.</span><span>Serving the neighbourhood since 1977.</span></div>
+            <div class="footer-bottom"><span>© <span data-year>2026</span> Arun Karyana Store · Railway Road, Barara</span><span>अरुण करियाना</span></div>
         </div>
     </footer>
-    <script>document.querySelectorAll('[data-year]').forEach(function (el) { el.textContent = new Date().getFullYear(); });</script>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <script src="config.js?v=7474b03af7"></script>
+    <script src="assets/js/auth.js?v=829609dc60"></script>
+    <script src="assets/js/account.js?v=0998126611"></script>
 </body>
 </html>

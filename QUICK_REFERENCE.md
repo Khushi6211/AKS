@@ -1,240 +1,70 @@
-# 🚀 Quick Reference - Arun Karyana Store
-
-**Last Updated:** November 21, 2025
-
----
-
-## 📱 Live URLs
-
-| Service | URL | Status |
-|---------|-----|--------|
-| **Website** | https://arun-karyana.netlify.app | ✅ Live |
-| **Backend API** | https://aks-backend.onrender.com | ✅ Live |
-| **Admin Dashboard** | https://arun-karyana.netlify.app/admin-dashboard.html | ✅ Live |
-
----
-
-## 🔑 Admin Credentials
-
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` on the Render backend (Environment tab) and redeploy.
-That account is created (or promoted) as the store admin on startup; sign in at `/login.html`
-and you are taken straight to the dashboard. See README → "Store dashboard (admin) access".
-
----
-
-## 🎨 Brand Colors
-
-```css
-Primary (Warm Brown):  #9C6F44
-Secondary (Light Gold): #E8C07D
-Accent (Deeper Gold):  #B88B4A
-Dark Grey:             #2D2D2D
-Off-White:             #F8F5F0
-```
-
-**Logo URL:**  
-`https://i.ibb.co/N6Q46Xdk/Vintage-Men-s-Portrait-in-Brown-Tones.png`
-
----
-
-## 🛠️ Technology Stack
-
-| Component | Technology | Hosting |
-|-----------|-----------|---------|
-| **Frontend** | HTML5, Tailwind CSS, JavaScript | Netlify (auto-deploy) |
-| **Backend** | Python 3.11, Flask, Gunicorn | Render.com (manual deploy) |
-| **Database** | MongoDB Atlas | Cloud |
-| **Images** | Cloudinary | Free tier |
-| **Email** | SendGrid | 100 emails/day |
-
----
-
-## 📊 Database Collections
-
-1. **products_collection** - All products
-2. **orders_collection** - Customer orders
-3. **users_collection** - User accounts
-4. **offers_collection** - Promotional offers
-
----
-
-## 🔧 Common Tasks
-
-### Deploy Backend (Render)
-1. Go to https://dashboard.render.com
-2. Select "aks-backend" service
-3. Click "Manual Deploy"
-4. Select "Deploy latest commit"
-
-### Deploy Frontend (Netlify)
-✅ **Automatic** - Deploys on every git push to main branch
-
-### Add New Product
-1. Login to admin dashboard
-2. Go to "Products" tab
-3. Click "Add New Product"
-4. Fill details and upload image
-5. Click "Save Product"
-
-### Manage Orders
-1. Login to admin dashboard
-2. Go to "Orders" tab
-3. Click on order to view details
-4. Update status: Pending → Processing → Out for Delivery → Delivered
-
-### Add Promotional Offer
-1. Login to admin dashboard
-2. Go to "Offers" tab
-3. Click "Add New Offer"
-4. Set discount percentage and validity dates
-5. Toggle "Active" to make visible on website
-
----
-
-## 📧 Email Configuration
-
-**SendGrid API Key Location:** Environment variable `SENDGRID_API_KEY`  
-**From Email:** Your verified sender email  
-**Email Types:**
-- Order confirmation
-- Order status updates
-- Password reset
-
-**To Fix Spam Issue:**  
-👉 Read `SENDGRID_SPAM_PREVENTION_GUIDE.md`
-
----
-
-## 🐛 Recent Bug Fixes (November 21, 2025)
-
-✅ **Bug 1:** Admin offers tab infinite loading  
-✅ **Bug 2:** Cart not working for new products  
-✅ **Bug 3:** Forgot password design mismatch  
-✅ **Bug 4:** Reset password link not working  
-✅ **Bug 5:** Email styling mismatch + spam issue  
-
-📄 **Full Details:** Read `BUG_FIXES_COMPLETED.md`
-
----
-
-## 🧪 Testing Checklist
-
-**After Every Deployment:**
-
-- [ ] Test login (customer + admin)
-- [ ] Add product to cart
-- [ ] Place test order
-- [ ] Check order email received
-- [ ] Update order status from admin
-- [ ] Test password reset flow
-- [ ] Check offers tab in admin
-- [ ] Verify mobile responsiveness
-
----
-
-## 📞 Support & Documentation
-
-| Document | Purpose |
-|----------|---------|
-| `README.md` | Project overview & setup |
-| `BUG_FIXES_COMPLETED.md` | Detailed bug fix documentation |
-| `SENDGRID_SPAM_PREVENTION_GUIDE.md` | Email deliverability guide |
-| `TESTING_CHECKLIST.md` | Complete testing procedures |
-| `QUICK_REFERENCE.md` | This file |
-
----
-
-## ⚡ Quick Commands
-
-### Check Backend Status
-```bash
-curl https://aks-backend.onrender.com/
-```
-
-### Check Frontend Status
-```bash
-curl https://arun-karyana.netlify.app/
-```
-
-### View Git Commits
-```bash
-git log --oneline -10
-```
-
-### Check MongoDB Connection
-```bash
-# In Python/Flask
-if products_collection is not None:
-    print("Database connected!")
-```
-
----
-
-## 🚨 Troubleshooting
-
-### Website not loading?
-- Check Netlify deployment status
-- Clear browser cache (Ctrl + Shift + R)
-- Wait 2-3 minutes for deployment
-
-### Backend API errors?
-- Check Render logs
-- Manually trigger redeploy
-- Verify MongoDB connection
-
-### Emails not sending?
-- Check SendGrid API key
-- Verify sender email
-- Check SendGrid dashboard for errors
-
-### Cart not working?
-- Check browser console (F12)
-- Verify product IDs are strings (not numbers)
-- Clear localStorage and retry
-
----
-
-## 📈 Future Enhancements
-
-**Phase 2 Ideas:**
-- [ ] Add Sentry error tracking
-- [ ] Customer order tracking page
-- [ ] Email notification preferences
-- [ ] Promotional SMS notifications
-- [ ] Inventory management
-- [ ] Sales analytics dashboard
-- [ ] Customer loyalty program
-- [ ] Multi-language support
-
----
-
-## 💡 Important Notes
-
-1. **Render Free Tier:** Backend sleeps after 15 min inactivity (first request may be slow)
-2. **Netlify Free Tier:** 100 GB bandwidth/month, 300 build minutes/month
-3. **SendGrid Free Tier:** 100 emails/day
-4. **Cloudinary Free Tier:** 25 GB storage, 25 GB bandwidth/month
-5. **MongoDB Atlas Free Tier:** 512 MB storage
-
----
-
-## 📞 Contact Information
-
-**Store Details:**  
-Arun Karyana Store  
-Railway Road, Barara  
-Ambala, Haryana 133201  
-India
-
-**Owner:** Ashish Ji  
-**Developer:** AI Assistant  
-**Project Start:** November 2025  
-**Current Phase:** Phase 1 Complete, Testing & Deployment
-
----
-
-**Need Help?** Refer to detailed documentation files or ask your AI assistant! 🤖
-
----
-
-*Last updated: November 21, 2025*
+# Quick reference: Arun Karyana Store
+
+## Live addresses
+
+| What | Address |
+| --- | --- |
+| Shop | https://arun-karyana-store.netlify.app |
+| Store dashboard | https://arun-karyana-store.netlify.app/admin.html (or `/dashboard`) |
+| Classic dashboard (backup) | https://arun-karyana-store.netlify.app/admin-classic.html |
+| Server health | https://arun-karyana-backend.onrender.com/health |
+
+## Signing in to the dashboard
+
+Sign in at `/login.html` with **owner@arunkaryanastore.com** and the owner password (shared
+privately). Change it any time from Dashboard → My account. The owner login can't be reset by
+email on purpose, so nobody can take it over through the inbox.
+
+Forgot it? Passwords are stored scrambled, so nobody can look it up. Either set `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` on Render (Environment tab) for a second admin login, or have the developer put a
+new password hash in `OWNER_PASSWORD_HASH` and raise `OWNER_BOOTSTRAP_VERSION` in `main.py`.
+
+## Everyday tasks (all from the phone)
+
+| Task | Where in the dashboard |
+| --- | --- |
+| See today's orders, money and what needs attention | **Today** |
+| Confirm, pack, send out, deliver or cancel an order; call or WhatsApp the customer | **Orders** → tap an order |
+| Change stock (+ / −), find low-stock or photo-less items | **Products** |
+| Add or edit a product, take its photo with the phone camera | **Products** → Add product / tap a product |
+| Promo codes and automatic offers | **Offers** |
+| The strip of messages at the top of the shop | **More → Announcement bar** |
+| A greeting card for festivals | **More → Welcome pop-up** |
+| A customer can't sign in | **More → Customers** → tap them → Create temporary password → Send on WhatsApp |
+| Give a family member dashboard access | **More → Customers** → tap them → Give dashboard access |
+| Choose which reviews show on the shop | **More → Reviews** (the section appears once three are on) |
+| Contact-form messages | **More → Messages** |
+
+Stock goes down automatically when an order is marked **Delivered**, and comes back if a delivered
+order is later cancelled. The dashboard checks for new orders every minute and chimes.
+
+## Brand
+
+| Token | Colour | Use |
+| --- | --- | --- |
+| Bone | `#f2eee6` | Page background |
+| Ink | `#14120f` | Text, dark buttons |
+| Kesar | `#e8531f` | Accent, highlights |
+| Haldi | `#e9a83a` | Secondary accent |
+| Night | `#12100e` | Dark sections, footer |
+
+Type: Inter Tight (headings), Inter (text), Instrument Serif italic (accents), Geist Mono (labels).
+
+## Technology
+
+| Part | Technology | Hosting |
+| --- | --- | --- |
+| Shop and dashboard | HTML, CSS, JavaScript; GSAP, Lenis, three.js (all self-hosted) | Netlify, auto-deploys `main` |
+| Server | Python 3.11, Flask, Gunicorn | Render, auto-deploys `main` |
+| Database | MongoDB Atlas | Cloud |
+| Product photos | Cloudinary | Free tier |
+| Email | SendGrid (optional: the sender address must be verified) | 100 emails/day |
+
+A GitHub Actions workflow (`store-health.yml`) pings the server every 10 minutes so it stays
+awake for the first customer of the day, and prints its health.
+
+## For developers
+
+- Backend tests: `pip install -r requirements.txt -r requirements-dev.txt && pytest`
+- After changing CSS/JS: `python3 scripts/stamp-assets.py` (cache-busting `?v=` stamps)
+- Product category names are free text; the shop maps them to aisles in `assets/js/store.js` (`AISLES`).
