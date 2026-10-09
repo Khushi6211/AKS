@@ -28,3 +28,13 @@ jobs:
           cat health.json 2>/dev/null || true
           echo
           [ "$code" = "200" ]
+
+      - name: Catalogue snapshot (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          base="https://arun-karyana-backend.onrender.com"
+          echo "--- categories ---"; curl -s --max-time 60 "$base/categories"; echo
+          echo "--- products ---"; curl -s --max-time 60 "$base/products" | jq -c '.products // . | .[]? | {id: ._id, name, price, category, stock, image}'
+          echo "--- offers ---"; curl -s --max-time 60 "$base/offers"; echo
+          echo "--- banner ---"; curl -s --max-time 60 "$base/banners/active"; echo
+          echo "--- reviews ---"; curl -s --max-time 60 "$base/reviews/featured"; echo
